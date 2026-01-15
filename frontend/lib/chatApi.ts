@@ -1,0 +1,285 @@
+/**
+ * Chat API Client with SSE Streaming Support
+ * Includes auto-reconnect with exponential backoff
+ */
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+
+// Retry configuration
+const MAX_RETRIES = 3
+const INITIAL_BACKOFF_MS = 1000
+const MAX_BACKOFF_MS = 10000
+const REQUEST_TIMEOUT_MS = 120000 // 2 minutes
+
+/**
+ * Sleep for a specified duration
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+/**
+ * Calculate exponential backoff with jitter
+ */
+function getBackoffDelay(attempt: number): number {
+  const backoff = Math.min(INITIAL_BACKOFF_MS * Math.pow(2, attempt), MAX_BACKOFF_MS)
+  // Add jitter (0-25% of backoff)
+  const jitter = backoff * Math.random() * 0.25
+  return backoff + jitter
+}
+
+export interface NextSuggestion {
+  id: string
+  question: string
+}
+
+export interface StreamChunk {
+  token?: string
+  done: boolean
+  error?: string
+  session_id?: string
+  user_id?: number  // User ID returned by backend for persistence
+  status?: string
+  intent?: string
+  ui_blocks?: any[]
+  citations?: string[]
+  followups?: string[]
+  itinerary?: any[]  // Travel itinerary data
+  next_suggestions?: NextSuggestion[]  // Follow-up questions from next_step_suggestion tool
+  placeholder?: boolean
+  clear?: boolean
+  status_update?: string  // Agent status messages (e.g., "writing itinerary...")
+  agent?: string  // Which agent sent the status
+  create_new_message?: boolean  // Flag to tell frontend to create new message for subsequent data
+}
+
+export interface ChatStreamOptions {
+  message: string
+  sessionId?: string
+  userId?: number  // Send existing user_id to backend for reuse
+  countryCode?: string  // User's country code for regional affiliate links
+  onToken: (token: string, isPlaceholder?: boolean) => void
+  onClear?: () => void
+  onComplete: (data: Partial<StreamChunk>) => void
+  onError: (error: string) => void
+  onReconnecting?: (attempt: number, maxRetries: number) => void  // Called when retrying connection
+  onReconnected?: () => void  // Called when connection is restored
+}
+
+/**
+ * Stream chat messages using Server-Sent Events (SSE)
+ * Includes auto-reconnect with exponential backoff on network errors
+ */
+export async function streamChat({
+  message,
+  sessionId,
+  userId,
+  countryCode,
+  onToken,
+  onClear,
+  onComplete,
+  onError,
+  onReconnecting,
+  onReconnected,
+}: ChatStreamOptions): Promise<void> {
+  let attempt = 0
+
+  while (attempt < MAX_RETRIES) {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+
+    try {
+      const body: { message: string; session_id?: string; user_id?: number; country_code?: string } = { message }
+      if (sessionId) {
+        body.session_id = sessionId
+      }
+      if (userId) {
+        body.user_id = userId
+      }
+      if (countryCode) {
+        body.country_code = countryCode
+      }
+
+      const response = await fetch(`${API_URL}/v1/chat/stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      })
+
+      clearTimeout(timeoutId)
+
+      // Notify if we recovered from a failed attempt
+      if (attempt > 0 && onReconnected) {
+        onReconnected()
+      }
+
+      if (!response.ok) {
+        // Don't retry on 4xx errors (client errors)
+        if (response.status >= 400 && response.status < 500) {
+          onError(`Request failed: ${response.status}`)
+          return
+        }
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const reader = response.body?.getReader()
+      if (!reader) {
+        throw new Error('No response body')
+      }
+
+      const decoder = new TextDecoder()
+      let buffer = ''
+
+      while (true) {
+        const { done, value } = await reader.read()
+
+        if (done) {
+          break
+        }
+
+        // Decode and add to buffer
+        buffer += decoder.decode(value, { stream: true })
+
+        // Process complete SSE messages
+        const lines = buffer.split('\n')
+        buffer = lines.pop() || '' // Keep incomplete line in buffer
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const jsonStr = line.slice(6) // Remove 'data: ' prefix
+            try {
+              const chunk: StreamChunk = JSON.parse(jsonStr)
+
+              if (chunk.error) {
+                onError(chunk.error)
+                return
+              }
+
+              if (chunk.clear && onClear) {
+                onClear()
+              }
+
+              // Handle status updates (e.g., "writing itinerary...")
+              if (chunk.status_update) {
+                onToken(chunk.status_update, true)  // true = placeholder that will be replaced
+              }
+
+              if (chunk.token) {
+                onToken(chunk.token, chunk.placeholder)
+              }
+
+              // Handle intermediate chunks (sent before done=true)
+              // This includes itinerary and ui_blocks (product carousel)
+              if ((chunk.itinerary || chunk.ui_blocks) && !chunk.done) {
+                onComplete({
+                  itinerary: chunk.itinerary,
+                  ui_blocks: chunk.ui_blocks,  // Include ui_blocks from intermediate chunks
+                  create_new_message: chunk.create_new_message,  // Pass the flag to frontend
+                })
+                // Don't return - continue processing other chunks
+              }
+
+              if (chunk.done) {
+                onComplete({
+                  session_id: chunk.session_id,
+                  user_id: chunk.user_id,  // Pass user_id to callback for persistence
+                  status: chunk.status,
+                  intent: chunk.intent,
+                  ui_blocks: chunk.ui_blocks,
+                  citations: chunk.citations,
+                  followups: chunk.followups,
+                  next_suggestions: chunk.next_suggestions,  // Follow-up questions at end of response
+                  // Note: itinerary and product carousel are sent in intermediate chunk, not in final chunk
+                })
+                return
+              }
+            } catch (e) {
+              console.error('Failed to parse SSE data:', e)
+            }
+          }
+        }
+      }
+
+      // If we get here, stream completed successfully
+      return
+
+    } catch (error) {
+      clearTimeout(timeoutId)
+
+      const isNetworkError = error instanceof TypeError ||
+        (error instanceof Error && error.name === 'AbortError') ||
+        (error instanceof Error && error.message.includes('network'))
+
+      // Only retry on network errors or timeouts
+      if (isNetworkError && attempt < MAX_RETRIES - 1) {
+        attempt++
+        const delay = getBackoffDelay(attempt)
+        console.warn(`SSE connection failed, retrying in ${Math.round(delay)}ms (attempt ${attempt}/${MAX_RETRIES})`)
+        if (onReconnecting) {
+          onReconnecting(attempt, MAX_RETRIES)
+        }
+        await sleep(delay)
+        continue
+      }
+
+      // Final attempt failed or non-retryable error
+      console.error('Stream error:', error)
+      onError(error instanceof Error ? error.message : 'Connection failed. Please try again.')
+      return
+    }
+  }
+}
+
+/**
+ * Login to the API
+ */
+export async function login(username: string, password: string): Promise<{ access_token: string }> {
+  const response = await fetch(`${API_URL}/v1/auth/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ username, password }),
+  })
+
+  if (!response.ok) {
+    const data = await response.json()
+    throw new Error(data.detail || 'Login failed')
+  }
+
+  return response.json()
+}
+
+/**
+ * Fetch conversation history for a session
+ */
+export async function fetchConversationHistory(sessionId: string): Promise<any> {
+  try {
+    const response = await fetch(`${API_URL}/v1/chat/history/${sessionId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    return response.json()
+  } catch (error) {
+    console.error('Failed to fetch conversation history:', error)
+    throw error
+  }
+}
+
+/**
+ * Check health of the API
+ */
+export async function checkHealth(): Promise<any> {
+  const response = await fetch(`${API_URL}/health`)
+  return response.json()
+}

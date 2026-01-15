@@ -1,0 +1,42 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ProductCard from '../../components/ProductCard.astro';
+---
+
+<Layout title="Health - ReviewGuide.ai">
+    <div class="space-y-8">
+        <div class="text-center py-12">
+            <h1 class="text-4xl font-bold text-slate-900 mb-4">Health & Wellness</h1>
+            <p class="text-lg text-slate-600 max-w-2xl mx-auto">
+                Fitness trackers, supplements, and wellness products reviewed.
+            </p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-8">
+            <ProductCard
+                title="Fitbit Charge 5 Fitness Tracker"
+                price="$129.95"
+                image="https://images.unsplash.com/photo-1575311373937-040b8e1fd5b6?w=400"
+                asin="PLACEHOLDER011"
+                rating={4.4}
+                description="Advanced health tracker with built-in GPS and stress management tools."
+            />
+            <ProductCard
+                title="Theragun Mini Massage Gun"
+                price="$199.00"
+                image="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400"
+                asin="PLACEHOLDER012"
+                rating={4.6}
+                description="Portable deep tissue massage therapy wherever you need it."
+            />
+            <ProductCard
+                title="Withings Body+ Smart Scale"
+                price="$99.95"
+                image="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400"
+                asin="PLACEHOLDER013"
+                rating={4.5}
+                description="Full body composition analysis with automatic sync to your phone."
+            />
+        </div>
+    </div>
+</Layout>

@@ -1,0 +1,76 @@
+# Travel Provider Configuration
+# Add/remove providers by enabling/disabling them here
+# No code changes needed!
+
+# NOTE: Hotels and Flights now use Expedia PLP (Product Listing Page) links
+# instead of individual cards. This is handled directly in the tools:
+# - travel_search_hotels.py -> generates Expedia hotel search PLP links
+# - travel_search_flights.py -> generates Expedia flight search PLP links
+# The providers below are kept for backward compatibility but are disabled.
+
+hotel_providers:
+  # Expedia PLP provider - generates search result page links with affiliate tracking
+  - name: expedia_plp
+    enabled: true
+    config:
+      api_key: plp_provider  # No API key needed, generates links only
+      partner_id: "1101l413711"
+
+  # Mock provider for development (disabled - using Expedia PLP)
+  - name: mock
+    enabled: false
+    config:
+      api_key: mock_key
+
+  # Booking.com (disabled)
+  - name: booking
+    enabled: false
+    config:
+      api_key: ${BOOKING_API_KEY}
+      affiliate_id: ${BOOKING_AFFILIATE_ID}
+
+  # Expedia API (disabled - using PLP links instead)
+  - name: expedia
+    enabled: false
+    config:
+      api_key: ${EXPEDIA_API_KEY}
+      affiliate_id: ${EXPEDIA_AFFILIATE_ID}
+
+flight_providers:
+  # Expedia PLP provider - generates search result page links with affiliate tracking
+  - name: expedia_plp
+    enabled: true
+    config:
+      api_key: plp_provider  # No API key needed, generates links only
+      partner_id: "1101l413711"
+
+  # Mock provider for development (disabled - using Expedia PLP)
+  - name: mock
+    enabled: false
+    config:
+      api_key: mock_key
+
+  # Amadeus (disabled - using Expedia PLP links instead)
+  - name: amadeus
+    enabled: false
+    config:
+      api_key: ${AMADEUS_API_KEY}
+      api_secret: ${AMADEUS_API_SECRET}
+
+  # Skyscanner (disabled)
+  - name: skyscanner
+    enabled: false
+    config:
+      api_key: ${SKYSCANNER_API_KEY}
+
+# To add a new provider:
+# 1. Create provider class in providers/ directory
+# 2. Register it with @ProviderRegistry.register_*_provider("name")
+# 3. Add configuration here
+# 4. Set enabled: true
+# That's it!
+
+# Expedia PLP Link Formats:
+# Hotels: https://www.expedia.com/Hotel-Search?destination=<SEARCH_TERM>&partnerId=1101l413711
+# Flights (one-way): https://www.expedia.com/Flights-Search?trip=oneway&leg1=from:[ORIGIN],to:[DESTINATION],departure:[DATE]TANYT&passengers=adults:1&options=cabinclass:economy&mode=search&partnerId=1101l413711
+# Flights (round-trip): Adds leg2 for return flight

@@ -1,0 +1,203 @@
+{
+  "products": [
+    {
+      "asin": "MOCK000001",
+      "title": "Amazon Product A - Premium Quality Item",
+      "price": {"amount": 29.99, "currency": "USD"},
+      "image_url": "https://placehold.co/400x400/e2e8f0/64748b?text=Product+A",
+      "rating": 4.5,
+      "total_reviews": 1234,
+      "category": "electronics",
+      "keywords": ["product", "electronics", "gadget", "tech", "device"],
+      "availability": "In Stock",
+      "prime": true
+    },
+    {
+      "asin": "MOCK000002",
+      "title": "Amazon Product B - Best Seller",
+      "price": {"amount": 49.99, "currency": "USD"},
+      "image_url": "https://placehold.co/400x400/dbeafe/3b82f6?text=Product+B",
+      "rating": 4.7,
+      "total_reviews": 5678,
+      "category": "electronics",
+      "keywords": ["product", "electronics", "popular", "bestseller", "top rated"],
+      "availability": "In Stock",
+      "prime": true
+    },
+    {
+      "asin": "MOCK000003",
+      "title": "Amazon Product C - Value Choice",
+      "price": {"amount": 19.99, "currency": "USD"},
+      "image_url": "https://placehold.co/400x400/dcfce7/22c55e?text=Product+C",
+      "rating": 4.3,
+      "total_reviews": 2345,
+      "category": "home",
+      "keywords": ["product", "home", "value", "budget", "affordable"],
+      "availability": "In Stock",
+      "prime": true
+    },
+    {
+      "asin": "MOCK000004",
+      "title": "Amazon Product D - Professional Grade",
+      "price": {"amount": 99.99, "currency": "USD"},
+      "image_url": "https://placehold.co/400x400/fef3c7/f59e0b?text=Product+D",
+      "rating": 4.8,
+      "total_reviews": 890,
+      "category": "tools",
+      "keywords": ["product", "professional", "premium", "high quality", "tools"],
+      "availability": "In Stock",
+      "prime": true
+    },
+    {
+      "asin": "MOCK000005",
+      "title": "Amazon Product E - Compact Design",
+      "price": {"amount": 34.99, "currency": "USD"},
+      "image_url": "https://placehold.co/400x400/fce7f3/ec4899?text=Product+E",
+      "rating": 4.4,
+      "total_reviews": 3456,
+      "category": "travel",
+      "keywords": ["product", "travel", "compact", "portable", "lightweight"],
+      "availability": "In Stock",
+      "prime": true
+    },
+    {
+      "asin": "MOCK000006",
+      "title": "Amazon Product F - Eco Friendly",
+      "price": {"amount": 24.99, "currency": "USD"},
+      "image_url": "https://placehold.co/400x400/d1fae5/10b981?text=Product+F",
+      "rating": 4.6,
+      "total_reviews": 1567,
+      "category": "home",
+      "keywords": ["product", "eco", "green", "sustainable", "environment"],
+      "availability": "In Stock",
+      "prime": true
+    },
+    {
+      "asin": "MOCK000007",
+      "title": "Amazon Product G - Smart Technology",
+      "price": {"amount": 79.99, "currency": "USD"},
+      "image_url": "https://placehold.co/400x400/e0e7ff/6366f1?text=Product+G",
+      "rating": 4.5,
+      "total_reviews": 4567,
+      "category": "electronics",
+      "keywords": ["product", "smart", "tech", "wifi", "bluetooth", "connected"],
+      "availability": "In Stock",
+      "prime": true
+    },
+    {
+      "asin": "MOCK000008",
+      "title": "Amazon Product H - Outdoor Essential",
+      "price": {"amount": 44.99, "currency": "USD"},
+      "image_url": "https://placehold.co/400x400/fed7aa/f97316?text=Product+H",
+      "rating": 4.4,
+      "total_reviews": 2890,
+      "category": "outdoor",
+      "keywords": ["product", "outdoor", "camping", "hiking", "adventure"],
+      "availability": "In Stock",
+      "prime": true
+    },
+    {
+      "asin": "MOCK000009",
+      "title": "Amazon Product I - Kitchen Must Have",
+      "price": {"amount": 39.99, "currency": "USD"},
+      "image_url": "https://placehold.co/400x400/fecaca/ef4444?text=Product+I",
+      "rating": 4.7,
+      "total_reviews": 6789,
+      "category": "kitchen",
+      "keywords": ["product", "kitchen", "cooking", "food", "appliance"],
+      "availability": "In Stock",
+      "prime": true
+    },
+    {
+      "asin": "MOCK000010",
+      "title": "Amazon Product J - Fitness Gear",
+      "price": {"amount": 54.99, "currency": "USD"},
+      "image_url": "https://placehold.co/400x400/c7d2fe/8b5cf6?text=Product+J",
+      "rating": 4.6,
+      "total_reviews": 3456,
+      "category": "sports",
+      "keywords": ["product", "fitness", "exercise", "workout", "gym", "sports"],
+      "availability": "In Stock",
+      "prime": true
+    },
+    {
+      "asin": "MOCK000011",
+      "title": "Amazon Product K - Office Supplies",
+      "price": {"amount": 15.99, "currency": "USD"},
+      "image_url": "https://placehold.co/400x400/f3e8ff/a855f7?text=Product+K",
+      "rating": 4.3,
+      "total_reviews": 1234,
+      "category": "office",
+      "keywords": ["product", "office", "desk", "work", "supplies"],
+      "availability": "In Stock",
+      "prime": true
+    },
+    {
+      "asin": "MOCK000012",
+      "title": "Amazon Product L - Beauty Care",
+      "price": {"amount": 27.99, "currency": "USD"},
+      "image_url": "https://placehold.co/400x400/ffe4e6/f43f5e?text=Product+L",
+      "rating": 4.5,
+      "total_reviews": 4567,
+      "category": "beauty",
+      "keywords": ["product", "beauty", "skincare", "cosmetics", "personal care"],
+      "availability": "In Stock",
+      "prime": true
+    },
+    {
+      "asin": "MOCK000013",
+      "title": "Amazon Product M - Pet Supplies",
+      "price": {"amount": 22.99, "currency": "USD"},
+      "image_url": "https://placehold.co/400x400/ccfbf1/14b8a6?text=Product+M",
+      "rating": 4.8,
+      "total_reviews": 7890,
+      "category": "pet",
+      "keywords": ["product", "pet", "dog", "cat", "animal", "supplies"],
+      "availability": "In Stock",
+      "prime": true
+    },
+    {
+      "asin": "MOCK000014",
+      "title": "Amazon Product N - Baby Essential",
+      "price": {"amount": 32.99, "currency": "USD"},
+      "image_url": "https://placehold.co/400x400/cffafe/06b6d4?text=Product+N",
+      "rating": 4.6,
+      "total_reviews": 2345,
+      "category": "baby",
+      "keywords": ["product", "baby", "infant", "kids", "child", "parenting"],
+      "availability": "In Stock",
+      "prime": true
+    },
+    {
+      "asin": "MOCK000015",
+      "title": "Amazon Product O - Gaming Accessory",
+      "price": {"amount": 59.99, "currency": "USD"},
+      "image_url": "https://placehold.co/400x400/1e293b/f8fafc?text=Product+O",
+      "rating": 4.7,
+      "total_reviews": 5678,
+      "category": "games",
+      "keywords": ["product", "gaming", "video games", "controller", "accessory"],
+      "availability": "In Stock",
+      "prime": true
+    }
+  ],
+  "categories": {
+    "electronics": ["electronics", "gadget", "tech", "device", "smart"],
+    "home": ["home", "house", "living", "furniture", "decor"],
+    "tools": ["tools", "hardware", "diy", "repair", "professional"],
+    "travel": ["travel", "luggage", "vacation", "trip", "portable"],
+    "outdoor": ["outdoor", "camping", "hiking", "adventure", "nature"],
+    "kitchen": ["kitchen", "cooking", "food", "appliance", "culinary"],
+    "sports": ["sports", "fitness", "exercise", "workout", "gym"],
+    "office": ["office", "desk", "work", "supplies", "stationery"],
+    "beauty": ["beauty", "skincare", "cosmetics", "personal care", "grooming"],
+    "pet": ["pet", "dog", "cat", "animal", "supplies"],
+    "baby": ["baby", "infant", "kids", "child", "parenting"],
+    "games": ["gaming", "video games", "controller", "console", "accessory"]
+  },
+  "metadata": {
+    "version": "2.0",
+    "last_updated": "2024-11-24",
+    "description": "Mock Amazon products with placeholder data for development. Use AMAZON_API_ENABLED=true with real credentials for production."
+  }
+}

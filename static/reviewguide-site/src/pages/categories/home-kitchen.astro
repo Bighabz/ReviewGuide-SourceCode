@@ -1,0 +1,48 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ProductCard from '../../components/ProductCard.astro';
+---
+
+<Layout title="Home & Kitchen - ReviewGuide.ai">
+    <div class="space-y-8">
+        <div class="text-center py-12">
+            <h1 class="text-4xl font-bold text-slate-900 mb-4">Home & Kitchen</h1>
+            <p class="text-lg text-slate-600 max-w-2xl mx-auto">
+                Top-rated kitchen gadgets, appliances, and home essentials.
+            </p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-8">
+            <ProductCard
+                title="Ninja AF101 Air Fryer"
+                price="$89.95"
+                image="https://images.unsplash.com/photo-1585515320310-259814833e62?w=400"
+                asin="PLACEHOLDER002"
+                rating={4.8}
+                description="Crisps evenly, easy to clean, and compact enough for small kitchens."
+            />
+            <ProductCard
+                title="Instant Pot Duo 7-in-1"
+                price="$99.95"
+                image="https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400"
+                asin="PLACEHOLDER005"
+                rating={4.7}
+                description="Easy to use, versatile, and convenient. Replaces 7 kitchen appliances."
+            />
+            <ProductCard
+                title="Vitamix Professional Blender"
+                price="$449.95"
+                image="https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=400"
+                asin="PLACEHOLDER009"
+                rating={4.7}
+                description="Professional-grade blender for smoothies, soups, and more."
+            />
+        </div>
+
+        <div class="text-center pt-8">
+            <a href="/blog/top-kitchen-gadgets" class="text-blue-600 hover:text-blue-700 font-semibold">
+                Read our full kitchen gadgets guide →
+            </a>
+        </div>
+    </div>
+</Layout>

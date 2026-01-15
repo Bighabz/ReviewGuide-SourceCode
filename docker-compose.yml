@@ -1,0 +1,159 @@
+services:
+  # ===========================================
+  # PostgreSQL Database
+  # ===========================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: reviewguide-postgres
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-reviewguide_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - reviewguide-network
+
+  # ===========================================
+  # Redis Cache
+  # ===========================================
+  redis:
+    image: redis:7-alpine
+    container_name: reviewguide-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - reviewguide-network
+
+  # ===========================================
+  # Backend - FastAPI
+  # ===========================================
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: reviewguide-backend
+    environment:
+      # Database
+      DATABASE_URL: postgresql+asyncpg://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-reviewguide_db}
+      # Redis
+      REDIS_URL: redis://redis:6379
+      # App settings
+      ENV: ${ENV:-development}
+      DEBUG: ${DEBUG:-true}
+      SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
+      # Admin credentials
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123456}
+      # LLM API Keys (from host .env)
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      # Other API keys
+      EBAY_APP_ID: ${EBAY_APP_ID}
+      EBAY_CERT_ID: ${EBAY_CERT_ID}
+      EBAY_CAMPAIGN_ID: ${EBAY_CAMPAIGN_ID}
+      PERPLEXITY_API_KEY: ${PERPLEXITY_API_KEY}
+      BOOKING_API_KEY: ${BOOKING_API_KEY}
+      SKYSCANNER_API_KEY: ${SKYSCANNER_API_KEY}
+      AMADEUS_API_KEY: ${AMADEUS_API_KEY}
+      AMADEUS_API_SECRET: ${AMADEUS_API_SECRET}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY}
+      IPINFO_TOKEN: ${IPINFO_TOKEN}
+      # Amazon Affiliate
+      AMAZON_ASSOCIATE_TAG: ${AMAZON_ASSOCIATE_TAG}
+      AMAZON_ASSOCIATE_TAGS: ${AMAZON_ASSOCIATE_TAGS}
+      AMAZON_DEFAULT_COUNTRY: ${AMAZON_DEFAULT_COUNTRY:-US}
+      AMAZON_API_ENABLED: ${AMAZON_API_ENABLED:-false}
+      USE_MOCK_AFFILIATE: ${USE_MOCK_AFFILIATE:-False}
+      # Search
+      SEARCH_PROVIDER: ${SEARCH_PROVIDER:-openai}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - reviewguide-network
+
+  # ===========================================
+  # Frontend - Next.js
+  # ===========================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    container_name: reviewguide-frontend
+    environment:
+      NEXT_PUBLIC_API_URL: http://backend:8000
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    networks:
+      - reviewguide-network
+
+  # ===========================================
+  # Database Migrations (one-time job)
+  # ===========================================
+  migrations:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: reviewguide-migrations
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        sleep 5 &&
+        alembic upgrade head &&
+        echo 'Migrations completed!'
+      "
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-reviewguide_db}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - reviewguide-network
+    profiles:
+      - setup
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  reviewguide-network:
+    driver: bridge
