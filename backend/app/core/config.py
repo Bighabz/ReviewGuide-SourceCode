@@ -1,0 +1,335 @@
+"""
+Application Configuration
+Loads settings from environment variables
+"""
+from typing import List
+from pydantic_settings import BaseSettings
+from pydantic import Field, validator
+
+
+class Settings(BaseSettings):
+    """Application settings"""
+
+    # Application
+    APP_NAME: str = Field(default="ReviewGuide.ai", description="Application name")
+    ENV: str = Field(default="development", description="Environment (development, staging, production)")
+    DEBUG: bool = Field(default=True, description="Enable debug mode")
+    SECRET_KEY: str = Field(..., min_length=32, description="Secret key for JWT and encryption")
+    API_V1_PREFIX: str = Field(default="/v1", description="API version prefix")
+    TIMEZONE: str = Field(default="Asia/Bangkok", description="Application timezone (UTC+7)")
+
+    # CORS
+    CORS_ORIGINS: List[str] = Field(
+        default=["http://localhost:3000"],
+        description="Allowed CORS origins (comma-separated string or list)"
+    )
+
+    @validator("CORS_ORIGINS", pre=True)
+    def parse_cors_origins(cls, v):
+        if isinstance(v, str):
+            return [origin.strip() for origin in v.strip("[]").split(",")]
+        return v
+
+    # Admin Credentials
+    ADMIN_USERNAME: str = Field(default="admin", description="Admin username")
+    ADMIN_PASSWORD: str = Field(..., min_length=8, description="Admin password")
+
+    # Database
+    DATABASE_URL: str = Field(..., description="PostgreSQL connection string")
+    DB_POOL_SIZE: int = Field(default=50, description="Database connection pool size")
+    DB_MAX_OVERFLOW: int = Field(default=50, description="Database connection pool max overflow")
+    DB_POOL_RECYCLE: int = Field(default=3600, description="Database connection recycle time in seconds")
+    DB_CONNECT_TIMEOUT: int = Field(default=10, description="Database connection timeout in seconds")
+
+    # Redis
+    REDIS_URL: str = Field(..., description="Redis connection string")
+    REDIS_MAX_CONNECTIONS: int = Field(default=50, description="Redis connection pool max connections")
+    REDIS_RETRY_MAX_ATTEMPTS: int = Field(default=3, description="Redis retry max attempts")
+    REDIS_SOCKET_CONNECT_TIMEOUT: int = Field(default=5, description="Redis socket connect timeout in seconds")
+    REDIS_HEALTH_CHECK_INTERVAL: int = Field(default=30, description="Redis health check interval in seconds")
+    REDIS_RETRY_BACKOFF_BASE: float = Field(default=0.1, description="Redis retry exponential backoff base delay in seconds")
+    ENABLE_SEARCH_CACHE: bool = Field(default=True, description="Enable/disable search results caching")
+
+    # MCP Dynamic Workflow
+    USE_MCP_PLANNER: bool = Field(
+        default=False,
+        description="Enable MCP-based dynamic planner (true) or use traditional LangGraph workflow (false)"
+    )
+
+    # Product Search Configuration
+    MAX_PRODUCTS_RETURN: int = Field(
+        default=5,
+        description="Maximum number of products to return from search"
+    )
+
+    # Conversation History
+    USE_REDIS_FOR_HISTORY: bool = Field(
+        default=True,
+        description="Use Redis cache for history (true) or load directly from PostgreSQL (false)"
+    )
+    MAX_HISTORY_MESSAGES: int = Field(
+        default=10,
+        description="Maximum number of recent messages to load and send to LLM for context"
+    )
+    MAX_USER_HISTORY_FOR_SLOT_EXTRACTION: int = Field(
+        default=5,
+        description="Maximum number of user messages from history to include when extracting slots in clarifier agent"
+    )
+
+    # Rate Limiting
+    RATE_LIMIT_ENABLED: bool = Field(
+        default=True,
+        description="Enable rate limiting for chat endpoint"
+    )
+    RATE_LIMIT_GUEST_REQUESTS: int = Field(
+        default=20,
+        description="Max requests per time window for guest users"
+    )
+    RATE_LIMIT_GUEST_WINDOW: int = Field(
+        default=60,
+        description="Time window in seconds for guest rate limit (default: 1 minute)"
+    )
+    RATE_LIMIT_AUTH_REQUESTS: int = Field(
+        default=100,
+        description="Max requests per time window for authenticated users"
+    )
+    RATE_LIMIT_AUTH_WINDOW: int = Field(
+        default=60,
+        description="Time window in seconds for authenticated rate limit (default: 1 minute)"
+    )
+
+    # LLM Providers
+    OPENAI_API_KEY: str = Field(..., description="OpenAI API key")
+    ANTHROPIC_API_KEY: str = Field(default="", description="Anthropic API key")
+    DEFAULT_MODEL: str = Field(default="gpt-4o-mini", description="Default LLM model to use")
+    LITELLM_LOG_LEVEL: str = Field(default="INFO", description="LiteLLM logging level")
+
+    # Agent-specific Models (override DEFAULT_MODEL for specific agents)
+    PLANNER_MODEL: str = Field(default="o3-mini", description="Model for planner agent (reasoning)")
+    INTENT_MODEL: str = Field(default="gpt-4o-mini", description="Model for intent classification agent")
+    CLARIFIER_MODEL: str = Field(default="gpt-4o-mini", description="Model for clarifier agent")
+    COMPOSER_MODEL: str = Field(default="gpt-4o-mini", description="Model for composer agents")
+    PRODUCT_SEARCH_MODEL: str = Field(default="gpt-4.1-mini", description="Model for product search (needs recent product knowledge)")
+
+    # Agent-specific Max Tokens (match actual code values, increase for reasoning models)
+    PLANNER_MAX_TOKENS: int = Field(default=500, description="Max tokens for planner agent")
+    INTENT_MAX_TOKENS: int = Field(default=50, description="Max tokens for intent agent")
+    CLARIFIER_MAX_TOKENS: int = Field(default=800, description="Max tokens for clarifier agent")
+    COMPOSER_MAX_TOKENS: int = Field(default=80, description="Max tokens for composer agents")
+    PRODUCT_SEARCH_MAX_TOKENS: int = Field(default=500, description="Max tokens for product search")
+
+    # Search Provider Configuration
+    SEARCH_PROVIDER: str = Field(default="perplexity", description="Search provider to use")
+
+    # OpenAI Search Provider
+    OPENAI_SEARCH_BASE_URL: str = Field(default="https://api.openai.com/v1", description="OpenAI base URL")
+    OPENAI_SEARCH_TIMEOUT: float = Field(default=30.0, description="OpenAI timeout in seconds")
+    OPENAI_PRODUCT_DOMAINS: str = Field(default="amazon.com,ebay.com,walmart.com", description="Comma-separated list of domains for product search")
+    OPENAI_SERVICE_DOMAINS: str = Field(default="g2.com,capterra.com,trustpilot.com", description="Comma-separated list of domains for service search")
+    OPENAI_TRAVEL_DOMAINS: str = Field(default="tripadvisor.com,lonelyplanet.com,booking.com", description="Comma-separated list of domains for travel search")
+
+    # Perplexity Search Provider
+    PERPLEXITY_API_KEY: str = Field(default="", description="Perplexity API key")
+    PERPLEXITY_BASE_URL: str = Field(default="https://api.perplexity.ai", description="Perplexity base URL")
+    PERPLEXITY_MODEL: str = Field(default="sonar", description="Perplexity model")
+    PERPLEXITY_TIMEOUT: float = Field(default=30.0, description="Perplexity timeout in seconds")
+    PERPLEXITY_PRODUCT_DOMAINS: str = Field(default="ebay.com", description="Comma-separated list of domains for product search")
+    PERPLEXITY_SERVICE_DOMAINS: str = Field(default="g2.com,capterra.com,trustpilot.com", description="Comma-separated list of domains for service search")
+    PERPLEXITY_TRAVEL_DOMAINS: str = Field(default="tripadvisor.com,lonelyplanet.com", description="Comma-separated list of domains for travel search")
+
+    @validator("PERPLEXITY_PRODUCT_DOMAINS", "PERPLEXITY_SERVICE_DOMAINS", "PERPLEXITY_TRAVEL_DOMAINS", "OPENAI_PRODUCT_DOMAINS", "OPENAI_SERVICE_DOMAINS", "OPENAI_TRAVEL_DOMAINS", pre=True)
+    def parse_domain_list(cls, v):
+        if isinstance(v, str):
+            return v
+        return v
+
+    # Search Query Generation
+    ENABLE_LLM_SEARCH_QUERY: bool = Field(
+        default=False,
+        description="Enable LLM-based search query generation. If False, simple slot concatenation is used."
+    )
+    SEARCH_QUERY_PRODUCT_SUFFIX: str = Field(
+        default="no articles, blogs, news, reviews, shop. search only purchasable products with title, price, url",
+        description="Suffix to append to product search queries when ENABLE_LLM_SEARCH_QUERY is False"
+    )
+
+    # eBay Partner Network
+    EBAY_APP_ID: str = Field(default="", description="eBay App ID")
+    EBAY_CERT_ID: str = Field(default="", description="eBay Cert ID (Client Secret)")
+    EBAY_CAMPAIGN_ID: str = Field(default="", description="eBay Partner Network Campaign ID")
+    EBAY_AFFILIATE_CUSTOM_ID: str = Field(default="", description="eBay custom tracking ID (optional)")
+    EBAY_MKCID: str = Field(default="1", description="eBay marketing channel ID (1=EPN, 7=Site Email, 8=Marketing Email)")
+    EBAY_MKRID: str = Field(default="711-53200-19255-0", description="eBay rotation ID for US marketplace")
+    EBAY_TOOLID: str = Field(default="10001", description="eBay tool ID (10001=default)")
+    EBAY_MKEVT: str = Field(default="1", description="eBay marketing event (1=Click, 2=Impression)")
+    MAX_AFFILIATE_OFFERS_PER_PRODUCT: int = Field(default=3, description="Maximum number of affiliate offers to fetch per product")
+    USE_MOCK_AFFILIATE: bool = Field(default=True, description="Use mock affiliate provider")
+
+    # Amazon Associates / Product Advertising API
+    AMAZON_API_ENABLED: bool = Field(default=False, description="Enable real Amazon PA-API (requires API credentials)")
+    AMAZON_ACCESS_KEY: str = Field(default="", description="Amazon PA-API Access Key")
+    AMAZON_SECRET_KEY: str = Field(default="", description="Amazon PA-API Secret Key")
+    AMAZON_ASSOCIATE_TAG: str = Field(default="", description="Amazon Associate Tag (e.g., yoursite-20)")
+    AMAZON_ASSOCIATE_TAGS: str = Field(
+        default="US:,UK:,DE:,FR:,JP:,CA:,AU:",
+        description="Comma-separated country:tag pairs for regional affiliate tags"
+    )
+    AMAZON_DEFAULT_COUNTRY: str = Field(default="US", description="Default country code for Amazon links")
+
+    # IP Geolocation
+    IPINFO_TOKEN: str = Field(default="", description="IPInfo.io API token for IP geolocation")
+
+    # Affiliate Links Display Configuration
+    SHOW_AFFILIATE_LINKS_PER_PRODUCT: bool = Field(
+        default=False,
+        description="Include detailed affiliate links per product in responses (multiple sellers)"
+    )
+
+    # Travel APIs (Hotels & Flights)
+    USE_MOCK_TRAVEL: bool = Field(default=True, description="Use mock travel providers (legacy)")
+    TRAVEL_HOTEL_PROVIDERS: str = Field(default="mock", description="Comma-separated list of hotel providers")
+    TRAVEL_FLIGHT_PROVIDERS: str = Field(default="mock", description="Comma-separated list of flight providers")
+    BOOKING_API_KEY: str = Field(default="", description="Booking.com API key")
+    BOOKING_AFFILIATE_ID: str = Field(default="", description="Booking.com affiliate ID")
+    EXPEDIA_API_KEY: str = Field(default="", description="Expedia API key")
+    SKYSCANNER_API_KEY: str = Field(default="", description="Skyscanner API key")
+    AMADEUS_API_KEY: str = Field(default="", description="Amadeus API key")
+    AMADEUS_API_SECRET: str = Field(default="", description="Amadeus API secret")
+
+    # Travel Cache Configuration
+    ENABLE_TRAVEL_CACHE: bool = Field(default=True, description="Enable Redis caching for travel searches")
+    TRAVEL_CACHE_TTL: int = Field(default=3600, description="Travel cache TTL in seconds (default: 1 hour)")
+
+    # Airport Code Cache Configuration
+    ENABLE_AIRPORT_CACHE: bool = Field(default=True, description="Enable database caching for city -> airport code lookups")
+    AIRPORT_CACHE_EXPIRY_DAYS: int = Field(default=180, description="Airport cache expiration in days (default: 6 months)")
+
+    # Link Health Monitoring
+    ENABLE_LINK_HEALTH_CHECKER: bool = Field(
+        default=True,
+        description="Enable automatic link health monitoring in background"
+    )
+    LINK_HEALTH_CHECK_INTERVAL_HOURS: int = Field(
+        default=6,
+        description="Interval in hours between automatic link health checks"
+    )
+    LINK_HEALTH_CHECK_TIMEOUT: int = Field(
+        default=10,
+        description="Timeout in seconds for each link health check request"
+    )
+    LINK_HEALTH_CHECK_MAX_CONCURRENT: int = Field(
+        default=10,
+        description="Maximum number of concurrent link health checks"
+    )
+
+    # Logging Configuration
+    LOG_ENABLED: bool = Field(default=True, description="Enable/disable all logging in the application")
+    LOG_LEVEL: str = Field(default="INFO", description="Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL")
+    LOG_FORMAT: str = Field(default="colored", description="Log format: json or colored")
+
+    # Config Encryption
+    CONFIG_ENCRYPTION_KEY: str = Field(default="", description="Master encryption key for sensitive config values in database (Fernet key)")
+
+    # Observability
+    LANGFUSE_PUBLIC_KEY: str = Field(default="", description="Langfuse public key")
+    LANGFUSE_SECRET_KEY: str = Field(default="", description="Langfuse secret key")
+    LANGFUSE_HOST: str = Field(default="https://cloud.langfuse.com", description="Langfuse host URL")
+    LANGFUSE_OTLP_ENDPOINT: str = Field(default="/api/public/otel", description="Langfuse OTLP endpoint path")
+    ENABLE_TRACING: bool = Field(default=True, description="Enable tracing")
+    ENABLE_OPENTELEMETRY_EXPORT: bool = Field(default=True, description="Enable OpenTelemetry OTLP export to Langfuse")
+
+    # OTEL Batch Processor Configuration
+    OTEL_BATCH_SCHEDULE_DELAY_MILLIS: int = Field(default=5000, description="Delay between batch exports (ms)")
+    OTEL_BATCH_MAX_QUEUE_SIZE: int = Field(default=2048, description="Maximum queue size for spans")
+    OTEL_BATCH_MAX_EXPORT_BATCH_SIZE: int = Field(default=512, description="Maximum batch size for export")
+    OTEL_BATCH_EXPORT_TIMEOUT_MILLIS: int = Field(default=30000, description="Timeout for export (ms)")
+
+    # Additional Rate Limiting
+    RATE_LIMIT_PER_IP: int = Field(default=100, description="Rate limit per IP address")
+    RATE_LIMIT_PER_SESSION: int = Field(default=20, description="Rate limit per session")
+
+    # Anonymous User Configuration
+    ANONYMOUS_EMAIL_DOMAIN: str = Field(
+        default="@reviewguide.ai",
+        description="Email domain for anonymous users"
+    )
+    ANONYMOUS_EMAIL_PREFIX: str = Field(
+        default="anonymous_",
+        description="Email prefix for anonymous users"
+    )
+    ANONYMOUS_EMAIL_RANDOM_LENGTH: int = Field(
+        default=16,
+        description="Number of random characters in anonymous email"
+    )
+
+    # JWT
+    JWT_ALGORITHM: str = Field(default="HS256", description="JWT algorithm")
+    JWT_EXPIRATION_HOURS: int = Field(default=24, description="JWT expiration in hours")
+
+    # Application Server
+    APP_HOST: str = Field(default="0.0.0.0", description="Application host")
+    APP_PORT: int = Field(default=8000, description="Application port")
+
+    # Provider Result Limits
+    EBAY_MAX_RESULTS: int = Field(default=50, description="Maximum eBay search results")
+    AMADEUS_MAX_HOTEL_RESULTS: int = Field(default=50, description="Maximum Amadeus hotel results")
+    AMADEUS_MAX_HOTELS_PER_REQUEST: int = Field(default=5, description="Maximum hotels per Amadeus API request")
+    AMADEUS_MAX_HOTELS_TO_RETURN: int = Field(default=10, description="Maximum hotels to return in response")
+    AMADEUS_MAX_FLIGHT_RESULTS: int = Field(default=10, description="Maximum Amadeus flight results")
+    BOOKING_MAX_RESULTS: int = Field(default=10, description="Maximum Booking.com results")
+    SKYSCANNER_MAX_RESULTS: int = Field(default=10, description="Maximum Skyscanner results")
+
+    # Provider Timeouts and Delays
+    SKYSCANNER_POLLING_DELAY: int = Field(default=2, description="Skyscanner polling delay in seconds")
+    CHAT_EVENT_QUEUE_TIMEOUT: float = Field(default=0.1, description="Chat event queue timeout in seconds")
+    CHAT_STREAM_SLEEP_DELAY: float = Field(default=0.01, description="Chat stream sleep delay in seconds")
+
+    # Cache TTLs
+    HALT_STATE_TTL: int = Field(default=3600, description="Halt state cache TTL in seconds")
+    CHAT_HISTORY_CACHE_TTL: int = Field(default=3600, description="Chat history cache TTL in seconds")
+
+    class Config:
+        env_file = ".env"
+        case_sensitive = True
+
+
+# Create global settings instance
+settings = Settings()
+
+
+async def load_config_overrides_from_db():
+    """
+    Load configuration overrides using ConfigCache snapshot approach.
+
+    Priority: Redis snapshot → Database → .env
+
+    Single Redis operation loads entire config snapshot (Magento 2 style).
+    If snapshot doesn't exist, builds from DB and caches for next time.
+
+    This should be called on application startup to load database configs to settings.
+    """
+    from app.services.config_cache import get_config_cache
+    from app.core.centralized_logger import get_logger
+
+    logger = get_logger(__name__)
+
+    try:
+        # Get config cache instance
+        config_cache = get_config_cache()
+
+        # Load all configs from snapshot (Redis → DB → .env)
+        config_dict = await config_cache.load_all()
+
+        # Apply to settings instance
+        overrides_applied = 0
+        for key, value in config_dict.items():
+            if hasattr(settings, key):
+                setattr(settings, key, value)
+                overrides_applied += 1
+
+        logger.info(f"[Config] Applied {overrides_applied} config values from snapshot")
+
+    except Exception as e:
+        logger.error(f"[Config] Failed to load config overrides: {e}", exc_info=True)
+        # Don't fail startup if config loading fails
+        pass

@@ -1,0 +1,42 @@
+{
+  "name": "reviewguide-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/material": "^7.3.5",
+    "lucide-react": "^0.294.0",
+    "next": "14.0.4",
+    "ra-data-simple-rest": "^5.13.2",
+    "react": "^18.2.0",
+    "react-admin": "^5.13.2",
+    "react-dom": "^18.2.0",
+    "react-markdown": "^9.0.1",
+    "recharts": "^3.5.1",
+    "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.2.0",
+    "@testing-library/react": "^14.1.2",
+    "@types/node": "^20.10.4",
+    "@types/react": "^18.2.42",
+    "@types/react-dom": "^18.2.17",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.16",
+    "jsdom": "^23.2.0",
+    "postcss": "^8.4.32",
+    "tailwindcss": "^3.3.6",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0"
+  }
+}

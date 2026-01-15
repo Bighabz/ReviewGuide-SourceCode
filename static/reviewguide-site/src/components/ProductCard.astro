@@ -1,0 +1,62 @@
+---
+interface Props {
+    title: string;
+    price?: string;
+    image: string;
+    asin: string;
+    rating?: number;
+    description: string;
+}
+
+const { title, price, image, asin, rating, description } = Astro.props;
+const affiliateLink = `https://www.amazon.com/dp/${asin}?tag=mikejahshan-20`;
+---
+
+<div class="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition-shadow h-full flex flex-col">
+    <a href={affiliateLink} target="_blank" rel="noopener noreferrer" class="aspect-[4/3] bg-white relative overflow-hidden group flex items-center justify-center p-4">
+        <img 
+            src={image} 
+            alt={title} 
+            class="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-300"
+            loading="lazy"
+        />
+    </a>
+    <div class="p-5 flex flex-col flex-grow">
+        <h3 class="text-lg font-bold text-slate-900 mb-2 leading-tight">
+            <a href={affiliateLink} target="_blank" rel="noopener noreferrer" class="hover:text-blue-600 line-clamp-2">
+                {title}
+            </a>
+        </h3>
+        
+        {rating && (
+            <div class="flex items-center mb-3">
+                <div class="flex text-amber-400 text-sm">
+                    {'★'.repeat(Math.round(rating))}
+                    {'☆'.repeat(5 - Math.round(rating))}
+                </div>
+                <span class="text-slate-400 text-xs ml-2">({rating}/5)</span>
+            </div>
+        )}
+        
+        <p class="text-slate-600 text-sm mb-4 line-clamp-3 flex-grow">{description}</p>
+        
+        <div class="flex items-center justify-between mt-auto pt-4 border-t border-slate-50">
+            {price ? (
+                <span class="text-xl font-bold text-slate-900">{price}</span>
+            ) : (
+                <span class="text-sm text-slate-400 italic">Check price</span>
+            )}
+            <a 
+                href={affiliateLink}
+                target="_blank" 
+                rel="noopener noreferrer"
+                class="bg-amber-400 hover:bg-amber-500 text-slate-900 font-bold py-2.5 px-4 rounded-lg text-sm transition-colors inline-flex items-center shadow-sm hover:shadow"
+            >
+                Buy on Amazon
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 ml-1.5">
+                    <path fill-rule="evenodd" d="M3 10a.75.75 0 01.75-.75h10.638L10.23 5.29a.75.75 0 111.04-1.08l5.5 5.25a.75.75 0 010 1.08l-5.5 5.25a.75.75 0 11-1.04-1.08l4.158-3.96H3.75A.75.75 0 013 10z" clip-rule="evenodd" />
+                </svg>
+            </a>
+        </div>
+    </div>
+</div>

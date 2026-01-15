@@ -1,0 +1,48 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ProductCard from '../../components/ProductCard.astro';
+---
+
+<Layout title="Travel - ReviewGuide.ai">
+    <div class="space-y-8">
+        <div class="text-center py-12">
+            <h1 class="text-4xl font-bold text-slate-900 mb-4">Travel Essentials</h1>
+            <p class="text-lg text-slate-600 max-w-2xl mx-auto">
+                Must-have gear for your next adventure - luggage, accessories, and tech.
+            </p>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-8">
+            <ProductCard
+                title="Samsonite Omni PC Hardside Luggage"
+                price="$120.00"
+                image="https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=400"
+                asin="PLACEHOLDER003"
+                rating={4.5}
+                description="Scratch-resistant micro-diamond texture and lightweight polycarbonate."
+            />
+            <ProductCard
+                title="Apple AirTag 4 Pack"
+                price="$79.00"
+                image="https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=400"
+                asin="PLACEHOLDER004"
+                rating={4.7}
+                description="Keep track of your items with the Find My app."
+            />
+            <ProductCard
+                title="Anker PowerCore Portable Charger"
+                price="$39.99"
+                image="https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=400"
+                asin="PLACEHOLDER010"
+                rating={4.6}
+                description="20000mAh high-capacity portable charger for all your devices."
+            />
+        </div>
+
+        <div class="text-center pt-8">
+            <a href="/blog/travel-essentials-guide" class="text-blue-600 hover:text-blue-700 font-semibold">
+                Read our full travel essentials guide →
+            </a>
+        </div>
+    </div>
+</Layout>

@@ -1,0 +1,204 @@
+"""
+Product Search Tool
+
+Uses OpenAI to generate a list of REAL product names based on user query.
+Returns ONLY product names - other tools handle specs, reviews, affiliate links.
+"""
+
+import sys
+import os
+import json
+from typing import Dict, Any, List
+from app.core.error_manager import tool_error_handler
+
+# Add backend to path (portable path)
+backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+
+# Tool contract for planner
+TOOL_CONTRACT = {
+    "name": "product_search",
+    "intent": "product",
+    "purpose": "Search for products to buy",
+    "tools": {
+        "pre": [],  # Entry-point tool - no dependencies
+        # "post": ['product_evidence']  # Compose is auto-added at end of intent
+        "post": ['product_normalize']  # Compose is auto-added at end of intent
+    },
+    "produces": ["product_names"],
+    "optional_slots": ["product_name", "category", "brand", "budget", "size", "color", "material", "style", "features", "use_case", "gender"],
+    "slot_types": {
+        "product_name": {"type": "string", "description": "Specific product name or model (e.g., 'MacBook Pro', 'Air Jordan 1')"},
+        "category": {"type": "string", "description": "Product category (e.g., 'laptop', 'headphones', 'shoes', 'camera')"},
+        "brand": {"type": "string", "description": "Brand preference (e.g., 'Apple', 'Nike', 'Sony', 'Samsung')"},
+        "budget": {"type": "string", "description": "Price range or budget (e.g., 'under $500', '$100-$200', 'below 1000')"},
+        "size": {"type": "string", "description": "Size specification (e.g., '13 inch', 'medium', '42', 'XL')"},
+        "color": {"type": "string", "description": "Color preference (e.g., 'black', 'silver', 'red', 'space gray')"},
+        "material": {"type": "string", "description": "Material preference (e.g., 'leather', 'cotton', 'aluminum', 'stainless steel')"},
+        "style": {"type": "string", "description": "Style preference (e.g., 'casual', 'gaming', 'professional', 'minimalist')"},
+        "features": {"type": "string", "description": "Desired features (e.g., 'wireless', 'waterproof', 'noise-cancelling', '4K')"},
+        "use_case": {"type": "string", "description": "Intended use (e.g., 'running', 'office work', 'travel', 'photography')"},
+        "gender": {"type": "string", "description": "Gender specification (e.g., 'men', 'women', 'unisex')"},
+    },
+    "citation_message": "Finding products..."
+}
+
+
+@tool_error_handler(tool_name="product_search", error_message="Failed to search products")
+async def product_search(state: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Generate list of real product names using OpenAI.
+
+    Reads from state:
+        - user_message: User's search query
+        - slots: Optional structured data with the following fields:
+            - product_name: Specific product name or model
+            - category: Product category (e.g., "laptop", "headphones", "shoes")
+            - brand: Brand preference (e.g., "Apple", "Nike", "Sony")
+            - budget: Price range or budget (e.g., "under $500", "$100-$200")
+            - size: Size specification (e.g., "13 inch", "medium", "42")
+            - color: Color preference (e.g., "black", "silver", "red")
+            - material: Material preference (e.g., "leather", "cotton", "aluminum")
+            - style: Style preference (e.g., "casual", "gaming", "professional")
+            - features: Desired features (e.g., "wireless", "waterproof", "noise-cancelling")
+            - use_case: Intended use (e.g., "running", "office work", "travel")
+            - gender: Gender specification (e.g., "men", "women", "unisex")
+
+    Writes to state:
+        - product_names: List of specific product model names
+
+    Returns:
+        {
+            "product_names": ["Product Name 1", "Product Name 2", ...],
+            "success": bool
+        }
+    """
+    # Import here to avoid settings validation at module load
+    from app.core.centralized_logger import get_logger
+    from app.core.config import settings
+    from app.services.model_service import model_service
+
+    logger = get_logger(__name__)
+
+    try:
+        query = state.get("user_message", "")
+        slots = state.get("slots", {})
+
+        # Extract optional slots for product search
+        product_name = slots.get("product_name", "")
+        category = slots.get("category", "")
+        brand = slots.get("brand", "")
+        budget = slots.get("budget", "")
+        size = slots.get("size", "")
+        color = slots.get("color", "")
+        material = slots.get("material", "")
+        style = slots.get("style", "")
+        features = slots.get("features", "")
+        use_case = slots.get("use_case", "")
+        gender = slots.get("gender", "")
+
+        # Build search criteria from slots
+        criteria_parts = []
+        if product_name:
+            criteria_parts.append(f"Product: {product_name}")
+        if category:
+            criteria_parts.append(f"Category: {category}")
+        if brand:
+            criteria_parts.append(f"Brand: {brand}")
+        if budget:
+            criteria_parts.append(f"Budget: {budget}")
+        if size:
+            criteria_parts.append(f"Size: {size}")
+        if color:
+            criteria_parts.append(f"Color: {color}")
+        if material:
+            criteria_parts.append(f"Material: {material}")
+        if style:
+            criteria_parts.append(f"Style: {style}")
+        if features:
+            criteria_parts.append(f"Features: {features}")
+        if use_case:
+            criteria_parts.append(f"Use case: {use_case}")
+        if gender:
+            criteria_parts.append(f"Gender: {gender}")
+
+        # Combine query with slot criteria
+        slot_criteria = "\n".join(criteria_parts) if criteria_parts else ""
+        combined_query = query
+        if slot_criteria:
+            combined_query = f"{query}\n\nAdditional criteria:\n{slot_criteria}"
+
+        logger.info(f"[product_search] Query: {query}")
+        if slot_criteria:
+            logger.info(f"[product_search] Slot criteria:\n{slot_criteria}")
+
+        # Build prompt
+        prompt = f"""User is looking for: "{combined_query}"
+
+Generate a list of 5-8 SPECIFIC product model names that match this request.
+
+Requirements:
+- Include brand name + specific model/version when user specifies (e.g., "iPhone 16 Pro Max")
+- If user asks for a specific product (e.g., "iPhone 16"), include variations of that product
+- Be specific: "Nike Air Zoom Pegasus 40" not just "Nike running shoes"
+- NEVER refuse or say product doesn't exist - always generate product names based on user's request
+- If unsure about exact model numbers, use the product name the user specified
+
+Return ONLY a JSON object with product names:
+{{"products": ["Product Name 1", "Product Name 2", ...]}}"""
+
+        # Callbacks are automatically inherited from LangGraph context
+        # Use PRODUCT_SEARCH_MODEL with configurable max_tokens (important for reasoning models)
+        response = await model_service.generate(
+            messages=[
+                {"role": "system", "content": "You are a product name generator. Generate product names based on user's request. NEVER refuse or say a product doesn't exist. Always return valid JSON with product names."},
+                {"role": "user", "content": prompt}
+            ],
+            model=settings.PRODUCT_SEARCH_MODEL,
+            temperature=0.7,
+            max_tokens=settings.PRODUCT_SEARCH_MAX_TOKENS,
+            response_format={"type": "json_object"},
+            agent_name="product_search"
+        )
+
+        # Parse response
+        try:
+            # Try to parse as JSON object first
+            data = json.loads(response)
+            if isinstance(data, dict):
+                # Extract array from object (might be {"products": [...]} or {"product_names": [...]})
+                product_names = data.get("products") or data.get("product_names") or data.get("items") or []
+            elif isinstance(data, list):
+                product_names = data
+            else:
+                raise ValueError("Response is not a list or object containing a list")
+        except:
+            # Fallback: try to find JSON array in response
+            import re
+            match = re.search(r'\[.*?\]', response, re.DOTALL)
+            if match:
+                product_names = json.loads(match.group(0))
+            else:
+                raise ValueError("Could not parse product names from response")
+
+        # Validate and clean
+        product_names = [str(p).strip() for p in product_names if p and str(p).strip()]
+
+        logger.info(f"[product_search] Generated {len(product_names)} product names")
+        for i, name in enumerate(product_names, 1):
+            logger.info(f"  {i}. {name}")
+
+        return {
+            "product_names": product_names,
+            "success": True
+        }
+
+    except Exception as e:
+        logger.error(f"[product_search] Error: {e}", exc_info=True)
+
+        return {
+            "product_names": [],
+            "error": str(e),
+            "success": False
+        }

@@ -1,0 +1,817 @@
+"""
+Clarifier Agent
+Responsibilities:
+- Load execution plan from state
+- Check required_slots for all tools in the plan
+- Generate follow-up questions for missing slots
+- Extract slots from user answers
+- Manage halt state for multi-turn conversations
+"""
+from app.core.centralized_logger import get_logger
+import json
+import sys
+import os
+from typing import Dict, Any, List, Set
+
+# Add MCP server to path for tool contract imports
+backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+mcp_server_path = os.path.join(backend_dir, 'mcp_server')
+if mcp_server_path not in sys.path:
+    sys.path.insert(0, mcp_server_path)
+
+from tool_contracts import get_tool_contracts_dict  # noqa: E402
+
+from ..schemas.graph_state import GraphState
+from .base_agent import BaseAgent
+from ..services.halt_state_manager import HaltStateManager
+from toon_python import encode
+
+logger = get_logger(__name__)
+
+
+class ClarifierAgent(BaseAgent):
+    """Clarifier agent for slot filling and follow-up questions"""
+
+    def __init__(self):
+        super().__init__(
+            agent_name="Clarifier",
+            on_chain_start_message="Checking if I need more information..."
+        )
+
+    async def run(self, state: GraphState) -> GraphState:
+        """
+        Main entry point - calls execute()
+        Implements BaseAgent.run() abstract method
+        """
+        return await self.execute(state)
+
+    async def execute(self, state: GraphState) -> Dict[str, Any]:
+        """
+        Execute clarifier logic:
+        1. Load halt state if exists (for resumed sessions)
+        2. Check if this is a new plan or a resumed session
+        3. If new plan: load tool contracts, check required_slots, generate follow-up questions
+        4. If resumed: extract slot from user answer, validate, fill slots
+        5. If all slots filled: proceed to execution
+        6. If slots still missing: return next follow-up question
+
+        Input: plan, slots, halt_state (optional)
+        Output: {slots, followups, missing_required_slots, next_question, proceed_to_execution}
+        """
+        session_id = state.get("session_id")
+        intent = state.get("intent", "")
+
+        try:
+            logger.info(f"[Clarifier Agent] Executing for session: {session_id}")
+
+            # Skip clarifier logic for "intro" or "unclear" intents - route directly to next step
+            if intent in ["intro", "unclear"]:
+                logger.info(f"[Clarifier Agent] Intent is '{intent}' - skipping clarifier logic and routing to next step")
+                return {
+                    "slots": state.get("slots", {}),
+                    "followups": [],
+                    "missing_required_slots": [],
+                    "proceed_to_execution": True  # Skip to next agent
+                }
+
+            # Check if halt state exists (resumed session)
+            halt_state = await HaltStateManager.get_halt_state(session_id)
+
+            # Check if we have actual followup questions (not just empty list)
+            has_followups = halt_state and halt_state.get("followups") and len(halt_state.get("followups", [])) > 0
+
+            if has_followups:
+                # RESUMED SESSION: User is answering follow-up questions
+                logger.info(f"[Clarifier Agent] Resumed session - extracting slots from user answer")
+                return await self._handle_user_answer(state, halt_state, session_id)
+            else:
+                # NEW SESSION: Check if plan requires slots
+                logger.info(f"[Clarifier Agent] New session - checking plan for required slots")
+                return await self._handle_new_plan(state, session_id)
+
+        except Exception as e:
+            logger.error(f"[Clarifier Agent] Error: {str(e)}", exc_info=True)
+            return {
+                "slots": state.get("slots", {}),
+                "followups": [],
+                "missing_required_slots": [],
+                "proceed_to_execution": True  # Fail open - proceed despite error
+            }
+
+    async def _handle_new_plan(self, state: GraphState, session_id: str) -> Dict[str, Any]:
+        """
+        Handle new plan: check required_slots for all tools in plan.
+
+        Args:
+            state: Graph state with plan
+            session_id: Session ID
+
+        Returns:
+            Dict with slots, followups, missing_required_slots, proceed_to_execution
+        """
+        plan = state.get("plan", {})
+        current_slots = state.get("slots", {})
+
+        if not plan or not plan.get("steps"):
+            logger.info(f"[Clarifier Agent] No plan found, proceeding to execution")
+            return {
+                "slots": current_slots,
+                "followups": [],
+                "missing_required_slots": [],
+                "proceed_to_execution": True
+            }
+
+        # Get tool contracts
+        tool_contracts = get_tool_contracts_dict()
+
+        # Collect all required slots from all tools in the plan
+        all_required_slots: Set[str] = set()
+        all_optional_slots: Set[str] = set()  # Also collect optional slots for extraction
+        tools_by_required_slot: Dict[str, List[str]] = {}  # slot_name -> [tool_names]
+        slot_replacements: Dict[str, str] = {}  # slot_name -> replacement_slot
+
+        for step in plan["steps"]:
+            for tool_name in step.get("tools", []):
+                contract = tool_contracts.get(tool_name)
+                if contract:
+                    if "required_slots" in contract:
+                        required_slots = contract["required_slots"]
+                        logger.info(f"  Tool '{tool_name}' requires slots: {required_slots}")
+
+                        for slot in required_slots:
+                            all_required_slots.add(slot)
+                            if slot not in tools_by_required_slot:
+                                tools_by_required_slot[slot] = []
+                            tools_by_required_slot[slot].append(tool_name)
+
+                    # Also collect optional slots for extraction (e.g., children)
+                    if "optional_slots" in contract:
+                        optional_slots = contract["optional_slots"]
+                        logger.info(f"  Tool '{tool_name}' has optional slots: {optional_slots}")
+                        all_optional_slots.update(optional_slots)
+
+                    # Collect slot replacements (e.g., check_in can be replaced by departure_date)
+                    if "slot_replacements" in contract:
+                        for slot_name, replacement_slot in contract["slot_replacements"].items():
+                            slot_replacements[slot_name] = replacement_slot
+                            logger.info(f"  Tool '{tool_name}' slot replacement: '{slot_name}' can use '{replacement_slot}'")
+
+        if not all_required_slots and not all_optional_slots:
+            logger.info(f"[Clarifier Agent] No required or optional slots in plan, proceeding to execution")
+            return {
+                "slots": current_slots,
+                "followups": [],
+                "missing_required_slots": [],
+                "proceed_to_execution": True
+            }
+
+        # EXTRACT initial slots from user message FIRST (before calculating what's missing)
+        logger.info(f"[Clarifier Agent] Attempting to extract slots from user message")
+
+        user_message = state.get("sanitized_text") or state.get("user_message", "")
+        intent = state.get("intent", "")
+
+        # Get conversation history from state (already loaded in chat.py before workflow started)
+        conversation_history = state.get("conversation_history", [])
+
+        logger.info(f"[Clarifier Agent] Loaded {len(conversation_history)} messages from conversation history")
+
+        # Find which slots need extraction (both required and optional)
+        # Required slots that are missing - BUT skip slots that have replacements (we'll extract the replacement instead)
+        required_slots_to_extract = [
+            slot for slot in all_required_slots
+            if (slot not in current_slots or not current_slots[slot])
+            and slot not in slot_replacements  # Skip slots that have replacements
+        ]
+        # Also add replacement slots that are not yet filled
+        for slot_name, replacement_slot in slot_replacements.items():
+            if replacement_slot not in required_slots_to_extract and (replacement_slot not in current_slots or not current_slots[replacement_slot]):
+                required_slots_to_extract.append(replacement_slot)
+                logger.info(f"[Clarifier Agent] Will extract '{replacement_slot}' instead of '{slot_name}' (slot replacement)")
+
+        # Optional slots that are missing (e.g., children)
+        optional_slots_to_extract = [slot for slot in all_optional_slots if slot not in current_slots or not current_slots[slot]]
+        # Combine both lists
+        slots_to_extract = required_slots_to_extract + optional_slots_to_extract
+
+        if slots_to_extract:
+            logger.info(f"[Clarifier Agent] Attempting to extract {len(slots_to_extract)} slots in one LLM call: {slots_to_extract} (required: {required_slots_to_extract}, optional: {optional_slots_to_extract})")
+
+            extracted_slots = await self._extract_all_slots_from_conversation(
+                slot_names=slots_to_extract,
+                user_message=user_message,
+                conversation_history=conversation_history,
+                intent=intent
+            )
+
+            # Update current_slots with extracted values
+            for slot_name, slot_value in extracted_slots.items():
+                if slot_value is not None:
+                    current_slots[slot_name] = slot_value
+                    logger.info(f"[Clarifier Agent] ✅ Extracted slot '{slot_name}' = {slot_value}")
+                else:
+                    logger.info(f"[Clarifier Agent] ❌ Could not extract slot '{slot_name}' from message or history")
+        else:
+            logger.info(f"[Clarifier Agent] All required slots already filled")
+
+        # Apply slot replacements: if a required slot is missing but its replacement is filled, copy the value
+        for slot_name, replacement_slot in slot_replacements.items():
+            if (slot_name not in current_slots or not current_slots[slot_name]) and \
+               (replacement_slot in current_slots and current_slots[replacement_slot]):
+                current_slots[slot_name] = current_slots[replacement_slot]
+                logger.info(f"[Clarifier Agent] 🔄 Applied slot replacement: '{slot_name}' = '{replacement_slot}' value ({current_slots[slot_name]})")
+
+        # NOW calculate which required slots are STILL missing (after extraction and replacements)
+        # Skip slots that have replacements - we'll ask for the replacement slot instead
+        missing_required_slots = []
+        for slot in all_required_slots:
+            if slot not in current_slots or not current_slots[slot]:
+                # If this slot has a replacement, check if replacement is also missing
+                if slot in slot_replacements:
+                    replacement_slot = slot_replacements[slot]
+                    if replacement_slot not in current_slots or not current_slots[replacement_slot]:
+                        # Add the replacement slot instead (if not already added)
+                        if replacement_slot not in missing_required_slots:
+                            missing_required_slots.append(replacement_slot)
+                            logger.info(f"  Missing required slot: '{replacement_slot}' (replacement for '{slot}', needed by {tools_by_required_slot[slot]})")
+                    # Don't add the original slot - it will be filled from replacement
+                else:
+                    missing_required_slots.append(slot)
+                    logger.info(f"  Missing required slot: '{slot}' (needed by {tools_by_required_slot[slot]})")
+
+        # Check if all slots are now filled after extraction
+        if not missing_required_slots:
+            logger.info(f"[Clarifier Agent] All required slots extracted from initial message, proceeding to execution")
+            return {
+                "slots": current_slots,
+                "followups": [],
+                "missing_required_slots": [],
+                "proceed_to_execution": True
+            }
+
+        logger.info(f"[Clarifier Agent] {len(missing_required_slots)} slots still missing after extraction, will ask follow-up questions")
+
+        # Generate follow-up questions with intro and closing (all from LLM)
+        logger.info(f"[Clarifier Agent] Generating follow-up questions for {len(missing_required_slots)} missing slots")
+
+        followups_data = await self._generate_followup_questions(
+            missing_required_slots,
+            current_slots,
+            state.get("user_message", ""),
+            state.get("intent", ""),
+            conversation_history=conversation_history
+        )
+
+        # Save to halt state (store questions array for slot extraction later)
+        halt_state_data = {
+            "intent": state.get("intent"),
+            "slots": current_slots,
+            "followups": followups_data.get("questions", []),  # Store just questions for extraction
+            "missing_required_slots": missing_required_slots,
+            "plan": plan,
+            "tools_by_required_slot": tools_by_required_slot
+        }
+        await HaltStateManager.update_halt_state(session_id, halt_state_data)
+
+        logger.info(f"[Clarifier Agent] Returning all follow-up questions as structured data")
+
+        return {
+            "slots": current_slots,
+            "followups": followups_data.get("questions", []),
+            "missing_required_slots": missing_required_slots,
+            "next_question": followups_data,  # Full structured data for frontend
+            "proceed_to_execution": False  # HALT - wait for user answer
+        }
+
+    async def _handle_user_answer(
+        self,
+        state: GraphState,
+        halt_state: Dict[str, Any],
+        session_id: str
+    ) -> Dict[str, Any]:
+        """
+        Handle user's answer to ALL follow-up questions at once.
+        Extract all slots from the user's single response containing all answers.
+
+        Args:
+            state: Graph state with user_message
+            halt_state: Halt state from Redis
+            session_id: Session ID
+
+        Returns:
+            Dict with slots, followups, missing_required_slots, next_question, proceed_to_execution
+        """
+        user_message = state.get("sanitized_text") or state.get("user_message", "")
+        followups = halt_state.get("followups", [])
+        current_slots = halt_state.get("slots", {})
+        conversation_history = state.get("conversation_history", [])
+
+        if not followups:
+            logger.warning(f"[Clarifier Agent] No followups in halt state, proceeding to execution")
+            return {
+                "slots": current_slots,
+                "followups": [],
+                "missing_required_slots": [],
+                "proceed_to_execution": True
+            }
+
+        # Get intent from halt state for context
+        intent = halt_state.get("intent", "")
+
+        # Get required slots from followups
+        required_slot_names = [f["slot"] for f in followups]
+
+        # Also get optional slots and slot replacements from plan's tool contracts
+        optional_slot_names = []
+        slot_replacements: Dict[str, str] = {}
+        plan = halt_state.get("plan", {})
+        if plan and plan.get("steps"):
+            tool_contracts = get_tool_contracts_dict()
+            for step in plan["steps"]:
+                for tool_name in step.get("tools", []):
+                    contract = tool_contracts.get(tool_name)
+                    if contract:
+                        if "optional_slots" in contract:
+                            for slot in contract["optional_slots"]:
+                                if slot not in current_slots and slot not in optional_slot_names:
+                                    optional_slot_names.append(slot)
+                        # Collect slot replacements
+                        if "slot_replacements" in contract:
+                            for slot_name, replacement_slot in contract["slot_replacements"].items():
+                                slot_replacements[slot_name] = replacement_slot
+
+        # Combine required and optional slots for extraction
+        slot_names = required_slot_names + optional_slot_names
+        logger.info(f"[Clarifier Agent] Extracting {len(slot_names)} slots from user answer: {slot_names} (required: {required_slot_names}, optional: {optional_slot_names})")
+
+        extracted_slots = await self._extract_all_slots_from_answer(
+            slot_names=slot_names,
+            user_message=user_message,
+            followups=followups,
+            optional_slots=optional_slot_names
+        )
+
+        # Update current_slots with extracted values
+        still_missing_required = []
+        for slot_name in slot_names:
+            slot_value = extracted_slots.get(slot_name)
+            if slot_value is not None:
+                current_slots[slot_name] = slot_value
+                is_optional = slot_name in optional_slot_names
+                logger.info(f"[Clarifier Agent] ✅ Extracted {'optional ' if is_optional else ''}slot '{slot_name}' = {slot_value}")
+
+        # Apply slot replacements: if a required slot is missing but its replacement is filled, copy the value
+        for slot_name, replacement_slot in slot_replacements.items():
+            if (slot_name not in current_slots or not current_slots[slot_name]) and \
+               (replacement_slot in current_slots and current_slots[replacement_slot]):
+                current_slots[slot_name] = current_slots[replacement_slot]
+                logger.info(f"[Clarifier Agent] 🔄 Applied slot replacement: '{slot_name}' = '{replacement_slot}' value ({current_slots[slot_name]})")
+
+        # Now calculate which required slots are still missing (after extraction and replacements)
+        for slot_name in slot_names:
+            slot_value = current_slots.get(slot_name)
+            if slot_value is None:
+                # Only track required slots as "missing" - optional slots are fine to skip
+                if slot_name in required_slot_names:
+                    still_missing_required.append(slot_name)
+                    logger.warning(f"[Clarifier Agent] ❌ Required slot '{slot_name}' still missing after extraction and replacements")
+                else:
+                    logger.info(f"[Clarifier Agent] ⏭️ Optional slot '{slot_name}' not found in answer (skipping)")
+
+        if not still_missing_required:
+            # All slots successfully extracted - proceed to execution
+            logger.info(f"[Clarifier Agent] All follow-up questions answered, proceeding to execution")
+
+            # Clear halt state
+            await HaltStateManager.delete_halt_state(session_id)
+
+            return {
+                "slots": current_slots,
+                "followups": [],
+                "missing_required_slots": [],
+                "proceed_to_execution": True
+            }
+        else:
+            # Some required slots still missing - regenerate questions for remaining slots
+            logger.info(f"[Clarifier Agent] {len(still_missing_required)} required slots still missing: {still_missing_required}")
+
+            # Regenerate follow-up questions for remaining missing slots (with fresh intro/closing)
+            followups_data = await self._generate_followup_questions(
+                still_missing_required,
+                current_slots,
+                user_message,
+                intent,
+                conversation_history=conversation_history
+            )
+
+            remaining_followups = followups_data.get("questions", [])
+
+            # Update halt state with new slots and remaining followups
+            halt_state["slots"] = current_slots
+            halt_state["followups"] = remaining_followups
+            await HaltStateManager.update_halt_state(session_id, halt_state)
+
+            return {
+                "slots": current_slots,
+                "followups": remaining_followups,
+                "missing_required_slots": still_missing_required,
+                "next_question": followups_data,  # Full structured data for frontend
+                "proceed_to_execution": False  # HALT - wait for remaining answers
+            }
+
+    async def _generate_followup_questions(
+        self,
+        missing_slots: List[str],
+        current_slots: Dict[str, Any],
+        user_message: str,
+        intent: str,
+        conversation_history: List[Dict[str, str]] = None
+    ) -> Dict[str, Any]:
+        """
+        Generate follow-up questions with intro and closing using LLM.
+
+        Args:
+            missing_slots: List of slot names that are missing
+            current_slots: Already filled slots
+            user_message: Original user message
+            intent: User intent (travel, product, etc.)
+            conversation_history: Full conversation history for context
+
+        Returns:
+            Dict with intro, questions array, and closing for frontend rendering
+        """
+        slots_str = ", ".join(missing_slots)
+        filled_slots_str = json.dumps(current_slots) if current_slots else "{}"
+
+        # Build conversation context from history
+        conversation_context = ""
+        if conversation_history:
+            recent_messages = conversation_history[-6:]  # Last 6 messages for context
+            conversation_context = "\n\nConversation history:\n"
+            for msg in recent_messages:
+                role = msg.get("role", "user")
+                content = msg.get("content", "")
+                if content:
+                    conversation_context += f"- {role}: {content[:200]}{'...' if len(content) > 200 else ''}\n"
+
+        system_prompt = f"""
+You are a warm, human assistant.
+
+Context:
+- Current user message: "{user_message}"
+- Intent: {intent}
+- Missing info: {slots_str}
+- Already provided: {filled_slots_str}
+{conversation_context}
+Generate a JSON response with:
+1. "intro" - one short sentence acknowledging their request and asking for details (based on FULL conversation context, not just current message)
+2. "questions" - one question per missing slot (friendly, 12-25 words each, no technical terms)
+3. "closing" - one short sentence about what you'll create for them (based on context)
+
+Rules:
+- Be contextual - reference what they already told you in the conversation
+- Use the CORRECT destination from conversation history (e.g., if they said "Paris" earlier, say "Paris" not "Berlin")
+- Be warm but concise
+- No hardcoded phrases - generate based on actual context
+
+Return ONLY valid JSON:
+{{
+  "intro": "<your generated intro>",
+  "questions": [
+    {{"slot": "<slot_name>", "question": "<your question>"}},
+    ...
+  ],
+  "closing": "<your generated closing>"
+}}
+"""
+
+        user_prompt = f"Generate follow-up questions for these missing slots: {slots_str}"
+
+        try:
+            result_text = await self.generate(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                model=self.settings.CLARIFIER_MODEL,
+                temperature=0.3,
+                max_tokens=self.settings.CLARIFIER_MAX_TOKENS,
+                response_format={"type": "json_object"},
+                session_id=user_message[:50] if user_message else "unknown"
+            )
+
+            result = json.loads(result_text)
+            questions = result.get("questions", [])
+            logger.info(f"[Clarifier Agent] Generated {len(questions)} followup questions for {len(missing_slots)} missing slots")
+
+            # Ensure we have questions for all missing slots
+            if len(questions) != len(missing_slots):
+                logger.warning(f"[Clarifier Agent] LLM generated {len(questions)} questions for {len(missing_slots)} slots")
+                for slot in missing_slots:
+                    if not any(q["slot"] == slot for q in questions):
+                        questions.append({"slot": slot, "question": f"What is the {slot.replace('_', ' ')}?"})
+
+            return {
+                "intro": result.get("intro", "I need a few more details:"),
+                "questions": questions,
+                "closing": result.get("closing", "")
+            }
+
+        except Exception as e:
+            logger.error(f"[Clarifier Agent] Error generating follow-up questions: {e}", exc_info=True)
+            # Fallback
+            return {
+                "intro": "I need a few more details to help you:",
+                "questions": [{"slot": slot, "question": f"What is the {slot.replace('_', ' ')}?"} for slot in missing_slots],
+                "closing": ""
+            }
+
+    async def _extract_all_slots_from_answer(
+        self,
+        slot_names: List[str],
+        user_message: str,
+        followups: List[Dict[str, str]],
+        optional_slots: List[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Extract ALL slot values from user's answer to follow-up questions in ONE LLM call.
+
+        Args:
+            slot_names: List of slot names to extract (both required and optional)
+            user_message: User's answer message
+            followups: List of followup questions that were asked (for required slots)
+            optional_slots: List of optional slot names (may be mentioned but not asked)
+
+        Returns:
+            Dict mapping slot_name -> extracted_value (or None if not found)
+        """
+        optional_slots = optional_slots or []
+
+        # Build questions context for the LLM (only for required slots that have questions)
+        questions_context = "\n".join([
+            f"- {f['slot']}: \"{f['question']}\""
+            for f in followups
+        ])
+
+        # Build optional slots context
+        optional_slots_context = ""
+        if optional_slots:
+            optional_slots_context = f"\n\nOptional slots to extract if mentioned: {', '.join(optional_slots)}"
+
+        # Get current date for context
+        from datetime import datetime
+        current_date = datetime.now().strftime("%Y-%m-%d")
+
+        system_prompt = f"""You are a slot extractor. The user was asked these follow-up questions:
+
+{questions_context}
+{optional_slots_context}
+
+The user's answer is: "{user_message}"
+
+Extract ALL the requested slot values from the user's answer.
+
+Rules:
+- Extract ALL slots mentioned in the questions above
+- ALSO extract optional slots if user mentions them (e.g., "1 child" → children: 1)
+- For numbers (duration_days, adults, children, budget): return as number
+- For text (destination, origin, month, budget_level, travel_style, likes): return as string
+- For dates (departure_date, return_date, check_in, check_out):
+  * Return in YYYY-MM-DD format
+  * Today is {current_date}
+  * Travel dates are ALWAYS in the future (never in the past)
+  * If year is missing, infer the current year
+- For budget_level: normalize to "low", "medium", or "high"
+- For travel_style: extract who they're traveling with (solo, couple, family, friends, etc.)
+- For likes: extract their interests/preferences as a comma-separated string
+- If a slot value is not found in the answer, set it to null
+- Look for common patterns:
+  * "3 days" or "three days" → duration_days: 3
+  * "Dec 15-20" → departure_date and return_date
+  * "medium budget" or "moderate" → budget_level: "medium"
+  * "with my partner" or "couple" → travel_style: "couple"
+  * "food, museums" → likes: "food, museums"
+  * "2 adults 1 child" or "1 kid" → adults: 2, children: 1
+
+Return ONLY valid JSON with ALL requested slots:
+{{
+  {', '.join([f'"{slot}": <value or null>' for slot in slot_names])}
+}}"""
+
+        # Build messages list
+        messages = [{"role": "system", "content": system_prompt}]
+
+        # Add the user's answer
+        messages.append({"role": "user", "content": f"Extract these slots from my answer: {', '.join(slot_names)}"})
+
+        try:
+            result_text = await self.generate(
+                messages=messages,
+                model=self.settings.CLARIFIER_MODEL,
+                temperature=0.1,
+                max_tokens=self.settings.CLARIFIER_MAX_TOKENS,
+                response_format={"type": "json_object"},
+                session_id=user_message[:50] if user_message else "unknown"
+            )
+
+            result = json.loads(result_text)
+
+            # Filter to only return the requested slots
+            extracted_slots = {slot: result.get(slot) for slot in slot_names}
+
+            logger.info(f"[Clarifier Agent] Extracted {len([v for v in extracted_slots.values() if v is not None])}/{len(slot_names)} slots from answer")
+
+            return extracted_slots
+
+        except Exception as e:
+            logger.error(f"[Clarifier Agent] Error extracting slots from answer: {e}", exc_info=True)
+            return {slot: None for slot in slot_names}
+
+    async def _extract_all_slots_from_conversation(
+        self,
+        slot_names: list,
+        user_message: str,
+        conversation_history: list,
+        intent: str = ""
+    ) -> dict:
+        """
+        Extract ALL missing slot values from conversation in ONE LLM call (much more efficient!).
+
+        Args:
+            slot_names: List of slot names to extract
+            user_message: Current user message
+            conversation_history: Full conversation history for context
+            intent: User intent (travel, product, general) for context-aware extraction
+
+        Returns:
+            Dict mapping slot_name -> extracted_value (or None if not found)
+        """
+        # For travel intent, collect all available slots from travel tool contracts
+        predefined_slots_info = ""
+        slot_definitions = []
+
+        if intent == "travel":
+            tool_contracts = get_tool_contracts_dict()
+            all_slots = set()
+            optional_slots = set()
+
+            # Collect all slots and their types from travel tools
+            # Build slot_type_map dynamically from tool contracts
+            slot_type_map = {}
+
+            for _, contract in tool_contracts.items():
+                if contract.get("intent") == "travel":
+                    if "required_slots" in contract:
+                        all_slots.update(contract["required_slots"])
+                    if "optional_slots" in contract:
+                        optional_slots.update(contract["optional_slots"])
+                        all_slots.update(contract["optional_slots"])
+
+                    # Extract slot types from contract (if defined)
+                    if "slot_types" in contract:
+                        for slot_name, slot_info in contract["slot_types"].items():
+                            # Only add if not already defined (first contract wins)
+                            if slot_name not in slot_type_map:
+                                slot_type_map[slot_name] = slot_info
+
+            # Build slot definitions for TOON format
+            if all_slots:
+                for slot in sorted(all_slots):
+                    slot_info = slot_type_map.get(slot, {"type": "string", "format": "text"})
+                    slot_definitions.append({
+                        "slot": slot,
+                        "type": slot_info["type"],
+                        "format": slot_info["format"]
+                    })
+
+                # Format as TOON
+                predefined_slots_info = "\n\nPredefined travel slots (TOON format):\n"
+                predefined_slots_info += encode({"slots": slot_definitions})
+
+        # Get current date for context
+        from datetime import datetime
+        current_date = datetime.now().strftime("%Y-%m-%d")
+
+        # Build slot extraction list in TOON format
+        slots_to_extract = [{"slot": slot} for slot in slot_names]
+        slots_to_extract_str = f"Extract these slots:\n{encode({'slots_to_extract': slots_to_extract})}"
+
+        system_prompt = f"""You are a slot extractor. Extract ALL the following slot values from the conversation:
+
+{slots_to_extract_str}
+{predefined_slots_info}
+Rules:
+- Extract ALL requested slots in ONE response
+- CRITICAL: Search through the ENTIRE conversation history for each slot value
+- Look through ALL messages (both user and assistant) for slot values
+- Common patterns when users reference previous context:
+  * "show me hotels and flights for the trip" → extract origin/destination from earlier messages
+  * "that fit to the trip" → extract travel details from earlier messages
+  * "for this plan" → extract details from the plan discussed earlier
+- For numbers (duration_days, adults, children, budget): return as number
+- For text (destination, origin, month): return as string
+- For dates (departure_date, return_date, check_in, check_out):
+  * Return in YYYY-MM-DD format
+  * Today is {current_date}
+  * Travel dates are ALWAYS in the future (never in the past)
+  * If year is missing, infer the current year
+- If you cannot find a slot value anywhere in the conversation history, set it to null
+
+Return ONLY valid JSON with ALL slots:
+{{
+  "origin": <value or null>,
+  "destination": <value or null>,
+  "duration_days": <value or null>,
+  ...
+}}"""
+
+        # Build messages list including conversation history
+        # Use new config to limit ONLY user messages (not assistant messages)
+        max_user_history = self.settings.MAX_USER_HISTORY_FOR_SLOT_EXTRACTION
+        logger.info(f"[Clarifier Agent] MAX_USER_HISTORY_FOR_SLOT_EXTRACTION: {max_user_history}")
+        messages = [{"role": "system", "content": system_prompt}]
+
+        # Filter and add only recent user messages from conversation history
+        logger.info(f"[Clarifier Agent] conversation_history length: {len(conversation_history) if conversation_history else 0}")
+        if conversation_history:
+            # Extract only user messages
+            user_messages = [msg for msg in conversation_history if msg.get("role") == "user"]
+            logger.info(f"[Clarifier Agent] Found {len(user_messages)} user messages in history")
+
+            # Take the last N user messages based on config
+            recent_user_messages = user_messages[-max_user_history:] if len(user_messages) > max_user_history else user_messages
+            logger.info(f"[Clarifier Agent] Using {len(recent_user_messages)} recent user messages for slot extraction")
+
+            for idx, msg in enumerate(recent_user_messages):
+                content = msg.get("content", "")
+                logger.info(f"[Clarifier Agent] User message {idx}: content_length={len(content) if content else 0}")
+                if content:
+                    messages.append({"role": "user", "content": content})
+                else:
+                    logger.warning(f"[Clarifier Agent] Skipping user message {idx} - empty content!")
+
+        # Always add the current user message (this is the most important one!)
+        if user_message:
+            messages.append({"role": "user", "content": user_message})
+            logger.info(f"[Clarifier Agent] Added current user message: {user_message[:100]}...")
+
+        logger.info(f"[Clarifier Agent] Total messages to send to LLM: {len(messages)} (system + {len(messages)-1} user messages)")
+
+        # Add the final extraction request with priority guidance
+        messages.append({"role": "user", "content": f"Extract these slots from all messages above: {', '.join(slot_names)}. The last message is the newest message. Prioritize information from newer (later) messages over older (earlier) messages when there are conflicts."})
+
+        try:
+            result_text = await self.generate(
+                messages=messages,
+                model=self.settings.CLARIFIER_MODEL,
+                temperature=0.1,
+                max_tokens=self.settings.CLARIFIER_MAX_TOKENS,
+                response_format={"type": "json_object"},
+                session_id=user_message[:50] if user_message else "unknown"
+            )
+
+            result = json.loads(result_text)
+
+            # Filter to only return the requested slots
+            extracted_slots = {slot: result.get(slot) for slot in slot_names}
+
+            logger.info(f"[Clarifier Agent] Extracted {len([v for v in extracted_slots.values() if v is not None])}/{len(slot_names)} slots")
+
+            return extracted_slots
+
+        except Exception as e:
+            logger.error(f"[Clarifier Agent] Error extracting slots: {e}", exc_info=True)
+            return {slot: None for slot in slot_names}
+
+
+# Agent node function for LangGraph
+async def clarifier_agent_node(state: GraphState, agent: ClarifierAgent) -> GraphState:
+    """
+    LangGraph node wrapper for Clarifier Agent
+    """
+    result = await agent.execute(state)
+
+    # Update state with clarifier results
+    state.slots = result.get("slots", state.get("slots", {}))
+    state.followups = result.get("followups", [])
+
+    if result.get("next_question"):
+        # HALT - return follow-up question to user
+        state.assistant_text = result["next_question"]
+        state.status = "halted"
+        state.halt = True
+        state.next_agent = None  # No next agent - waiting for user
+    elif result.get("proceed_to_execution"):
+        # All slots filled - proceed to plan executor
+        state.next_agent = "plan_executor"
+        state.status = "processing"
+        state.halt = False
+    else:
+        # Default: proceed to plan executor
+        state.next_agent = "plan_executor"
+        state.status = "processing"
+        state.halt = False
+
+    state.current_agent = "clarifier"
+
+    return state
