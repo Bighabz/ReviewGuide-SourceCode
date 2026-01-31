@@ -20,7 +20,7 @@ class Settings(BaseSettings):
 
     # CORS
     CORS_ORIGINS: List[str] = Field(
-        default=["http://localhost:3000"],
+        default=["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://127.0.0.1:3000", "http://127.0.0.1:3001"],
         description="Allowed CORS origins (comma-separated string or list)"
     )
 
@@ -98,6 +98,58 @@ class Settings(BaseSettings):
         description="Time window in seconds for authenticated rate limit (default: 1 minute)"
     )
 
+    # ============================================
+    # TIERED ROUTING CONFIGURATION
+    # ============================================
+
+    # Feature flags for high-risk APIs
+    ENABLE_SERPAPI: bool = Field(
+        default=False,
+        description="Enable SerpApi (Tier 4) - HIGH LEGAL RISK, requires user consent"
+    )
+    ENABLE_REDDIT_API: bool = Field(
+        default=False,
+        description="Enable Reddit API (Tier 3) - Requires commercial license and user consent"
+    )
+    ENABLE_YOUTUBE_TRANSCRIPTS: bool = Field(
+        default=True,
+        description="Enable YouTube transcript extraction (Tier 2)"
+    )
+
+    # Tier escalation settings
+    MAX_AUTO_TIER: int = Field(
+        default=2,
+        ge=1,
+        le=4,
+        description="Highest tier to auto-escalate to without user consent (1-4)"
+    )
+    PARALLEL_API_TIMEOUT_MS: int = Field(
+        default=5000,
+        ge=1000,
+        le=30000,
+        description="Timeout per API call in milliseconds"
+    )
+
+    # Cost tracking
+    LOG_API_COSTS: bool = Field(
+        default=True,
+        description="Track API usage costs in api_usage_logs table"
+    )
+
+    # Circuit breaker settings
+    CIRCUIT_BREAKER_FAILURE_THRESHOLD: int = Field(
+        default=3,
+        ge=1,
+        le=10,
+        description="Number of failures before opening circuit"
+    )
+    CIRCUIT_BREAKER_RESET_TIMEOUT: int = Field(
+        default=300,
+        ge=60,
+        le=3600,
+        description="Seconds before attempting to close circuit"
+    )
+
     # LLM Providers
     OPENAI_API_KEY: str = Field(..., description="OpenAI API key")
     ANTHROPIC_API_KEY: str = Field(default="", description="Anthropic API key")
@@ -105,14 +157,14 @@ class Settings(BaseSettings):
     LITELLM_LOG_LEVEL: str = Field(default="INFO", description="LiteLLM logging level")
 
     # Agent-specific Models (override DEFAULT_MODEL for specific agents)
-    PLANNER_MODEL: str = Field(default="o3-mini", description="Model for planner agent (reasoning)")
+    PLANNER_MODEL: str = Field(default="gpt-4o-mini", description="Model for planner agent")
     INTENT_MODEL: str = Field(default="gpt-4o-mini", description="Model for intent classification agent")
     CLARIFIER_MODEL: str = Field(default="gpt-4o-mini", description="Model for clarifier agent")
     COMPOSER_MODEL: str = Field(default="gpt-4o-mini", description="Model for composer agents")
-    PRODUCT_SEARCH_MODEL: str = Field(default="gpt-4.1-mini", description="Model for product search (needs recent product knowledge)")
+    PRODUCT_SEARCH_MODEL: str = Field(default="gpt-4o-mini", description="Model for product search")
 
-    # Agent-specific Max Tokens (match actual code values, increase for reasoning models)
-    PLANNER_MAX_TOKENS: int = Field(default=500, description="Max tokens for planner agent")
+    # Agent-specific Max Tokens
+    PLANNER_MAX_TOKENS: int = Field(default=2000, description="Max tokens for planner agent")
     INTENT_MAX_TOKENS: int = Field(default=50, description="Max tokens for intent agent")
     CLARIFIER_MAX_TOKENS: int = Field(default=800, description="Max tokens for clarifier agent")
     COMPOSER_MAX_TOKENS: int = Field(default=80, description="Max tokens for composer agents")
