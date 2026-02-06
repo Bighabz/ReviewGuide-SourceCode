@@ -1,4 +1,3 @@
-# backend/app/services/tiered_router/router.py
 """Tiered API Router - Deterministic routing table lookup."""
 
 from typing import TYPE_CHECKING

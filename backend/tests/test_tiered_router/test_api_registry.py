@@ -1,4 +1,3 @@
-# backend/tests/test_tiered_router/test_api_registry.py
 import pytest
 from app.services.tiered_router.api_registry import APIConfig, API_REGISTRY
 

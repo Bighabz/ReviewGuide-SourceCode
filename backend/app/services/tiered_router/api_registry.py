@@ -1,7 +1,6 @@
-# backend/app/services/tiered_router/api_registry.py
 """API Registry - Maps logical API names to implementation details."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
 

@@ -1,4 +1,3 @@
-# backend/app/services/tiered_router/circuit_breaker.py
 """Circuit Breaker - Skip APIs that have failed repeatedly.
 
 States: CLOSED (normal) -> OPEN (skip) -> CLOSED (after timeout)
