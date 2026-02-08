@@ -57,7 +57,7 @@ export default function AnimatedLogo({ className = '', onAnimationComplete }: An
         <img
           src="/images/8f4c1971-a5b0-474e-9fb1-698e76324f0b.png"
           alt="ReviewGuide.ai"
-          className="h-24 sm:h-32 md:h-40 w-auto object-contain"
+          className="h-24 sm:h-32 md:h-40 w-auto object-contain mix-blend-multiply dark:mix-blend-screen"
         />
       </div>
     );
@@ -70,7 +70,7 @@ export default function AnimatedLogo({ className = '', onAnimationComplete }: An
         <img
           src="/images/8f4c1971-a5b0-474e-9fb1-698e76324f0b.png"
           alt="ReviewGuide.ai"
-          className="h-24 sm:h-32 md:h-40 w-auto object-contain"
+          className="h-24 sm:h-32 md:h-40 w-auto object-contain mix-blend-multiply dark:mix-blend-screen"
         />
       </div>
     );
@@ -85,7 +85,7 @@ export default function AnimatedLogo({ className = '', onAnimationComplete }: An
         muted
         playsInline
         onEnded={handleVideoEnd}
-        className="h-24 sm:h-32 md:h-40 w-auto object-contain"
+        className="h-24 sm:h-32 md:h-40 w-auto object-contain mix-blend-multiply dark:mix-blend-screen"
       />
       <audio
         ref={audioRef}

@@ -6,8 +6,7 @@ import ProductGrid from '@/components/browse/ProductGrid';
 import ContentRow from '@/components/browse/ContentRow';
 import { useFilters } from '@/components/browse/BrowseLayout';
 import { CATEGORIES, HOME_ROWS, ProductItem } from '@/lib/browseData';
-import AnimatedLogo from '@/components/AnimatedLogo';
-import HomeSearchBar from '@/components/HomeSearchBar';
+import ChatInput from '@/components/ChatInput';
 
 const ITEMS_PER_PAGE = 20;
 
@@ -111,38 +110,86 @@ export default function BrowsePage() {
         setSearchQuery(query);
     }, []);
 
-    // Get featured row (first row from HOME_ROWS)
-    const featuredRow = HOME_ROWS[0];
-    const remainingRows = HOME_ROWS.slice(1);
+    const [heroInput, setHeroInput] = useState('');
 
-    // MINIMAL HOMEPAGE: No filters, no search
+    const handleHeroSend = useCallback(() => {
+        if (heroInput.trim()) {
+            router.push(`/chat?q=${encodeURIComponent(heroInput.trim())}&new=1`);
+        } else {
+            router.push('/chat?new=1');
+        }
+    }, [heroInput, router]);
+
+    // DISCOVERY HOMEPAGE: Hero + Content Rows
     if (!hasActiveFilters && !hasSearch) {
         return (
-            <div className="min-h-screen flex flex-col">
-                {/* Hero Section: Logo + Search */}
-                <div className="flex-1 flex flex-col items-center justify-center px-4 py-12 sm:py-16">
-                    <AnimatedLogo className="mb-8 sm:mb-12" />
-                    <HomeSearchBar
-                        onSearch={handleSearch}
-                        placeholder="What are you looking for?"
+            <div className="flex flex-col">
+                {/* Hero Section: Editorial tagline + ChatInput */}
+                <div className="flex flex-col items-center justify-center px-4 pt-8 sm:pt-14 pb-10 sm:pb-16">
+                    <img
+                        src="/images/ezgif-7b66ba24abcfdab0.gif"
+                        alt="ReviewGuide.Ai"
+                        className="h-32 sm:h-44 md:h-56 w-auto mb-4 mix-blend-multiply dark:mix-blend-screen"
                     />
+                    <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl text-center text-[var(--text)] leading-tight tracking-tight">
+                        Smart shopping,{' '}
+                        <span className="italic text-[var(--primary)]">simplified.</span>
+                    </h1>
+                    <p className="text-sm sm:text-base text-[var(--text-secondary)] text-center mt-3 max-w-md">
+                        AI-powered product reviews, travel planning, and price comparison — all in one conversation.
+                    </p>
+
+                    {/* Chat Input — navigates to /chat on send */}
+                    <div className="w-full max-w-xl mx-auto mt-8">
+                        <ChatInput
+                            value={heroInput}
+                            onChange={setHeroInput}
+                            onSend={handleHeroSend}
+                            disabled={false}
+                            placeholder="Ask anything — best headphones, Tokyo trip, laptop deals..."
+                        />
+                    </div>
+
+                    {/* Quick suggestions */}
+                    <div className="flex flex-wrap justify-center gap-2 mt-4">
+                        {['Best wireless earbuds under $100', 'Plan a 5-day trip to Tokyo', 'Compare MacBook Air vs Pro'].map((suggestion, idx) => (
+                            <button
+                                key={idx}
+                                onClick={() => {
+                                    router.push(`/chat?q=${encodeURIComponent(suggestion)}&new=1`);
+                                }}
+                                className="px-4 py-2 rounded-full text-sm border border-[var(--border)] text-[var(--text-secondary)] bg-[var(--surface)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)] hover:border-[var(--border-strong)] transition-all"
+                            >
+                                {suggestion}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
-                {/* Featured Carousel */}
-                <div className="pb-4">
-                    <ContentRow
-                        title={featuredRow.title}
-                        subtitle={featuredRow.subtitle}
-                        items={featuredRow.items}
-                        viewAllLink={`/browse/${featuredRow.id}`}
-                    />
+                {/* Editorial rule separator */}
+                <div className="editorial-rule mx-8" />
+
+                {/* Content Rows */}
+                <div className="py-4 space-y-2">
+                    {HOME_ROWS.map((row) => (
+                        <ContentRow
+                            key={row.id}
+                            title={row.title}
+                            subtitle={row.subtitle}
+                            items={row.items}
+                            viewAllLink={`/browse/${row.id}`}
+                        />
+                    ))}
                 </div>
 
-                {/* Product Grid */}
+                {/* Browse All */}
                 <div className="px-4 sm:px-6 md:px-8 pb-12">
-                    <h2 className="text-xl sm:text-2xl font-bold text-[var(--text)] tracking-tight mb-4">
-                        Browse All
-                    </h2>
+                    <div className="flex items-center gap-4 mb-4">
+                        <h2 className="text-xl sm:text-2xl font-serif font-bold text-[var(--text)] tracking-tight">
+                            Browse All
+                        </h2>
+                        <div className="flex-1 h-px bg-[var(--border)]" />
+                    </div>
                     <ProductGrid
                         items={allProducts.slice(0, 20)}
                         currentPage={1}
@@ -159,12 +206,12 @@ export default function BrowsePage() {
             {/* Search Results Header */}
             <div className="mb-6">
                 {hasSearch && (
-                    <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text)] mb-2">
+                    <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[var(--text)] mb-2">
                         Results for "{searchQuery}"
                     </h1>
                 )}
                 {!hasSearch && hasActiveFilters && (
-                    <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text)] mb-2">
+                    <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[var(--text)] mb-2">
                         Filtered Products
                     </h1>
                 )}

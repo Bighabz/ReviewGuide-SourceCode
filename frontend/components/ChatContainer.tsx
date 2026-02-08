@@ -34,13 +34,17 @@ export interface Message {
   followups?: string[] | StructuredFollowups  // Follow-up questions (legacy array or new structured format)
   next_suggestions?: NextSuggestion[]  // Follow-up questions from next_step_suggestion tool
   isSuggestionClick?: boolean  // True when message was triggered by clicking a suggestion button
+  isThinking?: boolean  // True while waiting for real tokens (status updates hidden)
 }
 
 interface ChatContainerProps {
   clearHistoryTrigger?: number
+  externalSessionId?: string  // Allow parent to set session ID
+  onSessionChange?: (sessionId: string) => void  // Notify parent of session changes
+  initialQuery?: string  // Initial query from URL params (for sticky chat bar)
 }
 
-export default function ChatContainer({ clearHistoryTrigger }: ChatContainerProps) {
+export default function ChatContainer({ clearHistoryTrigger, externalSessionId, onSessionChange, initialQuery }: ChatContainerProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
@@ -153,12 +157,97 @@ export default function ChatContainer({ clearHistoryTrigger }: ChatContainerProp
     loadHistory()
   }, [])
 
+  // Track processed queries and sessions to avoid duplicate processing
+  const initialQueryProcessedRef = useRef<string | null>(null)
+  const lastExternalSessionIdRef = useRef<string | null>(null)
+
+  // Single unified effect to handle initial query from URL params (sticky chat bar)
+  // This runs when we have BOTH an externalSessionId AND initialQuery (new session with query)
+  useEffect(() => {
+    if (initialQuery && !isLoadingHistory && initialQueryProcessedRef.current !== initialQuery && externalSessionId) {
+      initialQueryProcessedRef.current = initialQuery
+
+      // Add user message
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        role: 'user',
+        content: initialQuery,
+        timestamp: new Date(),
+      }
+      setMessages([userMessage])
+
+      // Set session ID and trigger stream with explicit session ID
+      setSessionId(externalSessionId)
+      localStorage.setItem(CHAT_CONFIG.SESSION_STORAGE_KEY, externalSessionId)
+
+      // Pass session ID directly since state update is async
+      handleStream(initialQuery, false, externalSessionId)
+    }
+  }, [initialQuery, isLoadingHistory, externalSessionId])
+
+  // Handle external session ID changes (from conversation sidebar - switching sessions WITHOUT a query)
+  useEffect(() => {
+    // Only handle session switches that DON'T have an initialQuery (those are handled above)
+    if (externalSessionId && externalSessionId !== lastExternalSessionIdRef.current && !initialQuery) {
+      lastExternalSessionIdRef.current = externalSessionId
+
+      const switchToSession = async () => {
+        setIsLoadingHistory(true)
+        setMessages([])
+
+        try {
+          const response = await fetchConversationHistory(externalSessionId)
+          if (response.success && response.messages && response.messages.length > 0) {
+            const messagesWithDates = response.messages.map((msg: any, index: number) => {
+              const baseMessage = {
+                id: (Date.now() + index).toString(),
+                role: msg.role,
+                content: msg.content,
+                timestamp: new Date(msg.created_at || Date.now()),
+              }
+
+              if (msg.message_metadata) {
+                return {
+                  ...baseMessage,
+                  ...msg.message_metadata,
+                }
+              }
+
+              return baseMessage
+            })
+
+            setMessages(messagesWithDates)
+            console.log(`Switched to session ${externalSessionId} with ${messagesWithDates.length} messages`)
+          }
+        } catch (error) {
+          console.error('Failed to load session:', error)
+        }
+
+        setSessionId(externalSessionId)
+        localStorage.setItem(CHAT_CONFIG.SESSION_STORAGE_KEY, externalSessionId)
+        localStorage.setItem(CHAT_CONFIG.MESSAGES_STORAGE_KEY, JSON.stringify([]))
+        setIsLoadingHistory(false)
+      }
+
+      switchToSession()
+    }
+
+    // Update ref for sessions WITH initialQuery too (to track we've seen this session)
+    if (externalSessionId && externalSessionId !== lastExternalSessionIdRef.current) {
+      lastExternalSessionIdRef.current = externalSessionId
+    }
+  }, [externalSessionId, initialQuery])
+
   // Persist session ID to localStorage whenever it changes
   useEffect(() => {
     if (sessionId && !isLoadingHistory) {
       localStorage.setItem(CHAT_CONFIG.SESSION_STORAGE_KEY, sessionId)
+      // Notify parent of session change
+      if (onSessionChange) {
+        onSessionChange(sessionId)
+      }
     }
-  }, [sessionId, isLoadingHistory])
+  }, [sessionId, isLoadingHistory, onSessionChange])
 
   // Persist user_id to localStorage whenever it changes
   useEffect(() => {
@@ -176,17 +265,18 @@ export default function ChatContainer({ clearHistoryTrigger }: ChatContainerProp
   }, [messages, isLoadingHistory, showErrorBanner])
 
   // Ref to store sendMessage function for use in event listener
-  const sendMessageRef = useRef<(message: string) => void>(() => {})
+  const sendMessageRef = useRef<(message: string) => void>(() => { })
 
   // Shared function to handle streaming with error management
-  const handleStream = async (messageToSend: string, isSuggestion: boolean = false) => {
+  // overrideSessionId allows passing session ID directly when state hasn't updated yet
+  const handleStream = async (messageToSend: string, isSuggestion: boolean = false, overrideSessionId?: string) => {
     setIsStreaming(true)
     setError('')
     setShowErrorBanner(false)
     setPendingUserMessage(messageToSend)
 
-    // Generate session ID if not exists
-    let currentSessionId = sessionId
+    // Use override if provided (for cases where state hasn't updated yet), otherwise fall back to state
+    let currentSessionId = overrideSessionId || sessionId
     if (!currentSessionId) {
       currentSessionId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
         const r = Math.random() * 16 | 0
@@ -194,6 +284,14 @@ export default function ChatContainer({ clearHistoryTrigger }: ChatContainerProp
         return v.toString(16)
       })
       setSessionId(currentSessionId)
+
+      // Track this session in the all_sessions list for conversation history
+      const allSessionsJson = localStorage.getItem('chat_all_session_ids')
+      const allSessions: string[] = allSessionsJson ? JSON.parse(allSessionsJson) : []
+      if (!allSessions.includes(currentSessionId)) {
+        allSessions.push(currentSessionId)
+        localStorage.setItem('chat_all_session_ids', JSON.stringify(allSessions))
+      }
     }
 
     // Create assistant message placeholder
@@ -217,10 +315,9 @@ export default function ChatContainer({ clearHistoryTrigger }: ChatContainerProp
         setMessages((prev) =>
           prev.map((msg) =>
             msg.id === currentMessageIdRef.current
-              ? {
-                  ...msg,
-                  content: isPlaceholder ? token : msg.content + token
-                }
+              ? isPlaceholder
+                ? { ...msg, isThinking: true }  // Show thinking indicator, don't set text
+                : { ...msg, content: msg.content + token, isThinking: false }
               : msg
           )
         )
@@ -267,12 +364,12 @@ export default function ChatContainer({ clearHistoryTrigger }: ChatContainerProp
             prev.map((msg) =>
               msg.id === currentMessageIdRef.current
                 ? {
-                    ...msg,
-                    ...(data.ui_blocks && data.ui_blocks.length > 0 ? { ui_blocks: data.ui_blocks } : {}),
-                    ...(data.itinerary ? { itinerary: data.itinerary } : {}),
-                    ...(data.followups ? { followups: data.followups } : {}),
-                    ...(data.next_suggestions && data.next_suggestions.length > 0 ? { next_suggestions: data.next_suggestions } : {})
-                  }
+                  ...msg,
+                  ...(data.ui_blocks && data.ui_blocks.length > 0 ? { ui_blocks: data.ui_blocks } : {}),
+                  ...(data.itinerary ? { itinerary: data.itinerary } : {}),
+                  ...(data.followups ? { followups: data.followups } : {}),
+                  ...(data.next_suggestions && data.next_suggestions.length > 0 ? { next_suggestions: data.next_suggestions } : {})
+                }
                 : msg
             )
           )
@@ -390,8 +487,8 @@ export default function ChatContainer({ clearHistoryTrigger }: ChatContainerProp
   // Show loading indicator while loading history
   if (isLoadingHistory) {
     return (
-      <div className="flex-1 flex items-center justify-center" style={{ background: 'var(--gpt-background)' }}>
-        <div className="text-center" style={{ color: 'var(--gpt-text-secondary)' }}>
+      <div className="flex-1 flex items-center justify-center" style={{ background: 'var(--background)' }}>
+        <div className="text-center" style={{ color: 'var(--text-secondary)' }}>
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-current mb-2"></div>
           <p>{UI_TEXT.LOADING_HISTORY}</p>
         </div>
@@ -400,74 +497,51 @@ export default function ChatContainer({ clearHistoryTrigger }: ChatContainerProp
   }
 
   return (
-    <div id="chat-container" className="flex-1 flex flex-col overflow-hidden" style={{ background: 'var(--gpt-background)' }}>
-      {/* Search Bar (when no messages) */}
+    <div id="chat-container" className="flex-1 flex flex-col overflow-hidden relative" style={{ background: 'var(--background)' }}>
+      {/* Welcome Screen (no messages) */}
       {messages.length === 0 && (
-        <div id="welcome-screen" className="flex-1 flex items-center justify-center p-3 sm:p-8">
-          <div id="welcome-container" className="w-full px-2 sm:px-0" style={{ maxWidth: '780px' }}>
-            <div className="text-center mb-6 sm:mb-12">
-              <h2 className="text-xl sm:text-3xl font-semibold mb-3" style={{ color: 'var(--gpt-text)' }}>
-                {UI_TEXT.WELCOME_TITLE}
-              </h2>
-            </div>
-            <ChatInput
-              value={input}
-              onChange={setInput}
-              onSend={handleSendMessage}
-              disabled={isStreaming}
-              placeholder={UI_TEXT.PLACEHOLDER_TEXT}
-            />
-
-            {/* Hot Searches Section */}
-            <div id="hot-searches" className="mt-4 sm:mt-6">
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-xs sm:text-sm font-medium" style={{ color: 'var(--gpt-text-secondary)' }}>
-                  🔥 {UI_TEXT.TRENDING_LABEL}
-                </span>
+        <div id="welcome-screen" className="flex-1 overflow-y-auto">
+          <div className="min-h-full flex flex-col items-center justify-center px-4 sm:px-8 py-12 sm:py-20">
+            <div id="welcome-container" className="w-full max-w-2xl space-y-8">
+              {/* Logo */}
+              <div className="flex flex-col items-center animate-fade-in">
+                <img
+                  src="/images/ezgif-7b66ba24abcfdab0.gif"
+                  alt="ReviewGuide.Ai"
+                  className="h-40 sm:h-52 md:h-64 w-auto mb-4 mix-blend-multiply dark:mix-blend-screen"
+                />
+                {/* Editorial tagline */}
+                <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl text-center text-[var(--text)] leading-tight tracking-tight">
+                  Smart shopping,{' '}
+                  <span className="italic text-[var(--primary)]">simplified.</span>
+                </h1>
+                <p className="text-sm sm:text-base text-[var(--text-secondary)] text-center mt-3 max-w-md">
+                  AI-powered product reviews, travel planning, and price comparison — all in one conversation.
+                </p>
               </div>
-              <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-center sm:justify-start">
-                {TRENDING_SEARCHES.map((search) => (
+
+              {/* Input */}
+              <div className="max-w-xl mx-auto w-full animate-fade-in-delayed">
+                <ChatInput
+                  value={input}
+                  onChange={setInput}
+                  onSend={handleSendMessage}
+                  disabled={isStreaming}
+                  placeholder={UI_TEXT.PLACEHOLDER_TEXT}
+                />
+              </div>
+
+              {/* Quick suggestions */}
+              <div className="flex flex-wrap justify-center gap-2 animate-fade-in-delayed">
+                {['Best wireless earbuds under $100', 'Plan a 5-day trip to Tokyo', 'Compare MacBook Air vs Pro'].map((suggestion, idx) => (
                   <button
-                    key={search}
-                    onClick={async () => {
-                      if (isStreaming) return
-
-                      const userMessage: Message = {
-                        id: Date.now().toString(),
-                        role: 'user',
-                        content: search,
-                        timestamp: new Date(),
-                      }
-
-                      setMessages((prev) => [...prev, userMessage])
-
-                      // Use shared streaming function
-                      await handleStream(search, false)
+                    key={idx}
+                    onClick={() => {
+                      setInput(suggestion)
                     }}
-                    disabled={isStreaming}
-                    className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm transition-all whitespace-nowrap"
-                    style={{
-                      background: 'var(--gpt-accent-light)',
-                      border: '1px solid var(--gpt-accent)',
-                      color: 'var(--gpt-accent)',
-                      cursor: isStreaming ? 'not-allowed' : 'pointer',
-                      fontWeight: 500,
-                      opacity: isStreaming ? 0.5 : 1,
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isStreaming) {
-                        e.currentTarget.style.background = 'var(--gpt-accent)'
-                        e.currentTarget.style.color = '#ffffff'
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isStreaming) {
-                        e.currentTarget.style.background = 'var(--gpt-accent-light)'
-                        e.currentTarget.style.color = 'var(--gpt-accent)'
-                      }
-                    }}
+                    className="px-4 py-2 rounded-full text-sm border border-[var(--border)] text-[var(--text-secondary)] bg-[var(--surface)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)] hover:border-[var(--border-strong)] transition-all"
                   >
-                    {search}
+                    {suggestion}
                   </button>
                 ))}
               </div>
@@ -484,15 +558,14 @@ export default function ChatContainer({ clearHistoryTrigger }: ChatContainerProp
           {/* Reconnecting indicator */}
           {isReconnecting && (
             <div
-              className="flex items-center justify-center gap-2 py-2 px-4 mx-auto mb-2"
+              className="flex items-center justify-center gap-2 py-2 px-4 mx-auto mb-2 rounded-full"
               style={{
-                background: 'var(--gpt-surface, #f3f4f6)',
-                borderRadius: '9999px',
+                background: 'var(--surface)',
                 maxWidth: 'fit-content',
               }}
             >
-              <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" style={{ color: 'var(--gpt-accent)' }} />
-              <span className="text-sm" style={{ color: 'var(--gpt-text-secondary)' }}>
+              <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" style={{ color: 'var(--primary)' }} />
+              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
                 {UI_TEXT.RECONNECTING}{reconnectAttempt > 0 ? ` (attempt ${reconnectAttempt}/3)` : '...'}
               </span>
             </div>
@@ -510,9 +583,9 @@ export default function ChatContainer({ clearHistoryTrigger }: ChatContainerProp
             id="chat-input-wrapper"
             className="sticky bottom-0 p-3 sm:p-4 z-40"
             style={{
-              borderTop: '1px solid var(--gpt-border)',
-              background: 'var(--gpt-background)',
-              backdropFilter: 'blur(10px)'
+              borderTop: '1px solid var(--border)',
+              background: 'var(--surface)',
+              backdropFilter: 'blur(12px)'
             }}
           >
             <div id="chat-input-container" className="mx-auto px-2 sm:px-0" style={{ maxWidth: '780px' }}>
@@ -524,19 +597,10 @@ export default function ChatContainer({ clearHistoryTrigger }: ChatContainerProp
                 placeholder={UI_TEXT.PLACEHOLDER_TEXT}
               />
 
-              {/* Ultra-minimal footer */}
+              {/* Minimal footer */}
               <div id="footer" className="mt-3 sm:mt-4 text-center">
-                {/* Footer links */}
-                <div className="text-[10px] sm:text-xs mb-2" style={{ color: 'var(--gpt-text-muted)', opacity: 0.6 }}>
-                  <a href="#" className="hover:underline" style={{ color: 'inherit' }}>About</a>
-                  <span className="mx-1 sm:mx-2">·</span>
-                  <a href="#" className="hover:underline" style={{ color: 'inherit' }}>Privacy</a>
-                  <span className="mx-1 sm:mx-2">·</span>
-                  <span className="hidden sm:inline">
-                    <a href="#" className="hover:underline" style={{ color: 'inherit' }}>Affiliate Disclosure</a>
-                    <span className="mx-2">·</span>
-                  </span>
-                  <a href="#" className="hover:underline" style={{ color: 'inherit' }}>Contact</a>
+                <div className="text-[10px] sm:text-xs mb-2 text-[var(--text-muted)] opacity-80">
+                  ReviewGuide.ai may earn from qualifying purchases. AI results should be verified.
                 </div>
               </div>
             </div>

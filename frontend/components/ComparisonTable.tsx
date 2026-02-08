@@ -39,7 +39,6 @@ export default function ComparisonTable({ data, title }: ComparisonTableProps) {
   // Find best values for highlighting
   const lowestPrice = Math.min(...products.map(p => p.price || Infinity))
   const highestRating = Math.max(...products.map(p => p.rating || 0))
-  const mostReviews = Math.max(...products.map(p => p.review_count || 0))
 
   const formatPrice = (price: number, currency: string) => {
     if (!price) return 'N/A'
@@ -47,13 +46,13 @@ export default function ComparisonTable({ data, title }: ComparisonTableProps) {
   }
 
   const renderRating = (rating?: number, review_count?: number) => {
-    if (!rating) return <span style={{ color: 'var(--gpt-text-muted)' }}>N/A</span>
+    if (!rating) return <span className="text-[var(--text-muted)]">N/A</span>
     return (
       <div className="flex items-center gap-1">
         <Star size={14} className="fill-yellow-400 text-yellow-400" />
-        <span className="font-medium">{rating.toFixed(1)}</span>
+        <span className="font-medium text-[var(--text)]">{rating.toFixed(1)}</span>
         {review_count && (
-          <span className="text-xs" style={{ color: 'var(--gpt-text-muted)' }}>
+          <span className="text-xs text-[var(--text-muted)]">
             ({review_count.toLocaleString()})
           </span>
         )}
@@ -62,81 +61,58 @@ export default function ComparisonTable({ data, title }: ComparisonTableProps) {
   }
 
   return (
-    <div className="w-full mb-4 sm:mb-6">
+    <div className="w-full mb-6 mt-4">
       {/* Title */}
       {title && (
-        <h3 className="text-sm sm:text-base font-semibold mb-2 sm:mb-3" style={{ color: 'var(--gpt-text)' }}>
+        <h3 className="text-lg font-bold font-serif mb-3 text-[var(--text)]">
           {title}
         </h3>
       )}
 
       {/* Comparison Table Container */}
-      <div
-        className="rounded-lg border overflow-hidden"
-        style={{ background: 'var(--gpt-assistant-message)', borderColor: 'var(--gpt-border)' }}
-      >
+      <div className="rounded-xl border border-[var(--border)] overflow-hidden shadow-card bg-[var(--surface)]">
         {/* Summary */}
         {summary && (
-          <div
-            className="px-4 py-3 border-b text-sm"
-            style={{ borderColor: 'var(--gpt-border)', color: 'var(--gpt-text)' }}
-          >
+          <div className="px-5 py-4 border-b border-[var(--border)] text-sm italic text-[var(--text-secondary)] bg-[var(--surface)]">
             {summary}
           </div>
         )}
 
         {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[600px]">
-            {/* Header with Product Images and Names */}
+        <div className="overflow-x-auto scrollbar-thin">
+          <table className="w-full min-w-[700px] border-collapse">
             <thead>
-              <tr style={{ borderBottom: '1px solid var(--gpt-border)' }}>
-                <th
-                  className="p-3 text-left text-xs font-medium uppercase tracking-wider"
-                  style={{ color: 'var(--gpt-text-muted)', width: '120px' }}
-                >
-                  Feature
-                </th>
+              <tr className="border-b border-[var(--border)]">
+                <th className="p-4 text-left text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] w-[140px] sticky left-0 bg-[var(--surface)] z-10 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.1)]">Feature</th>
                 {products.map((product, idx) => (
                   <th
                     key={idx}
-                    className="p-3 text-center transition-colors"
+                    className="p-4 text-center transition-colors duration-200 min-w-[180px]"
                     style={{
-                      background: hoveredColumn === idx ? 'var(--gpt-hover)' : 'transparent',
-                      minWidth: '150px'
+                      background: hoveredColumn === idx ? 'var(--surface-hover)' : 'transparent',
                     }}
                     onMouseEnter={() => setHoveredColumn(idx)}
                     onMouseLeave={() => setHoveredColumn(null)}
                   >
                     {/* Product Image */}
-                    <div className="flex justify-center mb-2">
-                      <div
-                        className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden"
-                        style={{ background: 'var(--gpt-hover)' }}
-                      >
+                    <div className="flex justify-center mb-3">
+                      <div className="w-20 h-20 rounded-lg overflow-hidden border border-[var(--border)] bg-white p-1">
                         {product.image_url ? (
                           <img
                             src={product.image_url}
                             alt={product.title}
                             loading="lazy"
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-contain"
                           />
                         ) : (
-                          <div
-                            className="w-full h-full flex items-center justify-center text-xs"
-                            style={{ color: 'var(--gpt-text-muted)' }}
-                          >
+                          <div className="w-full h-full flex items-center justify-center text-xs text-[var(--text-muted)] bg-[var(--background)]">
                             No Image
                           </div>
                         )}
                       </div>
                     </div>
                     {/* Product Title */}
-                    <div
-                      className="text-xs sm:text-sm font-medium line-clamp-2"
-                      style={{ color: 'var(--gpt-text)' }}
-                      title={product.title}
-                    >
+                    <div className="text-sm font-semibold line-clamp-2 text-[var(--text)] min-h-[40px]" title={product.title}>
                       {product.title}
                     </div>
                   </th>
@@ -144,34 +120,28 @@ export default function ComparisonTable({ data, title }: ComparisonTableProps) {
               </tr>
             </thead>
 
-            <tbody>
+            <tbody className="divide-y divide-[var(--border)]">
               {/* Price Row */}
-              <tr style={{ borderBottom: '1px solid var(--gpt-border)' }}>
-                <td
-                  className="p-3 text-sm font-medium"
-                  style={{ color: 'var(--gpt-text)' }}
-                >
-                  Price
-                </td>
+              <tr>
+                <td className="p-4 text-sm font-bold text-[var(--text)] sticky left-0 bg-[var(--surface)] z-10">Price</td>
                 {products.map((product, idx) => {
                   const isBest = product.price === lowestPrice && product.price > 0
                   return (
                     <td
                       key={idx}
-                      className="p-3 text-center transition-colors"
+                      className="p-4 text-center transition-colors duration-200"
                       style={{
-                        background: hoveredColumn === idx ? 'var(--gpt-hover)' : 'transparent'
+                        background: hoveredColumn === idx ? 'var(--surface-hover)' : 'transparent'
                       }}
                       onMouseEnter={() => setHoveredColumn(idx)}
                       onMouseLeave={() => setHoveredColumn(null)}
                     >
                       <span
-                        className={`text-sm sm:text-base font-bold ${isBest ? 'text-green-600' : ''}`}
-                        style={{ color: isBest ? '#16a34a' : 'var(--gpt-text)' }}
+                        className={`text-lg font-bold ${isBest ? 'text-emerald-600 dark:text-emerald-400' : 'text-[var(--text)]'}`}
                       >
                         {formatPrice(product.price, product.currency)}
                         {isBest && (
-                          <span className="ml-1 text-xs font-normal text-green-600">
+                          <span className="ml-1.5 text-[10px] font-bold uppercase tracking-wide text-emerald-600 px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30">
                             Best
                           </span>
                         )}
@@ -182,21 +152,16 @@ export default function ComparisonTable({ data, title }: ComparisonTableProps) {
               </tr>
 
               {/* Rating Row */}
-              <tr style={{ borderBottom: '1px solid var(--gpt-border)' }}>
-                <td
-                  className="p-3 text-sm font-medium"
-                  style={{ color: 'var(--gpt-text)' }}
-                >
-                  Rating
-                </td>
+              <tr>
+                <td className="p-4 text-sm font-medium text-[var(--text)] sticky left-0 bg-[var(--surface)] z-10">Rating</td>
                 {products.map((product, idx) => {
                   const isBest = product.rating === highestRating && (product.rating || 0) > 0
                   return (
                     <td
                       key={idx}
-                      className="p-3 transition-colors"
+                      className="p-4 transition-colors duration-200"
                       style={{
-                        background: hoveredColumn === idx ? 'var(--gpt-hover)' : 'transparent'
+                        background: hoveredColumn === idx ? 'var(--surface-hover)' : 'transparent'
                       }}
                       onMouseEnter={() => setHoveredColumn(idx)}
                       onMouseLeave={() => setHoveredColumn(null)}
@@ -204,7 +169,7 @@ export default function ComparisonTable({ data, title }: ComparisonTableProps) {
                       <div className="flex justify-center items-center gap-1">
                         {renderRating(product.rating, product.review_count)}
                         {isBest && product.rating && (
-                          <span className="ml-1 text-xs text-green-600">Top</span>
+                          <span className="ml-1 text-[10px] text-emerald-600 font-bold bg-emerald-100 px-1.5 py-0.5 rounded-full dark:bg-emerald-900/30 dark:text-emerald-400">Top</span>
                         )}
                       </div>
                     </td>
@@ -213,20 +178,14 @@ export default function ComparisonTable({ data, title }: ComparisonTableProps) {
               </tr>
 
               {/* Merchant Row */}
-              <tr style={{ borderBottom: '1px solid var(--gpt-border)' }}>
-                <td
-                  className="p-3 text-sm font-medium"
-                  style={{ color: 'var(--gpt-text)' }}
-                >
-                  Merchant
-                </td>
+              <tr>
+                <td className="p-4 text-sm font-medium text-[var(--text)] sticky left-0 bg-[var(--surface)] z-10">Merchant</td>
                 {products.map((product, idx) => (
                   <td
                     key={idx}
-                    className="p-3 text-center text-sm transition-colors"
+                    className="p-4 text-center text-sm font-medium text-[var(--text-secondary)] transition-colors duration-200"
                     style={{
-                      color: 'var(--gpt-text-secondary)',
-                      background: hoveredColumn === idx ? 'var(--gpt-hover)' : 'transparent'
+                      background: hoveredColumn === idx ? 'var(--surface-hover)' : 'transparent'
                     }}
                     onMouseEnter={() => setHoveredColumn(idx)}
                     onMouseLeave={() => setHoveredColumn(null)}
@@ -236,92 +195,77 @@ export default function ComparisonTable({ data, title }: ComparisonTableProps) {
                 ))}
               </tr>
 
-              {/* Pros Row (if available) */}
+              {/* Pros Row */}
               {products.some(p => p.pros && p.pros.length > 0) && (
-                <tr style={{ borderBottom: '1px solid var(--gpt-border)' }}>
-                  <td
-                    className="p-3 text-sm font-medium align-top"
-                    style={{ color: 'var(--gpt-text)' }}
-                  >
-                    Pros
-                  </td>
+                <tr>
+                  <td className="p-4 text-sm font-medium text-[var(--text)] align-top sticky left-0 bg-[var(--surface)] z-10">Pros</td>
                   {products.map((product, idx) => (
                     <td
                       key={idx}
-                      className="p-3 text-left text-xs transition-colors"
+                      className="p-4 text-left text-xs transition-colors duration-200 align-top"
                       style={{
-                        background: hoveredColumn === idx ? 'var(--gpt-hover)' : 'transparent'
+                        background: hoveredColumn === idx ? 'var(--surface-hover)' : 'transparent'
                       }}
                       onMouseEnter={() => setHoveredColumn(idx)}
                       onMouseLeave={() => setHoveredColumn(null)}
                     >
                       {product.pros && product.pros.length > 0 ? (
-                        <ul className="space-y-1">
+                        <ul className="space-y-2">
                           {product.pros.slice(0, 3).map((pro, proIdx) => (
-                            <li key={proIdx} className="flex items-start gap-1">
-                              <Check size={12} className="text-green-500 flex-shrink-0 mt-0.5" />
-                              <span style={{ color: 'var(--gpt-text)' }}>{pro}</span>
+                            <li key={proIdx} className="flex items-start gap-1.5 leading-snug">
+                              <Check size={14} className="text-emerald-500 flex-shrink-0 mt-0.5" />
+                              <span className="text-[var(--text)] opacity-90">{pro}</span>
                             </li>
                           ))}
                         </ul>
                       ) : (
-                        <span style={{ color: 'var(--gpt-text-muted)' }}>-</span>
+                        <span className="text-[var(--text-muted)]">-</span>
                       )}
                     </td>
                   ))}
                 </tr>
               )}
 
-              {/* Cons Row (if available) */}
+              {/* Cons Row */}
               {products.some(p => p.cons && p.cons.length > 0) && (
-                <tr style={{ borderBottom: '1px solid var(--gpt-border)' }}>
-                  <td
-                    className="p-3 text-sm font-medium align-top"
-                    style={{ color: 'var(--gpt-text)' }}
-                  >
-                    Cons
-                  </td>
+                <tr>
+                  <td className="p-4 text-sm font-medium text-[var(--text)] align-top sticky left-0 bg-[var(--surface)] z-10">Cons</td>
                   {products.map((product, idx) => (
                     <td
                       key={idx}
-                      className="p-3 text-left text-xs transition-colors"
+                      className="p-4 text-left text-xs transition-colors duration-200 align-top"
                       style={{
-                        background: hoveredColumn === idx ? 'var(--gpt-hover)' : 'transparent'
+                        background: hoveredColumn === idx ? 'var(--surface-hover)' : 'transparent'
                       }}
                       onMouseEnter={() => setHoveredColumn(idx)}
                       onMouseLeave={() => setHoveredColumn(null)}
                     >
                       {product.cons && product.cons.length > 0 ? (
-                        <ul className="space-y-1">
+                        <ul className="space-y-2">
                           {product.cons.slice(0, 3).map((con, conIdx) => (
-                            <li key={conIdx} className="flex items-start gap-1">
-                              <X size={12} className="text-red-500 flex-shrink-0 mt-0.5" />
-                              <span style={{ color: 'var(--gpt-text)' }}>{con}</span>
+                            <li key={conIdx} className="flex items-start gap-1.5 leading-snug">
+                              <X size={14} className="text-red-500 flex-shrink-0 mt-0.5" />
+                              <span className="text-[var(--text)] opacity-90">{con}</span>
                             </li>
                           ))}
                         </ul>
                       ) : (
-                        <span style={{ color: 'var(--gpt-text-muted)' }}>-</span>
+                        <span className="text-[var(--text-muted)]">-</span>
                       )}
                     </td>
                   ))}
                 </tr>
               )}
 
-              {/* Action Row - Buy Links */}
+              {/* Action Row */}
               <tr>
-                <td
-                  className="p-3 text-sm font-medium"
-                  style={{ color: 'var(--gpt-text)' }}
-                >
-                  Action
-                </td>
+                <td className="p-4 text-sm font-medium text-[var(--text)] sticky left-0 bg-[var(--surface)] z-10">Action</td>
                 {products.map((product, idx) => (
                   <td
                     key={idx}
-                    className="p-3 text-center transition-colors"
+                    className="p-4 text-center transition-colors duration-200"
                     style={{
-                      background: hoveredColumn === idx ? 'var(--gpt-hover)' : 'transparent'
+                      background: hoveredColumn === idx ? 'var(--surface-hover)' : 'transparent'
                     }}
                     onMouseEnter={() => setHoveredColumn(idx)}
                     onMouseLeave={() => setHoveredColumn(null)}
@@ -331,23 +275,17 @@ export default function ComparisonTable({ data, title }: ComparisonTableProps) {
                         href={product.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium transition-colors"
+                        className="inline-flex items-center justify-center gap-1.5 w-full px-4 py-2.5 rounded-lg text-sm font-semibold transition-all shadow-card hover:shadow-md active:scale-95"
                         style={{
-                          background: 'var(--gpt-accent)',
+                          background: 'var(--primary)',
                           color: 'white'
                         }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.opacity = '0.9'
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.opacity = '1'
-                        }}
                       >
-                        <span>View Deal</span>
-                        <ExternalLink size={12} />
+                        View Deal
+                        <ExternalLink size={14} />
                       </a>
                     ) : (
-                      <span className="text-xs" style={{ color: 'var(--gpt-text-muted)' }}>
+                      <span className="text-xs text-[var(--text-muted)]">
                         N/A
                       </span>
                     )}

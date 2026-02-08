@@ -14,21 +14,23 @@ const iconMap: Record<string, LucideIcon> = {
   restaurants: Utensils,
 }
 
+// Keep semantic colors but use CSS variables for consistency where possible
+// or cleaner classes. 
 const colorMap = {
   activities: {
-    iconBg: 'rgba(59, 130, 246, 0.1)',
-    iconColor: '#3b82f6',
-    bullet: '#3b82f6',
+    bg: 'bg-blue-100 dark:bg-blue-900/30',
+    text: 'text-blue-600 dark:text-blue-400',
+    bullet: 'bg-blue-500',
   },
   attractions: {
-    iconBg: 'rgba(245, 158, 11, 0.1)',
-    iconColor: '#f59e0b',
-    bullet: '#f59e0b',
+    bg: 'bg-amber-100 dark:bg-amber-900/30',
+    text: 'text-amber-600 dark:text-amber-400',
+    bullet: 'bg-amber-500',
   },
   restaurants: {
-    iconBg: 'rgba(239, 68, 68, 0.1)',
-    iconColor: '#ef4444',
-    bullet: '#ef4444',
+    bg: 'bg-red-100 dark:bg-red-900/30',
+    text: 'text-red-600 dark:text-red-400',
+    bullet: 'bg-red-500',
   },
 }
 
@@ -41,31 +43,20 @@ export default function ListBlock({ title, items, type }: ListBlockProps) {
   }
 
   return (
-    <div
-      className="p-4 sm:p-5 rounded-xl border"
-      style={{
-        background: 'var(--gpt-assistant-message)',
-        borderColor: 'rgba(0,0,0,0.08)',
-      }}
-    >
+    <div className="p-5 rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-card transition-shadow hover:shadow-md">
       <div className="flex items-center gap-3 mb-4">
-        <div
-          className="p-2 rounded-lg"
-          style={{
-            background: colors.iconBg,
-          }}
-        >
-          <Icon size={20} style={{ color: colors.iconColor }} />
+        <div className={`p-2.5 rounded-lg ${colors.bg}`}>
+          <Icon size={20} className={colors.text} />
         </div>
-        <h3 className="font-semibold text-base sm:text-lg" style={{ color: 'var(--gpt-text)' }}>
+        <h3 className="font-serif font-bold text-lg text-[var(--text)]">
           {title}
         </h3>
       </div>
-      <ul className="space-y-2.5">
+      <ul className="space-y-3">
         {items.map((item, idx) => (
-          <li key={idx} className="flex items-start gap-2.5 text-sm sm:text-base" style={{ color: 'var(--gpt-text)' }}>
-            <span className="font-bold mt-1" style={{ color: colors.bullet }}>•</span>
-            <span className="flex-1">{item}</span>
+          <li key={idx} className="flex items-start gap-3 text-[var(--text)]">
+            <div className={`w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0 ${colors.bullet}`} />
+            <span className="flex-1 text-base leading-relaxed opacity-90">{item}</span>
           </li>
         ))}
       </ul>

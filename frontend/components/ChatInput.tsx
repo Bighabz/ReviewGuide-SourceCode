@@ -1,7 +1,8 @@
 'use client'
 
-import { Send } from 'lucide-react'
-import { useRef, useEffect } from 'react'
+import { ArrowUp } from 'lucide-react'
+import { useRef, useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
 
 interface ChatInputProps {
   value: string
@@ -16,9 +17,10 @@ export default function ChatInput({
   onChange,
   onSend,
   disabled = false,
-  placeholder = 'Type your message...',
+  placeholder = 'Ask about products, travel, or deals...',
 }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const [isFocused, setIsFocused] = useState(false)
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -30,12 +32,8 @@ export default function ChatInput({
   const adjustHeight = () => {
     const textarea = textareaRef.current
     if (textarea) {
-      // Calculate line height (approximately 24px per line with padding)
-      const lineHeight = 24
-      const maxRows = 10
-      const maxHeight = lineHeight * maxRows
-
-      textarea.style.height = 'auto'
+      const maxHeight = 240
+      textarea.style.height = '52px'
       textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + 'px'
     }
   }
@@ -44,9 +42,17 @@ export default function ChatInput({
     adjustHeight()
   }, [value])
 
+  const hasValue = value.trim().length > 0
+
   return (
-    <div className="w-full">
-      <div className="relative flex items-center">
+    <div className="w-full relative">
+      <div
+        className={`relative rounded-2xl border transition-all duration-200 ${isFocused
+          ? 'border-[var(--primary)]/30 shadow-[0_0_0_3px_var(--primary-light)]'
+          : 'border-[var(--border)] shadow-sm'
+          }`}
+        style={{ background: 'var(--surface-elevated)' }}
+      >
         <textarea
           ref={textareaRef}
           value={value}
@@ -55,62 +61,39 @@ export default function ChatInput({
             adjustHeight()
           }}
           onKeyDown={handleKeyDown}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
           placeholder={placeholder}
           disabled={disabled}
           rows={1}
-          className="w-full resize-none rounded-2xl px-4 py-3 pr-10 focus:outline-none disabled:cursor-not-allowed scrollbar-hide text-sm sm:text-base"
+          className="w-full resize-none rounded-2xl pl-5 pr-14 py-4 bg-transparent focus:outline-none disabled:cursor-not-allowed text-[15px] text-[var(--text)] placeholder:text-[var(--text-muted)]"
           style={{
             minHeight: '52px',
             maxHeight: '240px',
             overflowY: 'auto',
-            background: 'var(--gpt-input-bg)',
-            border: '1px solid var(--gpt-input-border)',
-            color: 'var(--gpt-text)',
-            boxShadow: 'var(--gpt-shadow-sm)',
-            transition: 'border-color var(--gpt-transition), box-shadow var(--gpt-transition)'
-          }}
-          onFocus={(e) => {
-            e.currentTarget.style.borderColor = 'var(--gpt-accent)'
-            e.currentTarget.style.boxShadow = '0 0 0 3px var(--gpt-accent-light)'
-          }}
-          onBlur={(e) => {
-            e.currentTarget.style.borderColor = 'var(--gpt-input-border)'
-            e.currentTarget.style.boxShadow = 'var(--gpt-shadow-sm)'
+            lineHeight: '1.5',
           }}
         />
-        <button
+
+        {/* Send Button */}
+        <motion.button
           onClick={onSend}
-          disabled={disabled || !value.trim()}
-          data-send-button
-          className="btn-small absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center justify-center rounded-md w-[30px] h-[30px] sm:w-auto sm:h-auto sm:p-2 disabled:cursor-not-allowed disabled:opacity-30"
+          disabled={disabled || !hasValue}
+          className="absolute right-3 bottom-3 rounded-xl w-9 h-9 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed"
           style={{
-            background: disabled || !value.trim() ? 'var(--gpt-text-muted)' : 'var(--gpt-accent)',
-            color: 'white',
-            transition: 'all var(--gpt-transition)'
+            background: hasValue && !disabled ? 'var(--primary)' : 'var(--surface)',
+            color: hasValue && !disabled ? 'white' : 'var(--text-muted)',
           }}
-          onMouseEnter={(e) => {
-            if (!disabled && value.trim()) {
-              e.currentTarget.style.background = 'var(--gpt-accent-hover)'
-              e.currentTarget.style.transform = 'translateY(-50%) scale(1.05)'
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!disabled && value.trim()) {
-              e.currentTarget.style.background = 'var(--gpt-accent)'
-              e.currentTarget.style.transform = 'translateY(-50%) scale(1)'
-            }
-          }}
+          whileHover={hasValue && !disabled ? { scale: 1.05 } : {}}
+          whileTap={hasValue && !disabled ? { scale: 0.92 } : {}}
         >
-          <Send size={16} className="sm:w-[18px] sm:h-[18px]" />
-        </button>
+          <ArrowUp size={18} strokeWidth={2.5} />
+        </motion.button>
       </div>
-      {/* Hint text - Hidden on mobile */}
-      <div className="hidden sm:flex items-center justify-center gap-2 mt-2" style={{ color: 'var(--gpt-text-muted)', fontSize: '12px' }}>
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-          <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.5"/>
-          <path d="M7 4v4l2 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        </svg>
-        <span>Press <kbd className="px-1.5 py-0.5 rounded" style={{ background: 'var(--gpt-hover)', border: '1px solid var(--gpt-border)', fontSize: '11px' }}>Shift</kbd> + <kbd className="px-1.5 py-0.5 rounded" style={{ background: 'var(--gpt-hover)', border: '1px solid var(--gpt-border)', fontSize: '11px' }}>Enter</kbd> for new line</span>
+
+      {/* Footer hint */}
+      <div className="hidden sm:flex items-center justify-center gap-1.5 mt-2.5 text-[11px] text-[var(--text-muted)]">
+        <span>ReviewGuide AI can make mistakes. Verify important information.</span>
       </div>
     </div>
   )

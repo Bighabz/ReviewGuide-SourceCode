@@ -1,25 +1,112 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState, useCallback, Suspense, useRef } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import CategorySidebar from '@/components/CategorySidebar'
 import ChatContainer from '@/components/ChatContainer'
-import Topbar from '@/components/Topbar'
+import ConversationSidebar from '@/components/ConversationSidebar'
+import UnifiedTopbar from '@/components/UnifiedTopbar'
 import ErrorBoundary from '@/components/ErrorBoundary'
+import { CHAT_CONFIG } from '@/lib/constants'
 
-export default function ChatPage() {
+function ChatPageContent() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [conversationSidebarOpen, setConversationSidebarOpen] = useState(false)
   const [clearHistoryTrigger, setClearHistoryTrigger] = useState(0)
   const [showClearDialog, setShowClearDialog] = useState(false)
+  const [currentSessionId, setCurrentSessionId] = useState<string>('')
+  const [switchToSessionId, setSwitchToSessionId] = useState<string | undefined>(undefined)
+  const [initialQuery, setInitialQuery] = useState<string | undefined>(undefined)
+
+  // Track which query we've processed to avoid re-processing after router.replace
+  const processedQueryRef = useRef<string | null>(null)
 
   useEffect(() => {
-    // Check if user is authenticated
-    const token = localStorage.getItem('access_token')
-    if (!token) {
-      router.push('/')
+    // Check for query parameters (from sticky chat bar on browse page)
+    const query = searchParams.get('q')
+    const isNewSession = searchParams.get('new') === '1'
+
+    console.log('[ChatPage] URL params:', { query, isNewSession, alreadyProcessed: processedQueryRef.current })
+
+    // Only process if this is a new session request AND we haven't processed this exact query
+    if (isNewSession && query && processedQueryRef.current !== query) {
+      console.log('[ChatPage] Processing new session with query:', query)
+      processedQueryRef.current = query
+
+      // Start a fresh session with the query
+      const newSessionId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        const r = Math.random() * 16 | 0
+        const v = c === 'x' ? r : (r & 0x3 | 0x8)
+        return v.toString(16)
+      })
+
+      // Clear old session data
+      localStorage.removeItem(CHAT_CONFIG.MESSAGES_STORAGE_KEY)
+      localStorage.setItem(CHAT_CONFIG.SESSION_STORAGE_KEY, newSessionId)
+
+      setSwitchToSessionId(newSessionId)
+      setCurrentSessionId(newSessionId)
+      setInitialQuery(query)
+
+      // Clean up URL params after processing (with slight delay to ensure state is set)
+      setTimeout(() => {
+        router.replace('/chat', { scroll: false })
+      }, 100)
+    } else if (isNewSession && !query) {
+      // New session without query - just start fresh
+      processedQueryRef.current = null
+
+      const newSessionId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        const r = Math.random() * 16 | 0
+        const v = c === 'x' ? r : (r & 0x3 | 0x8)
+        return v.toString(16)
+      })
+
+      localStorage.removeItem(CHAT_CONFIG.MESSAGES_STORAGE_KEY)
+      localStorage.setItem(CHAT_CONFIG.SESSION_STORAGE_KEY, newSessionId)
+
+      setSwitchToSessionId(newSessionId)
+      setCurrentSessionId(newSessionId)
+      setInitialQuery(undefined)
+
+      setTimeout(() => {
+        router.replace('/chat', { scroll: false })
+      }, 100)
+    } else if (!isNewSession && !query) {
+      // Normal page load - load current session ID
+      const storedSessionId = localStorage.getItem(CHAT_CONFIG.SESSION_STORAGE_KEY)
+      if (storedSessionId) {
+        setCurrentSessionId(storedSessionId)
+      }
     }
-  }, [router])
+  }, [searchParams, router])
+
+  const handleSessionChange = useCallback((sessionId: string) => {
+    setCurrentSessionId(sessionId)
+  }, [])
+
+  const handleSelectConversation = useCallback((sessionId: string) => {
+    setSwitchToSessionId(sessionId)
+    setCurrentSessionId(sessionId)
+    setInitialQuery(undefined) // Clear initial query when switching conversations
+  }, [])
+
+  const handleNewConversation = useCallback(() => {
+    // Generate new session ID
+    const newSessionId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = Math.random() * 16 | 0
+      const v = c === 'x' ? r : (r & 0x3 | 0x8)
+      return v.toString(16)
+    })
+    setSwitchToSessionId(newSessionId)
+    setCurrentSessionId(newSessionId)
+    setInitialQuery(undefined)
+    processedQueryRef.current = null // Reset for next potential URL param processing
+    // Clear local messages
+    localStorage.removeItem(CHAT_CONFIG.MESSAGES_STORAGE_KEY)
+  }, [])
 
   const handleClearHistory = () => {
     setShowClearDialog(true)
@@ -34,18 +121,38 @@ export default function ChatPage() {
     setShowClearDialog(false)
   }
 
+  const handleSearch = (query: string) => {
+    // Start a new conversation with the search query
+    handleNewConversation()
+    setInitialQuery(query)
+  }
+
   return (
     <div className="h-screen flex overflow-hidden">
       <CategorySidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 flex flex-col overflow-hidden">
-        <Topbar
+        <UnifiedTopbar
           onMenuClick={() => setSidebarOpen(true)}
-          onClearHistory={handleClearHistory}
+          onNewChat={handleNewConversation}
+          onHistoryClick={() => setConversationSidebarOpen(true)}
+          onSearch={handleSearch}
         />
         <ErrorBoundary>
-          <ChatContainer clearHistoryTrigger={clearHistoryTrigger} />
+          <ChatContainer
+            clearHistoryTrigger={clearHistoryTrigger}
+            externalSessionId={switchToSessionId}
+            onSessionChange={handleSessionChange}
+            initialQuery={initialQuery}
+          />
         </ErrorBoundary>
       </div>
+      <ConversationSidebar
+        isOpen={conversationSidebarOpen}
+        onClose={() => setConversationSidebarOpen(false)}
+        currentSessionId={currentSessionId}
+        onSelectConversation={handleSelectConversation}
+        onNewConversation={handleNewConversation}
+      />
 
       {/* Custom Clear History Dialog */}
       {showClearDialog && (
@@ -58,59 +165,25 @@ export default function ChatPage() {
           onClick={cancelClearHistory}
         >
           <div
-            className="rounded-2xl shadow-2xl max-w-md w-full p-5 sm:p-6"
-            style={{
-              background: 'var(--gpt-background)',
-              border: '1px solid var(--gpt-border)'
-            }}
+            className="rounded-2xl shadow-2xl max-w-md w-full p-5 sm:p-6 bg-[var(--background)] border border-[var(--border)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3
-              className="text-base sm:text-lg font-semibold mb-2"
-              style={{ color: 'var(--gpt-text)' }}
-            >
+            <h3 className="text-base sm:text-lg font-semibold font-serif mb-2 text-[var(--text)]">
               Clear Chat History
             </h3>
-            <p
-              className="text-xs sm:text-sm mb-5 sm:mb-6"
-              style={{ color: 'var(--gpt-text-secondary)' }}
-            >
+            <p className="text-xs sm:text-sm mb-5 sm:mb-6 text-[var(--text-secondary)]">
               Are you sure you want to clear all chat history? This cannot be undone.
             </p>
             <div className="flex gap-2 sm:gap-3 justify-end">
               <button
                 onClick={cancelClearHistory}
-                className="px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all"
-                style={{
-                  background: 'var(--gpt-hover)',
-                  border: '1px solid var(--gpt-border)',
-                  color: 'var(--gpt-text)',
-                  cursor: 'pointer'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'var(--gpt-input-bg)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'var(--gpt-hover)'
-                }}
+                className="px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all bg-[var(--surface)] border border-[var(--border)] text-[var(--text)] hover:bg-[var(--surface-hover)] cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmClearHistory}
-                className="px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all"
-                style={{
-                  background: 'var(--gpt-accent)',
-                  border: 'none',
-                  color: '#ffffff',
-                  cursor: 'pointer'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'var(--gpt-accent-hover)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'var(--gpt-accent)'
-                }}
+                className="px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition-all bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)] cursor-pointer border-none"
               >
                 OK
               </button>
@@ -119,5 +192,20 @@ export default function ChatPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function ChatPage() {
+  return (
+    <Suspense fallback={
+      <div className="h-screen flex items-center justify-center bg-[var(--background)]">
+        <div className="text-center text-[var(--text-secondary)]">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-current mb-2"></div>
+          <p>Loading chat...</p>
+        </div>
+      </div>
+    }>
+      <ChatPageContent />
+    </Suspense>
   )
 }

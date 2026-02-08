@@ -60,12 +60,29 @@ export default function BrowseLayout({ children }: { children: React.ReactNode }
         router.push(`/chat?q=${encodeURIComponent(query)}&new=1`);
     };
 
-    // Minimal layout for homepage (no topbar, sidebar, or sticky bar)
+    // Homepage layout: topbar + mobile sidebar, but no desktop sidebar or sticky chat bar
     if (isHomepage && pathname === '/browse') {
         return (
             <FilterContext.Provider value={{ filters, setFilters, isHomepage, setIsHomepage }}>
                 <div className="min-h-screen bg-[var(--background)] text-[var(--text)]">
-                    {children}
+                    <UnifiedTopbar
+                        onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+                        onSearch={handleSearch}
+                        onNewChat={() => router.push('/chat?new=1')}
+                        onHistoryClick={() => router.push('/chat')}
+                    />
+
+                    {/* Mobile Sidebar Overlay */}
+                    {sidebarOpen && (
+                        <CategorySidebar
+                            isOpen={sidebarOpen}
+                            onClose={() => setSidebarOpen(false)}
+                        />
+                    )}
+
+                    <main className="pt-14 sm:pt-16">
+                        {children}
+                    </main>
                 </div>
             </FilterContext.Provider>
         );

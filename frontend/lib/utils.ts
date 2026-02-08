@@ -1,3 +1,14 @@
+import { clsx, type ClassValue } from 'clsx'
+import { twMerge } from 'tailwind-merge'
+
+/**
+ * Utility function to merge Tailwind CSS classes
+ * Combines clsx for conditional classes with tailwind-merge for deduplication
+ */
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+
 // Prefix used when user clicks a suggestion button
 // Backend uses this to detect suggestion clicks
 export const SUGGESTION_CLICK_PREFIX = 'You chose:'

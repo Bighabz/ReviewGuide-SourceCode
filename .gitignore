@@ -19,6 +19,7 @@ ai_prj.pub
 .env
 *.log
 .claude
+.mcp.json
 
 # Node
 node_modules/
@@ -70,3 +71,18 @@ docker-compose.override.yml
 test_*
 
 log*
+
+# Scratch/working docs
+plan.md
+progress.md
+research.md
+discovery.md
+GEMINI_UX_PROMPT.md
+NUL
+
+# Separate work
+kishan_frontend/
+
+# Auto-generated
+frontend/next-env.d.ts
+frontend/tsconfig.tsbuildinfo

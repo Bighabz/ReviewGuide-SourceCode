@@ -1,7 +1,9 @@
 'use client'
 
-import { User, Bot, Copy, Check } from 'lucide-react'
+import { User, Copy, Check, ArrowRight } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
+import { motion } from 'framer-motion'
+import DOMPurify from 'dompurify'
 import { Message as MessageType, NextSuggestion } from './ChatContainer'
 import ProductCarousel from './ProductCarousel'
 import ProductCards from './ProductCards'
@@ -37,11 +39,9 @@ export default function Message({ message }: MessageProps) {
 
   const handleCopy = async () => {
     try {
-      // Try modern clipboard API first
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(message.content)
       } else {
-        // Fallback for non-HTTPS or older browsers
         const textArea = document.createElement('textarea')
         textArea.value = message.content
         textArea.style.position = 'fixed'
@@ -73,7 +73,7 @@ export default function Message({ message }: MessageProps) {
     if (carousels.length === 0) return null
 
     return (
-      <div className="space-y-4 mb-4">
+      <div className="space-y-6 mb-6">
         {carousels.map((block, idx) => (
           <ProductCarousel key={idx} items={block.payload?.items || []} />
         ))}
@@ -94,7 +94,7 @@ export default function Message({ message }: MessageProps) {
     if (providerBlocks.length === 0) return null
 
     return (
-      <div className="space-y-4 mb-4">
+      <div className="space-y-6 mb-6">
         {providerBlocks.map((block, idx) => {
           // Map provider data format to carousel format
           const carouselItems = (block.data || []).map((product: any) => ({
@@ -107,7 +107,8 @@ export default function Message({ message }: MessageProps) {
             image_url: product.image_url,
             rating: product.rating,
             review_count: product.review_count,
-            source: product.source
+            source: product.source,
+            description: product.description
           }))
 
           return (
@@ -132,7 +133,7 @@ export default function Message({ message }: MessageProps) {
     if (newFormatProducts.length === 0) return null
 
     return (
-      <div className="space-y-4">
+      <div className="space-y-6 mb-6">
         {newFormatProducts.map((block, idx) => {
           // Map new format to carousel format
           const carouselItems = (block.data || []).map((product: any) => ({
@@ -169,7 +170,7 @@ export default function Message({ message }: MessageProps) {
     if (productCards.length === 0) return null
 
     return (
-      <div className="space-y-4 mt-4 w-full sm:max-w-[85%]">
+      <div className="space-y-6 mt-6 w-full">
         {productCards.map((block, idx) => (
           <ProductCards key={idx} products={block.payload?.products || []} />
         ))}
@@ -186,7 +187,7 @@ export default function Message({ message }: MessageProps) {
     if (productReviews.length === 0) return null
 
     return (
-      <div className="space-y-6 mt-6 w-full sm:max-w-[85%]">
+      <div className="space-y-6 mt-6 w-full">
         {productReviews.map((block, idx) => (
           <ProductReview key={idx} product={block.payload || {}} />
         ))}
@@ -206,7 +207,7 @@ export default function Message({ message }: MessageProps) {
     if (recommendations.length === 0) return null
 
     return (
-      <div className="space-y-4 mt-4 w-full sm:max-w-[85%]">
+      <div className="space-y-6 mt-6 w-full">
         {recommendations.map((block, idx) => (
           <ProductRecommendations key={idx} content={block.payload?.content || block.data?.content || ''} />
         ))}
@@ -223,7 +224,7 @@ export default function Message({ message }: MessageProps) {
     if (affiliateBlocks.length === 0) return null
 
     return (
-      <div className="space-y-4 mt-4 w-full sm:max-w-[85%]">
+      <div className="space-y-4 mt-6 w-full">
         {affiliateBlocks.map((block, idx) => (
           <AffiliateLinks
             key={idx}
@@ -248,7 +249,7 @@ export default function Message({ message }: MessageProps) {
     if (hotelBlocks.length === 0) return null
 
     return (
-      <div className="space-y-4 mt-4 w-full sm:max-w-[85%]">
+      <div className="space-y-6 mt-6 w-full">
         {hotelBlocks.map((block, idx) => (
           <HotelCards key={idx} hotels={block.payload?.hotels || block.data || []} />
         ))}
@@ -268,7 +269,7 @@ export default function Message({ message }: MessageProps) {
     if (flightBlocks.length === 0) return null
 
     return (
-      <div className="space-y-4 mt-4 w-full sm:max-w-[85%]">
+      <div className="space-y-6 mt-6 w-full">
         {flightBlocks.map((block, idx) => (
           <FlightCards key={idx} flights={block.payload?.flights || block.data || []} />
         ))}
@@ -297,7 +298,7 @@ export default function Message({ message }: MessageProps) {
     // If both hotels and flights exist, render side by side on desktop
     if (hasHotels && hasFlights) {
       return (
-        <div className="mt-4 w-full">
+        <div className="mt-6 w-full">
           {/* Desktop: side by side grid with equal height */}
           <div className="hidden md:grid md:grid-cols-2 gap-4 items-stretch">
             <div className="flex flex-col">
@@ -326,7 +327,7 @@ export default function Message({ message }: MessageProps) {
 
     // If only one type exists, render normally
     return (
-      <div className="mt-4 w-full sm:max-w-[85%]">
+      <div className="mt-6 w-full">
         {hasHotels && hotelBlocks.map((block, idx) => (
           <HotelCards key={`hotel-${idx}`} hotels={block.payload?.hotels || block.data || []} />
         ))}
@@ -346,7 +347,7 @@ export default function Message({ message }: MessageProps) {
       )
       if (itineraryBlocks.length > 0) {
         return (
-          <div className="space-y-4 mt-4 w-full sm:max-w-[85%]">
+          <div className="space-y-6 mt-6 w-full">
             {itineraryBlocks.map((block, idx) => (
               <ItineraryView key={idx} days={block.payload?.days || block.data || []} />
             ))}
@@ -358,7 +359,7 @@ export default function Message({ message }: MessageProps) {
     // Check for itinerary as direct field (new format for travel flow)
     if (message.itinerary && message.itinerary.length > 0) {
       return (
-        <div className="space-y-4 mt-4 w-full sm:max-w-[85%]">
+        <div className="space-y-6 mt-6 w-full">
           <ItineraryView days={message.itinerary} />
         </div>
       )
@@ -379,20 +380,23 @@ export default function Message({ message }: MessageProps) {
     if (comparisonBlocks.length === 0) return null
 
     return (
-      <div className="space-y-4 mb-4 w-full">
+      <div className="space-y-6 mb-6 w-full">
         {comparisonBlocks.map((block, idx) => {
           // New format: comparison_html with HTML content
           if (block.type === 'comparison_html' && block.data?.html) {
+            // SECURITY: Sanitize HTML to prevent XSS attacks
+            const sanitizedHtml = DOMPurify.sanitize(block.data.html, {
+              ADD_TAGS: ['style'],  // Allow style tags for table formatting
+              ADD_ATTR: ['target', 'rel'],  // Allow link attributes
+            })
             return (
               <div
                 key={idx}
-                className="comparison-html-container rounded-xl overflow-hidden"
+                className="comparison-html-container rounded-xl overflow-hidden shadow-card border border-[var(--border)]"
                 style={{
-                  background: 'var(--gpt-assistant-message)',
-                  border: '1px solid rgba(0,0,0,0.08)',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+                  background: 'var(--surface)',
                 }}
-                dangerouslySetInnerHTML={{ __html: block.data.html }}
+                dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
               />
             )
           }
@@ -420,12 +424,12 @@ export default function Message({ message }: MessageProps) {
     const destinationInfoBlocks = message.ui_blocks.filter(block => block.type === 'destination_info')
 
     const hasAny = activitiesBlocks.length > 0 || attractionsBlocks.length > 0 ||
-                   restaurantsBlocks.length > 0 || destinationInfoBlocks.length > 0
+      restaurantsBlocks.length > 0 || destinationInfoBlocks.length > 0
 
     if (!hasAny) return null
 
     return (
-      <div className="space-y-4 mt-4 w-full sm:max-w-[85%]">
+      <div className="space-y-6 mt-6 w-full">
         {/* Activities */}
         {activitiesBlocks.map((block, idx) => (
           <ListBlock
@@ -468,25 +472,23 @@ export default function Message({ message }: MessageProps) {
   }
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25 }}
       id={`message-${message.id}`}
-      className={`w-full py-4 sm:py-6 px-3 sm:px-4 message-slide-in`}
-      style={{
-        background: isUser ? 'var(--gpt-background)' : 'var(--gpt-background)'
-      }}
+      className="w-full py-4 sm:py-5 px-3 sm:px-4"
     >
-      <div id="message-container" className="mx-auto flex gap-2 sm:gap-4 items-start flex-row overflow-visible" style={{ maxWidth: '780px' }}>
+      <div id="message-container" className="mx-auto flex gap-3 sm:gap-4 items-start flex-row overflow-visible" style={{ maxWidth: '780px' }}>
         {/* Avatar - Only show for assistant */}
         {!isUser && (
-          <div className="flex-shrink-0">
-            <div
-              className="w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center"
-              style={{
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                boxShadow: 'var(--gpt-shadow-sm)'
-              }}
-            >
-              <Bot size={16} className="sm:w-[18px] sm:h-[18px]" style={{ color: 'white' }} />
+          <div className="flex-shrink-0 mt-0.5">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-[var(--primary)] shadow-sm">
+              <img
+                src="/images/ezgif-7b66ba24abcfdab0.gif"
+                alt="AI"
+                className="w-4 h-4 rounded"
+              />
             </div>
           </div>
         )}
@@ -495,17 +497,11 @@ export default function Message({ message }: MessageProps) {
         <div className={`flex-1 min-w-0 ${isUser ? 'flex flex-col items-end' : 'text-left'}`}>
           {isUser ? (
             message.isSuggestionClick ? (
-              // Suggestion click: show as subtle label instead of full message bubble
+              // Suggestion click: show as subtle pill
               <div className="w-full flex justify-end">
-                <div
-                  className="text-xs sm:text-sm py-1 px-2 rounded"
-                  style={{
-                    color: 'var(--gpt-text-muted)',
-                    background: 'var(--gpt-hover)',
-                  }}
-                >
-                  <span style={{ opacity: 0.7 }}>{SUGGESTION_CLICK_PREFIX}</span>{' '}
-                  <span style={{ fontWeight: 500 }}>
+                <div className="text-xs sm:text-sm py-2 px-4 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--text-secondary)]">
+                  <span className="opacity-60">{SUGGESTION_CLICK_PREFIX}</span>{' '}
+                  <span className="font-medium text-[var(--text)]">
                     {message.content.startsWith(SUGGESTION_CLICK_PREFIX)
                       ? message.content.slice(SUGGESTION_CLICK_PREFIX.length).trim()
                       : message.content}
@@ -513,195 +509,165 @@ export default function Message({ message }: MessageProps) {
                 </div>
               </div>
             ) : (
-              // Regular user message: full bubble
+              // Regular user message: editorial bubble
               <>
-                <div className="relative group flex items-start justify-end max-w-full gap-1.5 sm:gap-2">
-                  <div
-                    className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-2xl"
-                    style={{
-                      background: '#5b7cf6',
-                      color: 'white',
-                      boxShadow: 'var(--gpt-shadow-sm)',
-                      maxWidth: '85%',
-                      wordBreak: 'break-word'
-                    }}
-                  >
-                    <p className="whitespace-pre-wrap text-sm sm:text-base">
+                <div className="relative group flex items-start justify-end max-w-full gap-2.5">
+                  <div className="px-4 py-3 rounded-2xl rounded-tr-md bg-[var(--primary)] text-white shadow-card">
+                    <p className="whitespace-pre-wrap text-[15px] leading-relaxed">
                       {message.content}
                     </p>
                   </div>
+
                   {/* User Avatar */}
-                  <div className="flex-shrink-0">
-                    <div
-                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center"
-                      style={{
-                        background: '#10b981',
-                        boxShadow: 'var(--gpt-shadow-sm)'
-                      }}
-                    >
-                      <User size={14} className="sm:w-4 sm:h-4" style={{ color: 'white' }} />
+                  <div className="flex-shrink-0 mt-0.5">
+                    <div className="w-7 h-7 rounded-full flex items-center justify-center bg-[var(--surface-hover)] text-[var(--text-muted)] border border-[var(--border)]">
+                      <User size={14} strokeWidth={1.5} />
                     </div>
                   </div>
                 </div>
-                {/* Timestamp for user message */}
-                <div
-                  className="message-timestamp text-right mt-1 mr-8 sm:mr-10"
-                  title={formatFullTimestamp(message.timestamp)}
-                >
+                {/* Timestamp */}
+                <div className="text-[10px] text-[var(--text-muted)] text-right mt-1.5 mr-10">
                   {relativeTime}
                 </div>
               </>
             )
           ) : (
             <div className="w-full">
-              {/* 1. Render provider-specific carousels (eBay, Amazon, etc.) */}
-              {renderProviderCarousels()}
+              {/* Thinking indicator — shown while waiting for real tokens */}
+              {!message.content && message.isThinking && (
+                <div className="flex items-center gap-1.5 py-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--text-muted)] animate-pulse" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--text-muted)] animate-pulse [animation-delay:0.15s]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--text-muted)] animate-pulse [animation-delay:0.3s]" />
+                </div>
+              )}
 
-              {/* 2. Render new format products (Our Recommendations) */}
-              {renderNewFormatProducts()}
-
-              {/* 3. Render old carousels */}
-              {renderCarousels()}
-
-              {/* 4. Render text content (intro before comparison) */}
+              {/* 1. Render text content FIRST (brief summary) */}
               {message.content && (
-                <div className="w-full sm:max-w-[85%]">
-                  <div
-                    className="px-3 sm:px-5 py-3 sm:py-4 rounded-2xl"
-                    style={{
-                      background: 'var(--gpt-assistant-message)',
-                      border: '1px solid rgba(0,0,0,0.05)',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-                    }}
+                <div className="w-full">
+                  <div className="prose prose-sm sm:prose-base max-w-none
+                      text-[var(--text)]
+                      prose-headings:font-serif prose-headings:tracking-tight prose-headings:text-[var(--text)]
+                      prose-p:text-[var(--text)] prose-p:leading-relaxed prose-p:text-[15px]
+                      prose-strong:text-[var(--text)] prose-strong:font-semibold
+                      prose-li:text-[var(--text)] prose-li:marker:text-[var(--text-muted)]
+                      prose-pre:bg-[var(--surface)] prose-pre:border prose-pre:border-[var(--border)] prose-pre:rounded-xl
+                      prose-a:text-[var(--primary)] prose-a:no-underline hover:prose-a:underline"
                   >
-                    <div className="prose prose-sm sm:prose-base max-w-none [&>*:first-child]:mt-0 [&>h2]:text-lg [&>h2]:sm:text-xl [&>h2]:font-bold [&>h2]:mt-4 [&>h2]:mb-3" style={{ color: 'var(--gpt-text)' }}>
-                      <ReactMarkdown>{message.content}</ReactMarkdown>
-                    </div>
-                    {/* Model attribution - Hidden */}
-                    <div className="flex items-center justify-end gap-1.5 mt-3 pt-2.5 border-t" style={{ borderColor: 'rgba(0,0,0,0.06)', display: 'none' }}>
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ opacity: 0.4 }}>
-                        <circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1"/>
-                        <circle cx="6" cy="6" r="2" fill="currentColor"/>
-                      </svg>
-                      <span className="text-xs italic" style={{ color: 'var(--gpt-text-muted)', opacity: 0.8 }}>
-                        Answered by OpenAI — gpt-4o-mini
-                      </span>
-                    </div>
+                    <ReactMarkdown>{message.content}</ReactMarkdown>
                   </div>
                 </div>
               )}
 
-              {/* 5. Render product comparison table (after intro text) */}
+              {/* 2. Render provider-specific carousels (eBay, Amazon, etc.) */}
+              {renderProviderCarousels()}
+
+              {/* 3. Render new format products (Our Recommendations) */}
+              {renderNewFormatProducts()}
+
+              {/* 4. Render old carousels */}
+              {renderCarousels()}
+
+              {/* 5. Render comparison table */}
               {renderComparisonTable()}
 
-              {/* 6. Render travel UI blocks (hotels + flights side by side on desktop) */}
+              {/* 6. Render travel UI blocks */}
               {renderTravelCards()}
               {renderItinerary()}
               {renderDestinationFacts()}
 
-              {/* 4. Render follow-up questions (for travel flow) */}
-              {message.followups && (
-                <div className={`w-full sm:max-w-[85%] ${message.content || message.itinerary || message.ui_blocks?.some(block =>
-                  ['hotel_cards', 'flight_cards', 'hotels', 'flights'].includes(block.block_type || block.type)
-                ) ? "mt-4" : ""}`}>
-                  <div
-                    className="px-3 sm:px-5 py-3 sm:py-4 rounded-2xl"
-                    style={{
-                      background: 'var(--gpt-assistant-message)',
-                      border: '1px solid rgba(0,0,0,0.05)',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-                    }}
-                  >
-                    {/* Handle structured followups format */}
-                    {typeof message.followups === 'object' && !Array.isArray(message.followups) ? (
-                      <>
-                        {/* Intro */}
-                        {message.followups.intro && (
-                          <p className="text-sm sm:text-base font-medium mb-3" style={{ color: 'var(--gpt-text)' }}>
-                            {message.followups.intro}
-                          </p>
-                        )}
-                        {/* Questions list */}
-                        {message.followups.questions && message.followups.questions.length > 0 && (
-                          <ul className="space-y-2 mb-3">
-                            {message.followups.questions.map((q: { slot: string; question: string }, idx: number) => (
-                              <li key={idx} className="flex items-start gap-2 text-sm sm:text-base" style={{ color: 'var(--gpt-text)' }}>
-                                <span className="text-blue-500 font-bold">•</span>
-                                <span>{q.question}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                        {/* Closing */}
-                        {message.followups.closing && (
-                          <p className="text-sm sm:text-base italic" style={{ color: 'var(--gpt-text-muted)' }}>
-                            {message.followups.closing}
-                          </p>
-                        )}
-                      </>
-                    ) : Array.isArray(message.followups) && message.followups.length > 0 ? (
-                      /* Handle legacy array format */
-                      message.followups.map((question, idx) => (
-                        <p key={idx} className="text-sm sm:text-base mb-2 last:mb-0" style={{ color: 'var(--gpt-text)' }}>{question}</p>
-                      ))
-                    ) : null}
-                  </div>
-                </div>
-              )}
-
-              {/* 5. Render product recommendations article (new format) */}
+              {/* 7. Render product recommendations (article) */}
               {renderProductRecommendations()}
 
-              {/* 6. Render affiliate links grouped by product (new format) */}
+              {/* 8. Render affiliate links */}
               {renderAffiliateLinks()}
 
-              {/* 7. Render product reviews (old format - for backward compatibility) */}
+              {/* 9. Render legacy blocks */}
               {renderProductReviews()}
-
-              {/* 8. Render product cards (old format - for backward compatibility) */}
               {renderProductCards()}
 
-              {/* 9. Render next step suggestions (clickable follow-up questions) */}
-              {message.next_suggestions && message.next_suggestions.length > 0 && (
-                <div className="mt-4 w-full sm:max-w-[85%]">
-                  <div className="flex flex-wrap gap-2">
-                    {message.next_suggestions.map((suggestion: NextSuggestion, idx: number) => (
-                      <button
-                        key={suggestion.id || idx}
-                        className="px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm transition-all"
-                        style={{
-                          background: 'var(--gpt-accent-light)',
-                          border: '1px solid var(--gpt-accent)',
-                          color: 'var(--gpt-accent)',
-                          cursor: 'pointer',
-                          fontWeight: 500,
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = 'var(--gpt-accent)'
-                          e.currentTarget.style.color = '#ffffff'
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'var(--gpt-accent-light)'
-                          e.currentTarget.style.color = 'var(--gpt-accent)'
-                        }}
-                        onClick={() => {
-                          // Dispatch custom event to send this as a new message
-                          const event = new CustomEvent('sendSuggestion', {
-                            detail: { question: suggestion.question }
-                          })
-                          window.dispatchEvent(event)
-                        }}
-                      >
-                        {suggestion.question}
-                      </button>
-                    ))}
-                  </div>
+              {/* Follow-up questions */}
+              {message.followups && (
+                <div className="w-full mt-5">
+                  {/* Structured followups */}
+                  {typeof message.followups === 'object' && !Array.isArray(message.followups) ? (
+                    <div className="border border-[var(--border)] rounded-xl p-4 bg-[var(--surface)]">
+
+                      {message.followups.intro && (
+                        <p className="text-sm font-medium text-[var(--text)] mb-3">
+                          {message.followups.intro}
+                        </p>
+                      )}
+
+                      <div className="space-y-1.5">
+                        {message.followups.questions && message.followups.questions.map((q: { slot: string; question: string }, idx: number) => (
+                          <button
+                            key={idx}
+                            className="w-full text-left px-3.5 py-2.5 rounded-lg border border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)] hover:bg-[var(--primary-light)] transition-all text-sm text-[var(--text)] flex items-center justify-between group"
+                            onClick={() => {
+                              const event = new CustomEvent('sendSuggestion', {
+                                detail: { question: q.question }
+                              })
+                              window.dispatchEvent(event)
+                            }}
+                          >
+                            <span>{q.question}</span>
+                            <ArrowRight size={14} strokeWidth={1.5} className="opacity-0 group-hover:opacity-100 transition-opacity text-[var(--primary)]" />
+                          </button>
+                        ))}
+                      </div>
+
+                      {message.followups.closing && (
+                        <p className="mt-3 text-xs italic text-[var(--text-muted)]">
+                          {message.followups.closing}
+                        </p>
+                      )}
+                    </div>
+                  ) : Array.isArray(message.followups) && message.followups.length > 0 ? (
+                    // Legacy array style
+                    <div className="flex flex-wrap gap-2">
+                      {message.followups.map((question, idx) => (
+                        <button
+                          key={idx}
+                          className="text-left px-4 py-2 rounded-full text-sm border border-[var(--border)] text-[var(--text-secondary)] bg-[var(--surface)] hover:border-[var(--primary)] hover:text-[var(--primary)] hover:bg-[var(--primary-light)] transition-all"
+                          onClick={() => {
+                            const event = new CustomEvent('sendSuggestion', {
+                              detail: { question: question }
+                            })
+                            window.dispatchEvent(event)
+                          }}
+                        >
+                          {question}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
               )}
 
-              {/* Timestamp for assistant message */}
+              {/* Next step suggestions */}
+              {message.next_suggestions && message.next_suggestions.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {message.next_suggestions.map((suggestion: NextSuggestion, idx: number) => (
+                    <button
+                      key={suggestion.id || idx}
+                      className="px-4 py-2 rounded-full text-sm font-medium border border-[var(--border)] text-[var(--text-secondary)] bg-[var(--surface)] hover:border-[var(--primary)] hover:text-[var(--primary)] hover:bg-[var(--primary-light)] transition-all"
+                      onClick={() => {
+                        const event = new CustomEvent('sendSuggestion', {
+                          detail: { question: suggestion.question }
+                        })
+                        window.dispatchEvent(event)
+                      }}
+                    >
+                      {suggestion.question}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Timestamp for assistant */}
               <div
-                className="message-timestamp mt-2"
+                className="text-[10px] text-[var(--text-muted)] mt-2 ml-0.5"
                 title={formatFullTimestamp(message.timestamp)}
               >
                 {relativeTime}
@@ -710,6 +676,6 @@ export default function Message({ message }: MessageProps) {
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
