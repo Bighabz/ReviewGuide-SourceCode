@@ -90,9 +90,10 @@ app = FastAPI(
 app.add_middleware(LoggingMiddleware)
 
 # Add CORS middleware SECOND (will execute first due to reverse order)
+# SECURITY: Use explicit origins from settings, never wildcard in production
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

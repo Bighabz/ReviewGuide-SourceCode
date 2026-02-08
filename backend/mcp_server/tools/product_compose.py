@@ -142,74 +142,29 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
 
             products_with_offers.append(product_copy)
 
-        # Generate descriptions in parallel for each product
-        import asyncio
-
-        async def generate_product_description(product: Dict[str, Any], rank: int) -> str:
-            """Generate description for a single product."""
-            pros = product.get("pros", [])
-            pros_text = ", ".join(pros[:3]) if pros else "N/A"
-
-            prompt = f"""Product: {product.get("name", "")}
-Summary: {product.get("snippet", "")[:150]}
-Key Features: {pros_text}
-
-Write 1-2 concise sentences highlighting:
-- The product name with key specs
-- What makes it stand out (e.g., "Best overall", "Best for budget", "Best value")
-
-Format: **Product Name**
-Description here."""
-
-            description = await model_service.generate(
-                messages=[
-                    {"role": "system", "content": "You are a product expert. Write concise, compelling product descriptions."},
-                    {"role": "user", "content": prompt}
-                ],
-                model=settings.COMPOSER_MODEL,
-                temperature=0.7,
-                max_tokens=80,  # Just 1-2 sentences per product
-                agent_name="product_compose"
-            )
-            return description.strip()
-
-        # Generate intro and all product descriptions in parallel
-        async def generate_intro() -> str:
-            """Generate brief intro."""
-            intro_prompt = f'User asked: "{user_message}". Write ONE brief sentence (max 15 words) acknowledging the request.'
-            return await model_service.generate(
-                messages=[
-                    {"role": "system", "content": "You are helpful and concise."},
-                    {"role": "user", "content": intro_prompt}
-                ],
-                model=settings.COMPOSER_MODEL,
-                temperature=0.7,
-                max_tokens=30,
-                agent_name="product_compose"
-            )
-
-        # Run intro + all product descriptions in parallel
-        tasks = [generate_intro()]
-        for idx, product in enumerate(products_with_offers[:8], 1):  # Top 8 products
-            tasks.append(generate_product_description(product, idx))
-
-        results = await asyncio.gather(*tasks)
-
-        # Combine results
-        intro = results[0].strip()
-        product_descriptions = results[1:]
-
+        # Generate a brief summary - no need for per-product descriptions since cards show the products
         # Build final response
         if comparison_html:
             # Comparison mode - show intro before comparison table
             product_names = comparison_data.get("products", []) if comparison_data else []
             assistant_text = f"## Product Comparison: {', '.join(product_names)}\n\nHere's a detailed specification comparison."
-        elif product_descriptions:
-            assistant_text = f"{intro}\n\n## Top Recommendations\n\n"
-            assistant_text += "\n\n".join(product_descriptions)
         else:
-            # No normalized products, but we may have affiliate products to show
-            assistant_text = f"{intro}\n\nHere are some products from our partners:"
+            # Count products from each provider
+            total_products = sum(len(p) for p in affiliate_products.values())
+            provider_names = [p.title() for p in affiliate_products.keys()]
+
+            # Generate a brief, helpful response
+            assistant_text = await model_service.generate(
+                messages=[
+                    {"role": "system", "content": "You are a helpful shopping assistant. Write 1-2 SHORT sentences (max 30 words total). Be friendly and direct. Do NOT list individual products - they are shown in cards above."},
+                    {"role": "user", "content": f'User asked: "{user_message}". Found {total_products} products from {", ".join(provider_names)}. Write a brief helpful response.'}
+                ],
+                model=settings.COMPOSER_MODEL,
+                temperature=0.7,
+                max_tokens=50,
+                agent_name="product_compose"
+            )
+            assistant_text = assistant_text.strip()
 
         # Create UI blocks dynamically based on available providers
         ui_blocks = []
@@ -232,6 +187,10 @@ Description here."""
             affiliate_products.keys(),
             key=lambda p: PROVIDER_CONFIG.get(p, {}).get("order", 999)
         )
+
+        # Collect all products first for description generation
+        all_products_for_desc = []
+        products_by_provider = {}
 
         for provider_name in sorted_providers:
             provider_data = affiliate_products.get(provider_name, [])
@@ -265,14 +224,83 @@ Description here."""
                         if offer.get("product_id"):
                             product_item["product_id"] = offer["product_id"]
                         provider_products.append(product_item)
+                        all_products_for_desc.append(product_item)
 
             if provider_products:
-                ui_blocks.append({
-                    "type": config["type"],
-                    "title": config["title"],
-                    "data": provider_products[:10]  # Limit to 10 products
-                })
-                logger.info(f"[product_compose] Added {len(provider_products)} {provider_name} products to UI")
+                products_by_provider[provider_name] = {
+                    "config": config,
+                    "products": provider_products[:10]
+                }
+
+        # Generate personalized descriptions for products using conversation context
+        if all_products_for_desc:
+            products_to_describe = all_products_for_desc[:15]  # Up to 15 products
+            product_titles = [p["title"][:50] for p in products_to_describe]
+
+            # Read conversation history for personalization
+            conversation_history = state.get("conversation_history", [])
+
+            # Build context summary from recent conversation
+            context_summary = ""
+            if conversation_history:
+                recent_messages = conversation_history[-6:]  # Last 6 messages
+                context_summary = "\n".join([
+                    f"{msg.get('role', 'user')}: {msg.get('content', '')[:100]}"
+                    for msg in recent_messages
+                    if msg.get('content')
+                ])
+
+            # Enhanced prompt for personalized descriptions
+            desc_system = """Generate personalized 15-20 word descriptions for each product.
+
+IMPORTANT RULES:
+1. If user mentioned a pet name (like "Max", "Bella"), reference it: "Your dog Max would love this because..."
+2. If user mentioned a person (girlfriend, baby, mom), personalize: "Perfect gift for your girlfriend..."
+3. If no specific context, ask a follow-up question in the description: "Great choice! What breed is your dog?"
+4. Vary your descriptions - don't repeat the same pattern
+5. Be warm and conversational, not generic
+
+Return JSON: {"descriptions": ["desc1", "desc2", ...]}"""
+
+            desc_user = f'''Conversation context:
+{context_summary if context_summary else "No prior context"}
+
+User's current question: "{user_message}"
+
+Products to describe:
+{json.dumps(product_titles)}'''
+
+            try:
+                desc_response = await model_service.generate(
+                    messages=[
+                        {"role": "system", "content": desc_system},
+                        {"role": "user", "content": desc_user}
+                    ],
+                    model=settings.COMPOSER_MODEL,
+                    temperature=0.7,
+                    max_tokens=600,  # Increased for more descriptions
+                    response_format={"type": "json_object"},
+                    agent_name="product_compose_descriptions"
+                )
+                desc_data = json.loads(desc_response)
+                descriptions = desc_data.get("descriptions", [])
+
+                # Apply descriptions to products
+                for i, desc in enumerate(descriptions):
+                    if i < len(all_products_for_desc):
+                        all_products_for_desc[i]["description"] = desc
+                logger.info(f"[product_compose] Generated {len(descriptions)} product descriptions")
+            except Exception as desc_error:
+                logger.warning(f"[product_compose] Failed to generate descriptions: {desc_error}")
+
+        # Add products to UI blocks
+        for provider_name, data in products_by_provider.items():
+            ui_blocks.append({
+                "type": data["config"]["type"],
+                "title": data["config"]["title"],
+                "data": data["products"]
+            })
+            logger.info(f"[product_compose] Added {len(data['products'])} {provider_name} products to UI")
 
         # Create citations
         citations = [p["url"] for p in normalized_products if p.get("url")][:5]

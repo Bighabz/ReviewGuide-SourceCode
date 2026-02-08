@@ -56,10 +56,13 @@ services:
       # App settings
       ENV: ${ENV:-development}
       DEBUG: ${DEBUG:-true}
-      SECRET_KEY: ${SECRET_KEY:-your-secret-key-change-in-production}
-      # Admin credentials
-      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123456}
+      # CORS: Allow frontend origins
+      CORS_ORIGINS: '["http://localhost:3000","http://localhost:3001","http://localhost:3002","http://localhost:3003","http://127.0.0.1:3000","http://127.0.0.1:3001"]'
+      # SECURITY: SECRET_KEY must be set in .env file - no default allowed
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
+      # SECURITY: Admin credentials must be set in .env file - no defaults allowed
+      ADMIN_USERNAME: ${ADMIN_USERNAME:?ADMIN_USERNAME is required}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD is required}
       # LLM API Keys (from host .env)
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
@@ -83,6 +86,16 @@ services:
       USE_MOCK_AFFILIATE: ${USE_MOCK_AFFILIATE:-False}
       # Search
       SEARCH_PROVIDER: ${SEARCH_PROVIDER:-openai}
+      # Agent Models
+      DEFAULT_MODEL: ${DEFAULT_MODEL:-gpt-4o-mini}
+      PLANNER_MODEL: ${PLANNER_MODEL:-gpt-4o}
+      INTENT_MODEL: ${INTENT_MODEL:-gpt-4o-mini}
+      CLARIFIER_MODEL: ${CLARIFIER_MODEL:-gpt-4o-mini}
+      COMPOSER_MODEL: ${COMPOSER_MODEL:-gpt-4o-mini}
+      # Agent Token Limits
+      PLANNER_MAX_TOKENS: ${PLANNER_MAX_TOKENS:-2000}
+      # Rate Limiting (enabled by default for security)
+      RATE_LIMIT_ENABLED: ${RATE_LIMIT_ENABLED:-true}
     ports:
       - "8000:8000"
     depends_on:
@@ -110,7 +123,8 @@ services:
         NEXT_PUBLIC_API_URL: http://localhost:8000
     container_name: reviewguide-frontend
     environment:
-      NEXT_PUBLIC_API_URL: http://backend:8000
+      # Must use localhost for browser access (client-side JS can't resolve Docker hostnames)
+      NEXT_PUBLIC_API_URL: http://localhost:8000
     ports:
       - "3000:3000"
     depends_on:

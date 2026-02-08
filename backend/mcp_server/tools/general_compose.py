@@ -9,8 +9,8 @@ from app.core.centralized_logger import get_logger
 from app.core.error_manager import tool_error_handler
 import sys
 import os
+import json
 from typing import Dict, Any
-from app.core.error_manager import tool_error_handler
 
 # Add backend to path (portable path)
 backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -70,8 +70,42 @@ async def general_compose(
         logger.info(f"[general_compose] Composing response for: {user_message}")
 
         if not search_results:
+            # No search results - generate conversational response using LLM
+            conversation_history = state.get("conversation_history", [])
+
+            # Build conversation context
+            history_context = ""
+            if conversation_history:
+                recent = conversation_history[-4:]
+                history_context = json.dumps(recent, indent=2)
+            else:
+                history_context = "No prior context"
+
+            conversational_prompt = f"""The user said: "{user_message}"
+
+This appears to be a conversational message that doesn't need web search.
+Respond naturally and warmly. If it relates to the conversation history, acknowledge that.
+If they're making a statement or sharing preferences, engage with that.
+Keep response under 50 words.
+
+Conversation history:
+{history_context}"""
+
+            assistant_text = await model_service.generate(
+                messages=[
+                    {"role": "system", "content": "You are a friendly shopping assistant. Respond conversationally to casual messages. Be warm and engaging."},
+                    {"role": "user", "content": conversational_prompt}
+                ],
+                model=settings.COMPOSER_MODEL,
+                temperature=0.8,
+                max_tokens=100,
+                agent_name="general_compose_conversational"
+            )
+
+            logger.info(f"[general_compose] Generated conversational response: {len(assistant_text)} chars")
+
             return {
-                "assistant_text": "I couldn't find any information about that. Could you rephrase your question?",
+                "assistant_text": assistant_text.strip(),
                 "ui_blocks": [],
                 "citations": [],
                 "success": True
