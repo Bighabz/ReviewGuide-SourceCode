@@ -507,38 +507,31 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
       {/* Welcome Screen (no messages) */}
       {messages.length === 0 && (
         <div id="welcome-screen" className="flex-1 overflow-y-auto">
-          <div className="min-h-full flex flex-col items-center justify-center px-4 sm:px-8 py-12 sm:py-20">
-            <div id="welcome-container" className="w-full max-w-2xl space-y-8">
-              {/* Logo */}
-              <div className="flex flex-col items-center animate-fade-in">
-                <img
-                  src="/images/ezgif-7b66ba24abcfdab0.gif"
-                  alt="ReviewGuide.Ai"
-                  className="h-32 sm:h-44 md:h-56 w-auto mb-4"
-                />
-                {/* Editorial tagline */}
-                <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl text-center text-[var(--text)] leading-tight tracking-tight">
-                  Smart shopping,{' '}
-                  <span className="italic text-[var(--primary)]">simplified.</span>
-                </h1>
-                <p className="text-sm sm:text-base text-[var(--text-secondary)] text-center mt-3 max-w-md">
-                  AI-powered product reviews, travel planning, and price comparison — all in one conversation.
-                </p>
-              </div>
+          <div className="flex flex-col items-center justify-center px-4 pt-8 sm:pt-14 pb-10 sm:pb-16">
+              <img
+                src="/images/ezgif-7b66ba24abcfdab0.gif"
+                alt="ReviewGuide.Ai"
+                className="h-32 sm:h-44 md:h-56 w-auto mb-4"
+              />
+              <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl text-center text-[var(--text)] leading-tight tracking-tight">
+                Smart shopping,{' '}
+                <span className="italic text-[var(--primary)]">simplified.</span>
+              </h1>
+              <p className="text-sm sm:text-base text-[var(--text-secondary)] text-center mt-3 max-w-md">
+                AI-powered product reviews, travel planning, and price comparison — all in one conversation.
+              </p>
 
-              {/* Input */}
-              <div className="max-w-xl mx-auto w-full animate-fade-in-delayed">
+              <div className="w-full max-w-xl mx-auto mt-8">
                 <ChatInput
                   value={input}
                   onChange={setInput}
                   onSend={handleSendMessage}
                   disabled={isStreaming}
-                  placeholder={UI_TEXT.PLACEHOLDER_TEXT}
+                  placeholder="Ask anything — best headphones, Tokyo trip, laptop deals..."
                 />
               </div>
 
-              {/* Quick suggestions */}
-              <div className="flex flex-wrap justify-center gap-2 animate-fade-in-delayed">
+              <div className="flex flex-wrap justify-center gap-2 mt-4">
                 {['Best wireless earbuds under $100', 'Plan a 5-day trip to Tokyo', 'Compare MacBook Air vs Pro'].map((suggestion, idx) => (
                   <button
                     key={idx}
@@ -551,7 +544,6 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
                   </button>
                 ))}
               </div>
-            </div>
           </div>
         </div>
       )}
