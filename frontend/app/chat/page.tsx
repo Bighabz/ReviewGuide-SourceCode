@@ -128,40 +128,47 @@ function ChatPageContent() {
   }
 
   return (
-    <div className="h-screen flex overflow-hidden">
-      {/* Desktop sidebar — fixed, same as BrowseLayout */}
-      <aside className="hidden lg:block fixed left-0 top-14 sm:top-16 bottom-0 w-56 z-30">
-        <CategorySidebar />
-      </aside>
-
-      {/* Mobile sidebar overlay */}
-      {sidebarOpen && (
-        <CategorySidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      )}
-
-      <div className="flex-1 flex flex-col overflow-hidden lg:ml-56">
-        <UnifiedTopbar
-          onMenuClick={() => setSidebarOpen(true)}
-          onNewChat={handleNewConversation}
-          onHistoryClick={() => setConversationSidebarOpen(true)}
-          onSearch={handleSearch}
-        />
-        <ErrorBoundary>
-          <ChatContainer
-            clearHistoryTrigger={clearHistoryTrigger}
-            externalSessionId={switchToSessionId}
-            onSessionChange={handleSessionChange}
-            initialQuery={initialQuery}
-          />
-        </ErrorBoundary>
-      </div>
-      <ConversationSidebar
-        isOpen={conversationSidebarOpen}
-        onClose={() => setConversationSidebarOpen(false)}
-        currentSessionId={currentSessionId}
-        onSelectConversation={handleSelectConversation}
-        onNewConversation={handleNewConversation}
+    <div className="h-screen flex flex-col overflow-hidden bg-[var(--background)] text-[var(--text)]">
+      {/* Full-width topbar — identical to BrowseLayout */}
+      <UnifiedTopbar
+        onMenuClick={() => setSidebarOpen(true)}
+        onNewChat={handleNewConversation}
+        onHistoryClick={() => setConversationSidebarOpen(true)}
+        onSearch={handleSearch}
       />
+
+      {/* Content area below topbar */}
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Desktop sidebar — fixed, same as BrowseLayout */}
+        <aside className="hidden lg:block fixed left-0 top-14 sm:top-16 bottom-0 w-56 z-30">
+          <CategorySidebar />
+        </aside>
+
+        {/* Mobile sidebar overlay */}
+        {sidebarOpen && (
+          <CategorySidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+        )}
+
+        {/* Main chat content — offset for sidebar */}
+        <main className="flex-1 flex flex-col overflow-hidden lg:ml-56">
+          <ErrorBoundary>
+            <ChatContainer
+              clearHistoryTrigger={clearHistoryTrigger}
+              externalSessionId={switchToSessionId}
+              onSessionChange={handleSessionChange}
+              initialQuery={initialQuery}
+            />
+          </ErrorBoundary>
+        </main>
+
+        <ConversationSidebar
+          isOpen={conversationSidebarOpen}
+          onClose={() => setConversationSidebarOpen(false)}
+          currentSessionId={currentSessionId}
+          onSelectConversation={handleSelectConversation}
+          onNewConversation={handleNewConversation}
+        />
+      </div>
 
       {/* Custom Clear History Dialog */}
       {showClearDialog && (
