@@ -129,10 +129,17 @@ function ChatPageContent() {
 
   return (
     <div className="h-screen flex overflow-hidden">
+      {/* Desktop sidebar — fixed, same as BrowseLayout */}
+      <aside className="hidden lg:block fixed left-0 top-14 sm:top-16 bottom-0 w-56 z-30">
+        <CategorySidebar />
+      </aside>
+
+      {/* Mobile sidebar overlay */}
       {sidebarOpen && (
         <CategorySidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       )}
-      <div className="flex-1 flex flex-col overflow-hidden">
+
+      <div className="flex-1 flex flex-col overflow-hidden lg:ml-56">
         <UnifiedTopbar
           onMenuClick={() => setSidebarOpen(true)}
           onNewChat={handleNewConversation}

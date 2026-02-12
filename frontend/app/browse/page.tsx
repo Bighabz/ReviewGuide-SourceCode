@@ -170,7 +170,7 @@ export default function BrowsePage() {
                 <div className="editorial-rule mx-8" />
 
                 {/* Content Rows */}
-                <div className="py-4 space-y-2 lg:pl-56">
+                <div className="py-4 space-y-2">
                     {HOME_ROWS.map((row) => (
                         <ContentRow
                             key={row.id}
@@ -183,7 +183,7 @@ export default function BrowsePage() {
                 </div>
 
                 {/* Browse All */}
-                <div className="px-4 sm:px-6 md:px-8 pb-12 lg:pl-60">
+                <div className="px-4 sm:px-6 md:px-8 pb-12">
                     <div className="flex items-center gap-4 mb-4">
                         <h2 className="text-xl sm:text-2xl font-serif font-bold text-[var(--text)] tracking-tight">
                             Browse All
