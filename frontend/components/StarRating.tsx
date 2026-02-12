@@ -42,7 +42,7 @@ export function StarRating({
             </div>
 
             {showCount && (
-                <span className="text-xs text-[var(--gpt-text-secondary)] font-medium ml-1">
+                <span className="text-xs text-[var(--text-secondary)] font-medium ml-1">
                     {value.toFixed(1)} {count !== undefined && `(${count})`}
                 </span>
             )}
