@@ -19,9 +19,9 @@ class OpenAIProvider(SearchProvider):
     def __init__(self, api_key: str, **config):
         super().__init__(api_key, **config)
         # Now configurable from .env!
-        self.base_url = config.get("base_url")
-        self.model = config.get("model")
-        self.timeout = config.get("timeout")
+        self.base_url = config.get("base_url", "https://api.openai.com/v1")
+        self.model = config.get("model", "gpt-4o-mini")
+        self.timeout = config.get("timeout", 30.0)
 
         # Domain filters from config
         self.product_domains = self._parse_domains(config.get("product_domains", ""))

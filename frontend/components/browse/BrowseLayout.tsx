@@ -60,34 +60,6 @@ export default function BrowseLayout({ children }: { children: React.ReactNode }
         router.push(`/chat?q=${encodeURIComponent(query)}&new=1`);
     };
 
-    // Homepage layout: topbar + mobile sidebar, but no desktop sidebar or sticky chat bar
-    if (isHomepage && pathname === '/browse') {
-        return (
-            <FilterContext.Provider value={{ filters, setFilters, isHomepage, setIsHomepage }}>
-                <div className="min-h-screen bg-[var(--background)] text-[var(--text)]">
-                    <UnifiedTopbar
-                        onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-                        onSearch={handleSearch}
-                        onNewChat={() => router.push('/chat?new=1')}
-                        onHistoryClick={() => router.push('/chat')}
-                    />
-
-                    {/* Mobile Sidebar Overlay */}
-                    {sidebarOpen && (
-                        <CategorySidebar
-                            isOpen={sidebarOpen}
-                            onClose={() => setSidebarOpen(false)}
-                        />
-                    )}
-
-                    <main className="pt-14 sm:pt-16">
-                        {children}
-                    </main>
-                </div>
-            </FilterContext.Provider>
-        );
-    }
-
     return (
         <FilterContext.Provider value={{ filters, setFilters, isHomepage, setIsHomepage }}>
             <div className="min-h-screen bg-[var(--background)] text-[var(--text)]">
@@ -99,7 +71,7 @@ export default function BrowseLayout({ children }: { children: React.ReactNode }
                     onHistoryClick={() => router.push('/chat')}
                 />
 
-                {/* Category Sidebar (desktop) - Consistent across all browse pages */}
+                {/* Category Sidebar (desktop) - Always visible on lg */}
                 <aside className="hidden lg:block fixed left-0 top-14 sm:top-16 bottom-0 w-56 z-30">
                     <CategorySidebar />
                 </aside>
@@ -112,19 +84,21 @@ export default function BrowseLayout({ children }: { children: React.ReactNode }
                     />
                 )}
 
-                {/* Main Content - Left-aligned, tighter to sidebar */}
-                <main className="lg:ml-56 pt-16 w-full overflow-x-hidden min-h-[calc(100vh-4rem)] pb-24">
+                {/* Main Content - Always has sidebar margin on lg */}
+                <main className={`lg:ml-56 pt-14 sm:pt-16 w-full min-h-[calc(100vh-4rem)] ${!isHomepage ? 'pb-24' : ''}`}>
                     <div className="w-full">
                         {children}
                     </div>
                 </main>
 
-                {/* Sticky Chat Bar at Bottom */}
-                <div className="fixed bottom-0 left-0 right-0 z-40 bg-[var(--background)]/80 backdrop-blur-xl border-t border-[var(--border)] p-4 lg:pl-[15rem]">
-                    <div className="max-w-3xl mx-auto px-4">
-                        <SearchInput placeholder="Ask AI about any product..." />
+                {/* Sticky Chat Bar at Bottom - Only on non-homepage */}
+                {!isHomepage && (
+                    <div className="fixed bottom-0 left-0 right-0 z-40 bg-[var(--background)]/80 backdrop-blur-xl border-t border-[var(--border)] p-4 lg:pl-[15rem]">
+                        <div className="max-w-3xl mx-auto px-4">
+                            <SearchInput placeholder="Ask AI about any product..." />
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
         </FilterContext.Provider>
     );

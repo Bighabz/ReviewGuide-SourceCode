@@ -73,29 +73,24 @@ async def general_compose(
             # No search results - generate conversational response using LLM
             conversation_history = state.get("conversation_history", [])
 
-            # Build conversation context
-            history_context = ""
+            # Build messages with actual conversation history as structured messages
+            messages = [
+                {"role": "system", "content": "You are a friendly shopping assistant. Respond conversationally to casual messages. Be warm and engaging. Keep responses under 50 words."},
+            ]
+
+            # Add recent history as actual message objects so the LLM sees real context
             if conversation_history:
-                recent = conversation_history[-4:]
-                history_context = json.dumps(recent, indent=2)
-            else:
-                history_context = "No prior context"
+                for msg in conversation_history[-6:]:
+                    role = msg.get("role", "user")
+                    content = msg.get("content", "")
+                    if content and role in ("user", "assistant", "human", "ai"):
+                        mapped_role = "assistant" if role in ("assistant", "ai") else "user"
+                        messages.append({"role": mapped_role, "content": content[:300]})
 
-            conversational_prompt = f"""The user said: "{user_message}"
-
-This appears to be a conversational message that doesn't need web search.
-Respond naturally and warmly. If it relates to the conversation history, acknowledge that.
-If they're making a statement or sharing preferences, engage with that.
-Keep response under 50 words.
-
-Conversation history:
-{history_context}"""
+            messages.append({"role": "user", "content": user_message})
 
             assistant_text = await model_service.generate(
-                messages=[
-                    {"role": "system", "content": "You are a friendly shopping assistant. Respond conversationally to casual messages. Be warm and engaging."},
-                    {"role": "user", "content": conversational_prompt}
-                ],
+                messages=messages,
                 model=settings.COMPOSER_MODEL,
                 temperature=0.8,
                 max_tokens=100,
