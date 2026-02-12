@@ -35,6 +35,7 @@ export default function UnifiedTopbar({
   const [searchQuery, setSearchQuery] = useState('')
   const [scrolled, setScrolled] = useState(false)
   const [searchFocused, setSearchFocused] = useState(false)
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const colorPickerRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
   const router = useRouter()
@@ -173,6 +174,7 @@ export default function UnifiedTopbar({
 
             {/* Mobile Search */}
             <button
+              onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
               className="md:hidden p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)]"
               aria-label="Search"
             >
@@ -298,6 +300,36 @@ export default function UnifiedTopbar({
           </div>
         </div>
       </div>
+
+      {/* Mobile search form */}
+      <AnimatePresence>
+        {mobileSearchOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="md:hidden overflow-hidden"
+          >
+            <form onSubmit={(e) => { handleSearchSubmit(e); setMobileSearchOpen(false) }} className="px-4 pb-3">
+              <div className="relative w-full">
+                <Search
+                  size={16}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+                />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={searchPlaceholder}
+                  autoFocus
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-[var(--surface)] border border-[var(--border)] text-[var(--text)] text-sm placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)]/40 focus:ring-2 focus:ring-[var(--primary)]/8 transition-all"
+                />
+              </div>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Bottom rule — editorial separator */}
       <div className="editorial-rule" />

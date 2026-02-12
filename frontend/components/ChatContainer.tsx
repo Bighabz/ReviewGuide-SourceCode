@@ -264,8 +264,8 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
     }
   }, [messages, isLoadingHistory, showErrorBanner])
 
-  // Ref to store sendMessage function for use in event listener
-  const sendMessageRef = useRef<(message: string) => void>(() => { })
+  // Ref to always hold the latest handleSuggestionClick (avoids stale closure in event listener)
+  const handleSuggestionClickRef = useRef<(question: string) => void>(() => { })
 
   // Shared function to handle streaming with error management
   // overrideSessionId allows passing session ID directly when state hasn't updated yet
@@ -437,17 +437,23 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
     await handleStream(messageToSend, true)
   }
 
+  // Keep ref in sync with the latest handleSuggestionClick
+  useEffect(() => {
+    handleSuggestionClickRef.current = handleSuggestionClick
+  })
+
   // Listen for sendSuggestion events from Message component
+  // Uses a ref so the listener never goes stale — no need to re-register on dependency changes
   useEffect(() => {
     const handleSendSuggestion = (event: CustomEvent<{ question: string }>) => {
-      handleSuggestionClick(event.detail.question)
+      handleSuggestionClickRef.current(event.detail.question)
     }
 
     window.addEventListener('sendSuggestion', handleSendSuggestion as EventListener)
     return () => {
       window.removeEventListener('sendSuggestion', handleSendSuggestion as EventListener)
     }
-  }, [isStreaming, sessionId, userId])
+  }, [])
 
   const handleSendMessage = async () => {
     if (!input.trim() || isStreaming) return

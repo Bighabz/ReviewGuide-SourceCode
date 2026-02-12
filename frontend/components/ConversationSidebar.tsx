@@ -55,6 +55,7 @@ export default function ConversationSidebar({
         ? `${apiUrl}/v1/chat/conversations?session_ids=${encodeURIComponent(allSessions.join(','))}`
         : `${apiUrl}/v1/chat/conversations`
       const response = await fetch(url)
+      if (!response.ok) throw new Error(`Failed to fetch conversations: ${response.status}`)
       const data = await response.json()
 
       if (data.success && data.conversations) {
@@ -77,6 +78,7 @@ export default function ConversationSidebar({
       const response = await fetch(`${apiUrl}/v1/chat/conversations/${sessionId}`, {
         method: 'DELETE',
       })
+      if (!response.ok) throw new Error(`Failed to delete conversation: ${response.status}`)
       const data = await response.json()
 
       if (data.success) {
