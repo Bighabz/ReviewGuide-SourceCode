@@ -123,7 +123,7 @@ export default function UnifiedTopbar({
                 : '/images/8f4c1971-a5b0-474e-9fb1-698e76324f0b.png'
               }
               alt="ReviewGuide.Ai"
-              className="h-12 sm:h-14 w-auto object-contain group-hover:opacity-80 transition-opacity mix-blend-multiply dark:mix-blend-screen"
+              className="h-12 sm:h-14 w-auto object-contain group-hover:opacity-80 transition-opacity"
             />
           </Link>
 

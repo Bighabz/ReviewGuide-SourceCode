@@ -129,7 +129,7 @@ export default function BrowsePage() {
                     <img
                         src="/images/ezgif-7b66ba24abcfdab0.gif"
                         alt="ReviewGuide.Ai"
-                        className="h-32 sm:h-44 md:h-56 w-auto mb-4 mix-blend-multiply dark:mix-blend-screen"
+                        className="h-32 sm:h-44 md:h-56 w-auto mb-4"
                     />
                     <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl text-center text-[var(--text)] leading-tight tracking-tight">
                         Smart shopping,{' '}
@@ -170,7 +170,7 @@ export default function BrowsePage() {
                 <div className="editorial-rule mx-8" />
 
                 {/* Content Rows */}
-                <div className="py-4 space-y-2">
+                <div className="py-4 space-y-2 lg:pl-56">
                     {HOME_ROWS.map((row) => (
                         <ContentRow
                             key={row.id}
@@ -183,7 +183,7 @@ export default function BrowsePage() {
                 </div>
 
                 {/* Browse All */}
-                <div className="px-4 sm:px-6 md:px-8 pb-12">
+                <div className="px-4 sm:px-6 md:px-8 pb-12 lg:pl-60">
                     <div className="flex items-center gap-4 mb-4">
                         <h2 className="text-xl sm:text-2xl font-serif font-bold text-[var(--text)] tracking-tight">
                             Browse All

@@ -84,8 +84,8 @@ export default function BrowseLayout({ children }: { children: React.ReactNode }
                     />
                 )}
 
-                {/* Main Content - Always has sidebar margin on lg */}
-                <main className={`lg:ml-56 pt-14 sm:pt-16 w-full min-h-[calc(100vh-4rem)] ${!isHomepage ? 'pb-24' : ''}`}>
+                {/* Main Content - sidebar margin only on non-homepage so homepage centers naturally */}
+                <main className={`${!isHomepage ? 'lg:ml-56' : ''} pt-14 sm:pt-16 w-full min-h-[calc(100vh-4rem)] ${!isHomepage ? 'pb-24' : ''}`}>
                     <div className="w-full">
                         {children}
                     </div>
