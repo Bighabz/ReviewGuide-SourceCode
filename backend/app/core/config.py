@@ -2,6 +2,7 @@
 Application Configuration
 Loads settings from environment variables
 """
+import json
 from typing import List
 from pydantic_settings import BaseSettings
 from pydantic import Field, validator
@@ -18,17 +19,28 @@ class Settings(BaseSettings):
     API_V1_PREFIX: str = Field(default="/v1", description="API version prefix")
     TIMEZONE: str = Field(default="Asia/Bangkok", description="Application timezone (UTC+7)")
 
-    # CORS
-    CORS_ORIGINS: List[str] = Field(
-        default=["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://127.0.0.1:3000", "http://127.0.0.1:3001"],
-        description="Allowed CORS origins (comma-separated string or list)"
+    # CORS - stored as str to avoid pydantic-settings JSON parsing issues with env vars
+    CORS_ORIGINS: str = Field(
+        default="http://localhost:3000,http://localhost:3001,http://localhost:3002,http://127.0.0.1:3000,http://127.0.0.1:3001",
+        description="Allowed CORS origins (comma-separated string or JSON array)"
     )
 
     @validator("CORS_ORIGINS", pre=True)
     def parse_cors_origins(cls, v):
-        if isinstance(v, str):
-            return [origin.strip() for origin in v.strip("[]").split(",")]
+        if isinstance(v, list):
+            return ",".join(v)
         return v
+
+    @property
+    def cors_origins_list(self) -> List[str]:
+        """Parse CORS_ORIGINS string into a list. Handles JSON arrays and comma-separated strings."""
+        v = self.CORS_ORIGINS.strip()
+        if v.startswith("["):
+            try:
+                return json.loads(v)
+            except json.JSONDecodeError:
+                pass
+        return [origin.strip().strip('"').strip("'") for origin in v.split(",") if origin.strip()]
 
     # Admin Credentials
     ADMIN_USERNAME: str = Field(default="admin", description="Admin username")
