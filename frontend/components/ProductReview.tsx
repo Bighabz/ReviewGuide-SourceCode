@@ -55,11 +55,11 @@ export default function ProductReview({ product }: ProductReviewProps) {
   } = product
 
   return (
-    <div className="border rounded-lg p-6 bg-white shadow-sm">
+    <div className="border border-[var(--border)] rounded-xl p-6 bg-[var(--surface-elevated)] shadow-card">
       {/* Product Header */}
       <div className="mb-4">
         <div className="flex items-start justify-between">
-          <h3 className="text-xl font-semibold text-gray-900">{product_name}</h3>
+          <h3 className="text-xl font-semibold font-serif text-[var(--text)]">{product_name}</h3>
           {rating && rating !== 'N/A' && (
             <div className="flex items-center gap-1 text-amber-500">
               <Star size={16} fill="currentColor" />
@@ -68,17 +68,17 @@ export default function ProductReview({ product }: ProductReviewProps) {
           )}
         </div>
         {summary && (
-          <p className="mt-2 text-gray-600 text-sm">{summary}</p>
+          <p className="mt-2 text-[var(--text-secondary)] text-sm">{summary}</p>
         )}
       </div>
 
       {/* Features */}
       {features && features.length > 0 && (
         <div className="mb-4">
-          <h4 className="text-sm font-semibold text-gray-700 mb-2">Key Features</h4>
+          <h4 className="text-sm font-semibold font-serif text-[var(--text-secondary)] mb-2">Key Features</h4>
           <ul className="list-disc list-inside space-y-1">
             {features.map((feature, idx) => (
-              <li key={idx} className="text-sm text-gray-600">{feature}</li>
+              <li key={idx} className="text-sm text-[var(--text-secondary)]">{feature}</li>
             ))}
           </ul>
         </div>
@@ -89,14 +89,14 @@ export default function ProductReview({ product }: ProductReviewProps) {
         {/* Pros */}
         {pros && pros.length > 0 && (
           <div>
-            <h4 className="text-sm font-semibold text-green-700 mb-2 flex items-center gap-1">
+            <h4 className="text-sm font-semibold font-serif text-green-700 mb-2 flex items-center gap-1">
               <ThumbsUp size={14} />
               Pros
             </h4>
             <ul className="space-y-2">
               {pros.map((pro, idx) => (
-                <li key={idx} className="text-sm text-gray-600 flex items-start gap-2">
-                  <span className="text-green-600 mt-0.5">✓</span>
+                <li key={idx} className="text-sm text-[var(--text-secondary)] flex items-start gap-2">
+                  <span className="text-green-600 mt-0.5">&#10003;</span>
                   <span>{pro.description}</span>
                 </li>
               ))}
@@ -107,14 +107,14 @@ export default function ProductReview({ product }: ProductReviewProps) {
         {/* Cons */}
         {cons && cons.length > 0 && (
           <div>
-            <h4 className="text-sm font-semibold text-red-700 mb-2 flex items-center gap-1">
+            <h4 className="text-sm font-semibold font-serif text-red-700 mb-2 flex items-center gap-1">
               <ThumbsDown size={14} />
               Cons
             </h4>
             <ul className="space-y-2">
               {cons.map((con, idx) => (
-                <li key={idx} className="text-sm text-gray-600 flex items-start gap-2">
-                  <span className="text-red-600 mt-0.5">✗</span>
+                <li key={idx} className="text-sm text-[var(--text-secondary)] flex items-start gap-2">
+                  <span className="text-red-600 mt-0.5">&#10007;</span>
                   <span>{con.description}</span>
                 </li>
               ))}
@@ -125,8 +125,8 @@ export default function ProductReview({ product }: ProductReviewProps) {
 
       {/* Affiliate Links */}
       {affiliate_links && affiliate_links.length > 0 && (
-        <div className="mt-4 pt-4 border-t">
-          <h4 className="text-sm font-semibold text-gray-700 mb-3">Where to Buy</h4>
+        <div className="mt-4 pt-4 border-t border-[var(--border)]">
+          <h4 className="text-sm font-semibold font-serif text-[var(--text-secondary)] mb-3">Where to Buy</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {affiliate_links.map((link, idx) => (
               <a
@@ -134,11 +134,11 @@ export default function ProductReview({ product }: ProductReviewProps) {
                 href={link.affiliate_link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-between p-3 border rounded-lg hover:border-gray-300 hover:bg-gray-50 transition-colors group"
+                className="flex items-center justify-between p-3 border border-[var(--border)] rounded-lg hover:border-[var(--border-strong)] hover:bg-[var(--surface-hover)] transition-colors group"
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-medium text-gray-500 uppercase">{link.merchant}</span>
+                    <span className="text-xs font-medium text-[var(--text-muted)] uppercase">{link.merchant}</span>
                     {link.rating && (
                       <div className="flex items-center gap-0.5 text-amber-500">
                         <Star size={10} fill="currentColor" />
@@ -146,12 +146,12 @@ export default function ProductReview({ product }: ProductReviewProps) {
                       </div>
                     )}
                   </div>
-                  <p className="text-sm font-semibold text-gray-900 truncate">{link.title}</p>
-                  <p className="text-lg font-bold text-gray-900 mt-1">
+                  <p className="text-sm font-semibold text-[var(--text)] truncate">{link.title}</p>
+                  <p className="text-lg font-bold text-[var(--text)] mt-1">
                     {link.currency} {link.price.toFixed(2)}
                   </p>
                 </div>
-                <ExternalLink size={16} className="text-gray-400 group-hover:text-gray-600 flex-shrink-0 ml-2" />
+                <ExternalLink size={16} className="text-[var(--text-muted)] group-hover:text-[var(--text-secondary)] flex-shrink-0 ml-2" />
               </a>
             ))}
           </div>

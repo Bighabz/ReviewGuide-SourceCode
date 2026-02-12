@@ -20,6 +20,7 @@ from app.core.config import settings
 from app.core.dependencies import get_current_user, check_rate_limit
 from app.repositories.conversation_repository import ConversationRepository
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, desc, func
 from app.core.colored_logging import get_colored_logger
 
 
@@ -70,6 +71,33 @@ class ChatRequest(BaseModel):
     session_id: Optional[str] = None
     user_id: Optional[int] = None  # For anonymous users to reuse existing user
     country_code: Optional[str] = None  # User's country code for regional affiliate links
+    action: Optional[str] = None  # Optional action for button clicks (e.g., "consent_confirm")
+
+
+def is_consent_confirmation(request) -> bool:
+    """Detect consent confirmations vs new queries.
+
+    Used for two-layer consent flow when user needs to approve
+    extended search (Tier 3-4) that may incur additional API costs.
+
+    Args:
+        request: ChatRequest with message and optional action
+
+    Returns:
+        True if this is a consent confirmation
+    """
+    # Structured payload from button click
+    if getattr(request, "action", None) == "consent_confirm":
+        return True
+
+    # Text-based confirmation
+    message = getattr(request, "message", None)
+    if message:
+        consent_patterns = {"yes", "search deeper", "continue", "ok", "proceed", "go ahead"}
+        normalized = message.strip().lower()
+        return normalized in consent_patterns or normalized.startswith("yes")
+
+    return False
 
 
 
@@ -116,19 +144,43 @@ async def generate_chat_stream(
         # Load halt state if resuming
         halt_state_data = None
         conversation_history = []
+        extended_search_confirmed = False  # Flag for consent resume flow
+
         if halt_exists:
             # Load halt state from Redis using HaltStateManager
             halt_state_data = await HaltStateManager.load_halt_state(session_id)
 
+            # Check for consent_required halt (Tier 3-4 extended search)
+            halt_reason = halt_state_data.get("halt_reason") if halt_state_data else None
+            if halt_reason == "consent_required":
+                # Create a mock request object for consent detection
+                class MockRequest:
+                    def __init__(self, msg):
+                        self.message = msg
+                        self.action = None
+
+                if is_consent_confirmation(MockRequest(message)):
+                    # User confirmed extended search
+                    logger.info(f"[ChatEndpoint] User confirmed extended search for session {session_id}")
+                    extended_search_confirmed = True
+                    # Keep halt_state_data to restore partial results
+                else:
+                    # User sent a different message - clear halt and treat as new query
+                    logger.info(f"[ChatEndpoint] User declined extended search, treating as new query")
+                    await HaltStateManager.delete_halt_state(session_id)
+                    halt_state_data = None
+                    halt_exists = False
+
             # Check if this is actually a halted state (has followup questions)
             # vs just stored slots from previous request
-            followups = halt_state_data.get("followups", []) if halt_state_data else []
-            if not followups:
-                # No followups = not a halted state, just stored slots - treat as new query
-                logger.info(f"Halt state exists but no followups - treating as new query, clearing stale state")
-                await HaltStateManager.delete_halt_state(session_id)
-                halt_state_data = None
-                halt_exists = False
+            elif halt_state_data:
+                followups = halt_state_data.get("followups", [])
+                if not followups:
+                    # No followups = not a halted state, just stored slots - treat as new query
+                    logger.info(f"Halt state exists but no followups - treating as new query, clearing stale state")
+                    await HaltStateManager.delete_halt_state(session_id)
+                    halt_state_data = None
+                    halt_exists = False
 
         # Load conversation history BEFORE workflow starts
         # Note: User message is saved at end of safety_agent, not here
@@ -157,23 +209,32 @@ async def generate_chat_stream(
             # Set country_code from request or default to settings
             initial_slots["country_code"] = country_code or settings.AMAZON_DEFAULT_COUNTRY
 
+        # Set next_agent for consent resume flow
+        resume_next_agent = None
+        if extended_search_confirmed and halt_state_data:
+            # Resume at tiered_executor with consent confirmed
+            resume_next_agent = "tiered_executor"
+            logger.info(f"[ChatEndpoint] Setting resume flow to tiered_executor with consent confirmed")
+
         initial_state: GraphState = {
             "user_message": message,
             "session_id": session_id,
             "conversation_history": conversation_history,
             "status": "running",
             "current_agent": None,
-            "next_agent": None,
+            "next_agent": resume_next_agent,  # Set for consent resume, None otherwise
             "halt": False,  # Required field - reset to False so workflow can continue
             "plan": None,
             "slots": initial_slots,  # Initialize with country_code
             "followups": halt_state_data.get("followups", []) if halt_state_data else [],
             "policy_status": "allow",
+            "extended_search_confirmed": extended_search_confirmed,  # Flag for tiered executor
             "sanitized_text": None,
             "redaction_map": {},
             "intent": halt_state_data.get("intent") if halt_state_data else None,
             "intro_text": None,
-            "search_results": [],
+            # Restore partial_items if resuming from consent halt
+            "search_results": halt_state_data.get("partial_items", []) if extended_search_confirmed else [],
             "search_query": None,
             "product_names": [],
             "review_aspects": [],
@@ -580,6 +641,149 @@ async def generate_chat_stream(
             "done": True,
         }
         yield f"data: {json.dumps(error_chunk)}\n\n"
+
+
+@router.get("/conversations")
+async def list_conversations(
+    session_id: Optional[str] = None,
+    session_ids: Optional[str] = None,  # Comma-separated list of session IDs
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[dict] = Depends(get_current_user)
+):
+    """
+    List conversations with proper authorization.
+
+    - Admin users: Can see all conversations (for moderation)
+    - Authenticated users: Can see their own conversations
+    - Anonymous users: Must provide session_id(s) to see only those sessions
+
+    SECURITY: Never expose all conversations without proper authorization.
+    """
+    try:
+        from app.models.conversation_message import ConversationMessage
+
+        # SECURITY: Authorization check
+        is_admin = current_user and current_user.get("type") == "admin"
+
+        # Parse session_ids if provided (comma-separated)
+        allowed_sessions = []
+        if session_ids:
+            allowed_sessions = [s.strip() for s in session_ids.split(',') if s.strip()]
+        elif session_id:
+            allowed_sessions = [session_id]
+
+        # If not admin and no session_ids provided, return empty (fail-safe)
+        if not is_admin and not allowed_sessions:
+            logger.warning("Unauthorized attempt to list all conversations without session_ids")
+            return {
+                "success": True,
+                "conversations": []
+            }
+
+        # Build base query
+        first_msg_subq = (
+            select(
+                ConversationMessage.session_id,
+                func.min(ConversationMessage.sequence_number).label('first_seq')
+            )
+            .group_by(ConversationMessage.session_id)
+            .subquery()
+        )
+
+        # Get conversations with first message content
+        stmt = (
+            select(
+                ConversationMessage.session_id,
+                ConversationMessage.content,
+                ConversationMessage.created_at,
+                func.count(ConversationMessage.id).over(partition_by=ConversationMessage.session_id).label('message_count')
+            )
+            .join(
+                first_msg_subq,
+                (ConversationMessage.session_id == first_msg_subq.c.session_id) &
+                (ConversationMessage.sequence_number == first_msg_subq.c.first_seq)
+            )
+            .where(ConversationMessage.role == 'user')
+        )
+
+        # SECURITY: Filter by allowed session_ids if not admin
+        if not is_admin and allowed_sessions:
+            stmt = stmt.where(ConversationMessage.session_id.in_(allowed_sessions))
+
+        stmt = stmt.order_by(desc(ConversationMessage.created_at)).limit(50)
+
+        result = await db.execute(stmt)
+        rows = result.all()
+
+        conversations = []
+        seen_sessions = set()
+
+        for row in rows:
+            if row.session_id not in seen_sessions:
+                seen_sessions.add(row.session_id)
+                conversations.append({
+                    "session_id": row.session_id,
+                    "preview": row.content[:100] + "..." if len(row.content) > 100 else row.content,
+                    "created_at": row.created_at.isoformat() if row.created_at else None,
+                    "message_count": row.message_count
+                })
+
+        logger.info(f"Listed {len(conversations)} conversations (admin={is_admin}, session_filter={session_id is not None})")
+
+        return {
+            "success": True,
+            "conversations": conversations
+        }
+
+    except Exception as e:
+        logger.error(f"Failed to list conversations: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to list conversations: {str(e)}"
+        )
+
+
+@router.post("/conversations")
+async def create_conversation():
+    """
+    Create a new conversation session.
+
+    Returns a new session_id that can be used for chatting.
+    """
+    new_session_id = str(uuid.uuid4())
+    logger.info(f"Created new conversation: {new_session_id}")
+
+    return {
+        "success": True,
+        "session_id": new_session_id
+    }
+
+
+@router.delete("/conversations/{session_id}")
+async def delete_conversation(
+    session_id: str,
+    db: AsyncSession = Depends(get_db),
+    redis = Depends(get_redis)
+):
+    """
+    Delete a conversation and all its messages.
+    """
+    try:
+        conversation_repo = ConversationRepository(db=db, redis=redis)
+        success = await conversation_repo.delete_history(session_id)
+
+        if success:
+            logger.info(f"Deleted conversation: {session_id}")
+            return {"success": True, "message": "Conversation deleted"}
+        else:
+            raise HTTPException(status_code=500, detail="Failed to delete conversation")
+
+    except Exception as e:
+        logger.error(f"Failed to delete conversation {session_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to delete conversation: {str(e)}"
+        )
 
 
 @router.get("/history/{session_id}")

@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ExternalLink, Star } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 interface Product {
   product_id: string
@@ -13,6 +14,7 @@ interface Product {
   image_url?: string
   rating?: number
   review_count?: number
+  description?: string
 }
 
 interface ProductCarouselProps {
@@ -20,26 +22,43 @@ interface ProductCarouselProps {
   title?: string
 }
 
+function StarRatingInline({ value, size = 12 }: { value: number; size?: number }) {
+  const fullStars = Math.floor(value)
+  const hasHalf = value - fullStars >= 0.5
+  const emptyStars = 5 - fullStars - (hasHalf ? 1 : 0)
+
+  return (
+    <div className="flex items-center gap-px">
+      {Array.from({ length: fullStars }).map((_, i) => (
+        <Star key={`full-${i}`} size={size} fill="#E5A100" stroke="#E5A100" strokeWidth={0} />
+      ))}
+      {hasHalf && (
+        <div className="relative" style={{ width: size, height: size }}>
+          <Star size={size} fill="none" stroke="#D6D3CD" strokeWidth={1.5} />
+          <div className="absolute inset-0 overflow-hidden" style={{ width: '50%' }}>
+            <Star size={size} fill="#E5A100" stroke="#E5A100" strokeWidth={0} />
+          </div>
+        </div>
+      )}
+      {Array.from({ length: emptyStars }).map((_, i) => (
+        <Star key={`empty-${i}`} size={size} fill="none" stroke="#D6D3CD" strokeWidth={1.5} />
+      ))}
+    </div>
+  )
+}
+
 export default function ProductCarousel({ items, title }: ProductCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [itemsPerPage, setItemsPerPage] = useState(3)
 
-  if (!items || items.length === 0) {
-    return null
-  }
+  if (!items || items.length === 0) return null
 
-  // Detect screen size and set items per page
   useEffect(() => {
     const updateItemsPerPage = () => {
-      if (window.innerWidth < 640) {
-        setItemsPerPage(1) // Mobile: 1 item
-      } else if (window.innerWidth < 1024) {
-        setItemsPerPage(2) // Tablet: 2 items
-      } else {
-        setItemsPerPage(3) // Desktop: 3 items
-      }
+      if (window.innerWidth < 640) setItemsPerPage(1)
+      else if (window.innerWidth < 1024) setItemsPerPage(2)
+      else setItemsPerPage(3)
     }
-
     updateItemsPerPage()
     window.addEventListener('resize', updateItemsPerPage)
     return () => window.removeEventListener('resize', updateItemsPerPage)
@@ -59,54 +78,45 @@ export default function ProductCarousel({ items, title }: ProductCarouselProps) 
   }
 
   return (
-    <div className="w-full mb-4 sm:mb-6">
-      {/* Carousel Title */}
+    <div className="w-full mb-6">
+      {/* Section Title */}
       {title && (
-        <h3 className="text-sm sm:text-base font-semibold mb-2 sm:mb-3" style={{ color: 'var(--gpt-text)' }}>
-          {title}
-        </h3>
+        <div className="flex items-center gap-3 mb-4">
+          <h3 className="font-serif text-lg sm:text-xl text-[var(--text)]">{title}</h3>
+          <div className="flex-1 h-px bg-[var(--border)]" />
+        </div>
       )}
-      <div className="relative rounded-lg border p-4 sm:p-6" style={{ background: 'var(--gpt-assistant-message)', borderColor: 'var(--gpt-border)' }}>
-        {/* Navigation Buttons */}
+
+      <div className="relative">
+        {/* Navigation Arrows */}
         {items.length > itemsPerPage && (
           <>
             <button
               onClick={handlePrev}
-              className="absolute left-1 sm:left-2 top-1/2 -translate-y-1/2 z-10 rounded-full p-1.5 sm:p-2 transition-colors"
-              style={{ background: 'var(--gpt-input-bg)', boxShadow: 'var(--gpt-shadow-lg)' }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'var(--gpt-hover)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'var(--gpt-input-bg)'
-              }}
-              aria-label="Previous products"
+              className="absolute -left-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-[var(--surface-elevated)] border border-[var(--border)] shadow-card flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text)] hover:shadow-card-hover transition-all"
+              aria-label="Previous"
             >
-              <ChevronLeft size={20} style={{ color: 'var(--gpt-text)' }} />
+              <ChevronLeft size={18} />
             </button>
             <button
               onClick={handleNext}
-              className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 z-10 rounded-full p-1.5 sm:p-2 transition-colors"
-              style={{ background: 'var(--gpt-input-bg)', boxShadow: 'var(--gpt-shadow-lg)' }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'var(--gpt-hover)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'var(--gpt-input-bg)'
-              }}
-              aria-label="Next products"
+              className="absolute -right-3 top-1/2 -translate-y-1/2 z-10 w-9 h-9 rounded-full bg-[var(--surface-elevated)] border border-[var(--border)] shadow-card flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--text)] hover:shadow-card-hover transition-all"
+              aria-label="Next"
             >
-              <ChevronRight size={20} style={{ color: 'var(--gpt-text)' }} />
+              <ChevronRight size={18} />
             </button>
           </>
         )}
 
-        {/* Carousel Items */}
-        <div className="flex gap-2 sm:gap-4 overflow-hidden">
+        {/* Product Grid */}
+        <div className="flex gap-4 overflow-hidden px-1">
           {visibleItems.map((item, idx) => (
-            <div
+            <motion.div
               key={`${item.product_id}-${idx}`}
               className="flex-1 min-w-0"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: idx * 0.05 }}
             >
               <a
                 href={item.affiliate_link}
@@ -114,75 +124,85 @@ export default function ProductCarousel({ items, title }: ProductCarouselProps) 
                 rel="noopener noreferrer"
                 className="block group"
               >
-                {/* Product Image */}
-                <div className="aspect-square rounded-lg overflow-hidden mb-2 sm:mb-3" style={{ background: 'var(--gpt-hover)' }}>
-                  {item.image_url ? (
-                    <img
-                      src={item.image_url}
-                      alt={item.title}
-                      loading="lazy"
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-xs sm:text-sm" style={{ color: 'var(--gpt-text-muted)' }}>
-                      No Image
-                    </div>
-                  )}
-                </div>
-
-                {/* Product Info */}
-                <div className="space-y-1">
-                  <h3 className="font-medium text-xs sm:text-sm line-clamp-2 transition-colors" style={{ color: 'var(--gpt-text)' }}>
-                    {item.title}
-                  </h3>
-
-                  <div className="flex items-baseline gap-1 sm:gap-2">
-                    <span className="text-base sm:text-lg font-bold" style={{ color: 'var(--gpt-text)' }}>
-                      {item.currency} {item.price?.toFixed(2) ?? 'N/A'}
-                    </span>
+                <div className="bg-[var(--surface-elevated)] border border-[var(--border)] rounded-xl overflow-hidden product-card-hover">
+                  {/* Image */}
+                  <div className="aspect-square overflow-hidden bg-[var(--surface)]">
+                    {item.image_url ? (
+                      <img
+                        src={item.image_url}
+                        alt={item.title}
+                        loading="lazy"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[var(--text-muted)] text-sm">
+                        No Image
+                      </div>
+                    )}
                   </div>
 
-                  {item.rating && (
-                    <div className="flex items-center gap-1 text-xs" style={{ color: 'var(--gpt-text-secondary)' }}>
-                      <span className="text-yellow-500">★</span>
-                      <span>{item.rating}</span>
-                      {item.review_count && (
-                        <span style={{ color: 'var(--gpt-text-muted)' }}>({item.review_count})</span>
-                      )}
-                    </div>
-                  )}
+                  {/* Content */}
+                  <div className="p-4 space-y-2">
+                    {/* Merchant */}
+                    <span className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+                      {item.merchant}
+                    </span>
 
-                  <p className="text-xs truncate" style={{ color: 'var(--gpt-text-secondary)' }}>{item.merchant}</p>
+                    {/* Title */}
+                    <h4 className="text-sm font-semibold text-[var(--text)] line-clamp-2 leading-snug group-hover:text-[var(--primary)] transition-colors">
+                      {item.title}
+                    </h4>
+
+                    {/* Rating */}
+                    {item.rating && (
+                      <div className="flex items-center gap-1.5">
+                        <StarRatingInline value={item.rating} size={13} />
+                        <span className="text-xs text-[var(--text-muted)]">
+                          {item.rating}
+                          {item.review_count && ` (${item.review_count.toLocaleString()})`}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Description */}
+                    {item.description && (
+                      <p className="text-sm text-[var(--text-secondary)] line-clamp-2 leading-relaxed">
+                        {item.description}
+                      </p>
+                    )}
+
+                    {/* Price + CTA */}
+                    <div className="flex items-center justify-between pt-2 border-t border-[var(--border)]">
+                      <div>
+                        <span className="text-lg font-bold text-[var(--text)]">
+                          {item.currency === 'USD' ? '$' : item.currency}{' '}
+                          {item.price?.toFixed(2) ?? 'N/A'}
+                        </span>
+                      </div>
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--primary)] group-hover:text-[var(--primary-hover)]">
+                        View Deal
+                        <ExternalLink size={12} />
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </a>
-            </div>
+            </motion.div>
           ))}
         </div>
 
         {/* Pagination Dots */}
         {items.length > itemsPerPage && (
-          <div className="flex justify-center gap-2 mt-3 sm:mt-4">
+          <div className="flex justify-center gap-1.5 mt-4">
             {Array.from({ length: Math.ceil(items.length / itemsPerPage) }).map((_, idx) => (
               <button
                 key={idx}
                 onClick={() => setCurrentIndex(idx * itemsPerPage)}
-                className="w-2 h-2 rounded-full transition-colors"
-                style={{
-                  background: Math.floor(currentIndex / itemsPerPage) === idx
-                    ? 'var(--gpt-text)'
-                    : 'var(--gpt-text-muted)'
-                }}
-                onMouseEnter={(e) => {
-                  if (Math.floor(currentIndex / itemsPerPage) !== idx) {
-                    e.currentTarget.style.background = 'var(--gpt-text-secondary)'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (Math.floor(currentIndex / itemsPerPage) !== idx) {
-                    e.currentTarget.style.background = 'var(--gpt-text-muted)'
-                  }
-                }}
-                aria-label={`Go to page ${idx + 1}`}
+                className={`h-1.5 rounded-full transition-all ${Math.floor(currentIndex / itemsPerPage) === idx
+                  ? 'w-6 bg-[var(--primary)]'
+                  : 'w-1.5 bg-[var(--border-strong)] hover:bg-[var(--text-muted)]'
+                  }`}
+                aria-label={`Page ${idx + 1}`}
               />
             ))}
           </div>

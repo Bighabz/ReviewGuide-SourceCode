@@ -8,8 +8,8 @@ interface ProductRecommendationsProps {
 
 export default function ProductRecommendations({ content }: ProductRecommendationsProps) {
   return (
-    <div className="rounded-lg border p-6 my-6" style={{ background: 'var(--gpt-assistant-message)', borderColor: 'var(--gpt-border)' }}>
-      <div className="prose prose-sm max-w-none" style={{ color: 'var(--gpt-text)' }}>
+    <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6 my-6 shadow-card">
+      <div className="prose prose-sm max-w-none text-[var(--text)]">
         <ReactMarkdown>{content}</ReactMarkdown>
       </div>
     </div>

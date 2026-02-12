@@ -1,6 +1,6 @@
 'use client'
 
-import { MapPin, Star, ExternalLink, Search } from 'lucide-react'
+import { MapPin, Star, ExternalLink, Search, Hotel as HotelIcon } from 'lucide-react'
 
 // Traditional hotel card with full details
 interface HotelCard {
@@ -60,145 +60,131 @@ function PLPLinkCard({ hotel, fullHeight = false }: { hotel: HotelPLPLink; fullH
       href={hotel.search_url}
       target="_blank"
       rel="noopener noreferrer"
-      className={`block border rounded-lg p-4 sm:p-6 transition-shadow ${fullHeight ? 'h-full' : ''}`}
-      style={{ background: 'var(--gpt-assistant-message)', borderColor: 'var(--gpt-border)' }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = 'var(--gpt-shadow-lg)'
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = 'none'
-      }}
+      className={`block border border-[var(--border)] rounded-xl p-8 transition-all bg-[var(--surface)] hover:shadow-card-hover product-card-hover ${fullHeight ? 'h-full flex flex-col' : ''}`}
     >
       <div className={`flex flex-col items-center text-center ${fullHeight ? 'h-full justify-between' : ''}`}>
         {/* Search icon */}
-        <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full flex items-center justify-center mb-3 sm:mb-4" style={{ background: 'var(--gpt-hover)' }}>
-          <Search size={24} className="sm:w-8 sm:h-8" style={{ color: 'rgb(91, 124, 246)' }} />
+        <div className="w-16 h-16 rounded-full flex items-center justify-center mb-5 bg-[var(--primary-light)]">
+          <Search size={28} strokeWidth={1.5} className="text-[var(--primary)]" />
         </div>
 
         {/* Title */}
-        <h4 className="font-semibold text-base sm:text-lg mb-2" style={{ color: 'var(--gpt-text)' }}>
+        <h4 className="font-serif font-semibold text-xl mb-3 text-[var(--text)]">
           {hotel.title}
         </h4>
 
         {/* Date range if available */}
         {(hotel.check_in || hotel.check_out) && (
-          <p className="text-xs sm:text-sm mb-2" style={{ color: 'var(--gpt-text-secondary)' }}>
+          <p className="text-sm mb-2 text-[var(--text-secondary)]">
             {formatDate(hotel.check_in)} {hotel.check_out && `- ${formatDate(hotel.check_out)}`}
           </p>
         )}
 
         {/* Guests if available */}
         {hotel.guests && (
-          <p className="text-xs mb-3" style={{ color: 'var(--gpt-text-secondary)' }}>
+          <p className="text-sm mb-5 text-[var(--text-secondary)]">
             {hotel.guests} guest{hotel.guests > 1 ? 's' : ''}
           </p>
         )}
 
         {/* Provider badge */}
-        <div className="text-xs px-3 py-1 rounded-full mb-4" style={{ background: 'var(--gpt-hover)', color: 'var(--gpt-text-secondary)' }}>
+        <div className="text-xs px-3 py-1.5 rounded-full mb-6 bg-[var(--surface)] text-[var(--text-muted)] border border-[var(--border)]">
           Powered by {hotel.provider.charAt(0).toUpperCase() + hotel.provider.slice(1)}
         </div>
 
         {/* CTA Button */}
         <button
-          className="w-full px-4 py-2.5 sm:py-3 rounded-lg transition-colors flex items-center justify-center gap-2 text-sm sm:text-base font-medium"
-          style={{ background: 'rgb(91, 124, 246)', color: 'white' }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgb(71, 104, 226)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgb(91, 124, 246)'
-          }}
+          className="w-full px-5 py-3 rounded-lg transition-all flex items-center justify-center gap-2 text-base font-medium bg-[var(--primary)] text-white hover:shadow-card-hover"
         >
-          Search Hotels on Expedia
-          <ExternalLink size={16} />
+          Search Properties
+          <ExternalLink size={16} strokeWidth={1.5} />
         </button>
       </div>
     </a>
   )
 }
 
-// Traditional Hotel Card Component
+// Traditional Hotel Card Component - Booking.com Style (Horizontal)
 function TraditionalHotelCard({ hotel }: { hotel: HotelCard }) {
   return (
     <a
       href={hotel.deeplink}
       target="_blank"
       rel="noopener noreferrer"
-      className="block border rounded-lg p-3 sm:p-4 transition-shadow"
-      style={{ background: 'var(--gpt-assistant-message)', borderColor: 'var(--gpt-border)' }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = 'var(--gpt-shadow-lg)'
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = 'none'
-      }}
+      className="block border border-[var(--border)] rounded-xl overflow-hidden bg-[var(--surface)] shadow-card hover:shadow-card-hover transition-all product-card-hover group"
     >
-      <div className="flex flex-col h-full">
-        {/* Hotel name and rating */}
-        <div className="flex justify-between items-start mb-2">
-          <h4 className="font-semibold text-sm sm:text-base line-clamp-2 flex-1" style={{ color: 'var(--gpt-text)' }}>
-            {hotel.name}
-          </h4>
+      <div className="flex flex-col sm:flex-row h-full">
+        {/* Image Section (Left) */}
+        <div className="relative w-full sm:w-56 h-48 sm:h-auto shrink-0 bg-[var(--background)]">
+          {hotel.thumbnail_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={hotel.thumbnail_url}
+              alt={hotel.name}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-[var(--text-muted)]">
+              <HotelIcon size={40} strokeWidth={1.5} />
+            </div>
+          )}
+          {/* Rating Badge Overlay */}
           {hotel.rating && (
-            <div className="flex items-center gap-1 ml-2 flex-shrink-0">
-              <Star size={12} className="sm:w-3.5 sm:h-3.5 fill-yellow-400 text-yellow-400" />
-              <span className="text-xs sm:text-sm font-medium" style={{ color: 'var(--gpt-text)' }}>{hotel.rating}</span>
+            <div className="absolute top-3 right-3 sm:left-3 sm:right-auto text-white text-sm font-semibold px-2.5 py-1.5 rounded-md shadow-card" style={{ backgroundColor: '#E5A100' }}>
+              {hotel.rating}
             </div>
           )}
         </div>
 
-        {/* Location */}
-        <p className="text-xs sm:text-sm mb-2 sm:mb-3" style={{ color: 'var(--gpt-text-secondary)' }}>
-          {hotel.city}{hotel.country && `, ${hotel.country}`}
-        </p>
-
-        {/* Amenities */}
-        {hotel.amenities && hotel.amenities.length > 0 && (
-          <div className="flex flex-wrap gap-1 mb-2 sm:mb-3">
-            {hotel.amenities.slice(0, 3).map((amenity, i) => (
-              <span
-                key={i}
-                className="text-xs px-2 py-0.5 sm:py-1 rounded-full"
-                style={{ background: 'var(--gpt-hover)', color: 'var(--gpt-text)' }}
-              >
-                {amenity}
-              </span>
-            ))}
-            {hotel.amenities.length > 3 && (
-              <span className="text-xs px-2 py-0.5 sm:py-1" style={{ color: 'var(--gpt-text-secondary)' }}>
-                +{hotel.amenities.length - 3} more
-              </span>
-            )}
-          </div>
-        )}
-
-        {/* Price and book button */}
-        <div className="mt-auto pt-2 sm:pt-3 border-t flex justify-between items-center gap-3 sm:gap-4" style={{ borderColor: 'var(--gpt-border)' }}>
-          <div>
-            <div className="flex items-baseline gap-1">
-              <span className="text-base sm:text-lg font-bold" style={{ color: 'var(--gpt-text)' }}>
-                {hotel.currency}
-              </span>
-              <span className="text-xl sm:text-2xl font-bold" style={{ color: 'var(--gpt-text)' }}>
-                {hotel.price_nightly?.toFixed(2) ?? '—'}
-              </span>
+        {/* Content Section (Right) */}
+        <div className="flex-1 p-5 flex flex-col">
+          {/* Header */}
+          <div className="flex justify-between items-start mb-2">
+            <div className="flex-1">
+              <h4 className="font-serif font-semibold text-xl text-[var(--text)] line-clamp-2 leading-tight group-hover:text-[var(--primary)] transition-colors">
+                {hotel.name}
+              </h4>
+              <div className="flex items-center gap-1.5 mt-1.5 text-sm text-[var(--text-secondary)]">
+                <MapPin size={14} strokeWidth={1.5} className="text-[var(--text-muted)]" />
+                <span className="line-clamp-1">{hotel.city}, {hotel.country}</span>
+              </div>
             </div>
-            <div className="text-xs" style={{ color: 'var(--gpt-text-secondary)' }}>per night</div>
           </div>
-          <button
-            className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg transition-colors flex items-center gap-2 text-xs sm:text-sm whitespace-nowrap flex-shrink-0"
-            style={{ background: 'rgb(91, 124, 246)', color: 'white' }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgb(71, 104, 226)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgb(91, 124, 246)'
-            }}
-          >
-            View Deal
-            <ExternalLink size={12} className="sm:w-3.5 sm:h-3.5" />
-          </button>
+
+          {/* Amenities */}
+          {hotel.amenities && hotel.amenities.length > 0 && (
+            <div className="flex flex-wrap gap-2 my-4">
+              {hotel.amenities.slice(0, 3).map((amenity, i) => (
+                <span
+                  key={i}
+                  className="text-xs px-2.5 py-1 rounded border border-[var(--border)] text-[var(--text-secondary)] bg-[var(--background)]"
+                >
+                  {amenity}
+                </span>
+              ))}
+              {hotel.amenities.length > 3 && (
+                <span className="text-xs px-2 py-1 text-[var(--text-muted)]">
+                  +{hotel.amenities.length - 3}
+                </span>
+              )}
+            </div>
+          )}
+
+          <div className="mt-auto pt-4 flex items-end justify-between gap-4 border-t border-[var(--border)]">
+            {/* Price section */}
+            <div className="flex flex-col items-start text-left">
+              <span className="text-xs text-[var(--text-muted)] mb-0.5">per night</span>
+              <div className="flex items-baseline gap-1">
+                <span className="text-2xl font-bold text-[var(--text)]">{hotel.currency} {hotel.price_nightly?.toFixed(0)}</span>
+              </div>
+            </div>
+
+            {/* Action Button */}
+            <div className="hidden sm:flex items-center gap-1.5 text-sm font-medium text-[var(--primary)]">
+              See availability
+              <ExternalLink size={14} strokeWidth={1.5} />
+            </div>
+          </div>
         </div>
       </div>
     </a>
@@ -212,22 +198,35 @@ export default function HotelCards({ hotels, fullHeight = false }: HotelCardsPro
   const allPLPLinks = hotels.every(isPLPLink)
 
   return (
-    <div className={`space-y-2 sm:space-y-3 ${fullHeight ? 'h-full flex flex-col' : ''}`}>
-      <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2" style={{ color: 'var(--gpt-text)' }}>
-        <MapPin size={18} className="sm:w-5 sm:h-5" />
-        Hotels
-      </h3>
+    <div className={`space-y-5 ${fullHeight ? 'h-full flex flex-col' : ''}`}>
+      {/* Section title with editorial rule */}
+      <div className="space-y-3">
+        <h3 className="font-serif text-2xl font-semibold flex items-center gap-2.5 text-[var(--text)]">
+          <HotelIcon size={22} strokeWidth={1.5} className="text-[var(--primary)]" />
+          Recommended Hotels
+        </h3>
+        <div className="h-px bg-[var(--border)]"></div>
+      </div>
+
+      {/* Count badge for non-PLP results */}
+      {!allPLPLinks && (
+        <div className="flex justify-end">
+          <span className="text-xs font-medium px-3 py-1.5 rounded-full bg-[var(--surface)] text-[var(--text-secondary)] border border-[var(--border)]">
+            {hotels.length} options
+          </span>
+        </div>
+      )}
 
       {allPLPLinks ? (
-        // PLP links - full width to fill container
-        <div className={fullHeight ? 'flex-1 flex flex-col' : ''}>
+        // PLP links - grid
+        <div className={`grid grid-cols-1 gap-5 ${fullHeight ? 'flex-1' : ''}`}>
           {hotels.map((hotel, idx) => (
             <PLPLinkCard key={idx} hotel={hotel as HotelPLPLink} fullHeight={fullHeight} />
           ))}
         </div>
       ) : (
-        // Grid for traditional hotel cards
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+        // List layout for traditional cards (better for details)
+        <div className="flex flex-col gap-5">
           {hotels.map((hotel, idx) => (
             isPLPLink(hotel) ? (
               <PLPLinkCard key={idx} hotel={hotel} />

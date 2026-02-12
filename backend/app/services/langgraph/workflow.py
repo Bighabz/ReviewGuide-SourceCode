@@ -1,6 +1,7 @@
 """
 LangGraph Workflow - Simplified MCP Architecture
 5 main agents: Safety, Intent, Planner, Clarifier, Executor
+Plus tiered routing nodes: routing_gate, tiered_executor
 """
 from app.core.centralized_logger import get_logger
 from typing import Dict, Any
@@ -15,6 +16,10 @@ from app.agents.intent_agent import IntentAgent
 from app.agents.planner_agent import PlannerAgent
 from app.agents.clarifier_agent import ClarifierAgent
 from app.services.plan_executor import PlanExecutor
+
+# Import tiered routing nodes
+from app.services.langgraph.nodes.routing_gate import routing_gate_node
+from app.services.langgraph.nodes.tiered_executor import tiered_executor_node
 
 logger = get_logger(__name__)
 colored_logger = get_colored_logger(__name__)
@@ -346,8 +351,8 @@ def route_next_agent(state: GraphState) -> str:
 
 # Build the graph
 def build_workflow() -> StateGraph:
-    """Build the LangGraph workflow with 5 agents"""
-    logger.info("Building LangGraph workflow (5 agents)")
+    """Build the LangGraph workflow with 5 agents plus tiered routing nodes"""
+    logger.info("Building LangGraph workflow (5 agents + tiered routing)")
 
     workflow = StateGraph(GraphState)
 
@@ -357,6 +362,10 @@ def build_workflow() -> StateGraph:
     workflow.add_node("agent_planner", planner_node)
     workflow.add_node("agent_clarifier", clarifier_node)
     workflow.add_node("agent_plan_executor", plan_executor_node)
+
+    # Add tiered routing nodes
+    workflow.add_node("routing_gate", routing_gate_node)
+    workflow.add_node("tiered_executor", tiered_executor_node)
 
     # Set entry point
     workflow.set_entry_point("agent_safety")
@@ -368,6 +377,7 @@ def build_workflow() -> StateGraph:
         {
             "intent": "agent_intent",
             "clarifier": "agent_clarifier",  # For resuming halt state
+            "tiered_executor": "tiered_executor",  # For resuming from consent halt
             END: END,
         }
     )
@@ -395,6 +405,29 @@ def build_workflow() -> StateGraph:
         route_next_agent,
         {
             "plan_executor": "agent_plan_executor",
+            "routing_gate": "routing_gate",  # Route to hybrid routing gate
+            END: END,
+        }
+    )
+
+    # Routing gate decides between tiered executor and LLM planner
+    workflow.add_conditional_edges(
+        "routing_gate",
+        route_next_agent,
+        {
+            "tiered_executor": "tiered_executor",
+            "planner": "agent_planner",
+            END: END,
+        }
+    )
+
+    # Tiered executor routes to plan_executor (synthesizer) or halts
+    workflow.add_conditional_edges(
+        "tiered_executor",
+        route_next_agent,
+        {
+            "synthesizer": "agent_plan_executor",  # synthesizer maps to plan_executor
+            "plan_executor": "agent_plan_executor",
             END: END,
         }
     )
@@ -407,7 +440,7 @@ def build_workflow() -> StateGraph:
         }
     )
 
-    logger.info("✅ Workflow compiled: Safety → Intent → Planner → Clarifier → Executor")
+    logger.info("✅ Workflow compiled: Safety → Intent → Planner → Clarifier → [RoutingGate → TieredExecutor] → Executor")
     return workflow.compile()
 
 
