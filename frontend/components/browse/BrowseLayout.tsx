@@ -85,10 +85,8 @@ export default function BrowseLayout({ children }: { children: React.ReactNode }
                 )}
 
                 {/* Main Content - always offset for sidebar on lg */}
-                <main className={`lg:ml-56 pt-14 sm:pt-16 w-full min-h-[calc(100vh-4rem)] ${!isHomepage ? 'pb-24' : ''}`}>
-                    <div className="w-full">
-                        {children}
-                    </div>
+                <main className={`lg:ml-56 pt-14 sm:pt-16 min-h-[calc(100vh-4rem)] ${!isHomepage ? 'pb-24' : ''}`}>
+                    {children}
                 </main>
 
                 {/* Sticky Chat Bar at Bottom - Only on non-homepage */}
