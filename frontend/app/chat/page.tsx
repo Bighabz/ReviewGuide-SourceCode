@@ -129,7 +129,9 @@ function ChatPageContent() {
 
   return (
     <div className="h-screen flex overflow-hidden">
-      <CategorySidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      {sidebarOpen && (
+        <CategorySidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      )}
       <div className="flex-1 flex flex-col overflow-hidden">
         <UnifiedTopbar
           onMenuClick={() => setSidebarOpen(true)}
