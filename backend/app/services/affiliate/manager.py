@@ -145,9 +145,8 @@ class AffiliateManager:
             mock_provider = MockAffiliateProvider()
             self.register_provider("mock", mock_provider)
             self.primary_provider = "mock"
-            # Still initialize Amazon provider (it has its own mock mode)
-            self._initialize_amazon_provider()
-            return
+            # Still initialize real providers (they have their own mock modes)
+            # Don't return early — fall through to eBay + Amazon init below
 
         # Always initialize eBay provider (has mock mode when no credentials)
         logger.info("Initializing eBay affiliate provider")
