@@ -125,7 +125,7 @@ export default function BrowsePage() {
         return (
             <div className="flex flex-col">
                 {/* Hero Section: Editorial tagline + ChatInput */}
-                <div className="flex flex-col items-center justify-center px-4 pt-8 sm:pt-14 pb-10 sm:pb-16">
+                <div className="flex flex-col items-center justify-center px-4 pb-10 sm:pb-16">
                     <img
                         src="/images/ezgif-7b66ba24abcfdab0.gif"
                         alt="ReviewGuide.Ai"

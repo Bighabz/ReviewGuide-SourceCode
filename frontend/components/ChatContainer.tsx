@@ -507,7 +507,7 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
       {/* Welcome Screen (no messages) */}
       {messages.length === 0 && (
         <div id="welcome-screen" className="flex-1 overflow-y-auto">
-          <div className="flex flex-col items-center justify-center px-4 pt-8 sm:pt-14 pb-10 sm:pb-16">
+          <div className="flex flex-col items-center justify-center px-4 pt-14 sm:pt-16 pb-10 sm:pb-16">
               <img
                 src="/images/ezgif-7b66ba24abcfdab0.gif"
                 alt="ReviewGuide.Ai"
