@@ -240,6 +240,7 @@ async def generate_chat_stream(
             "review_aspects": [],
             "evidence_citations": [],
             "confidence_score": 0.0,
+            "review_data": {},
             "entity": None,
             "entity_key": None,
             "normalized_products": [],
