@@ -389,6 +389,10 @@ async def load_config_overrides_from_db():
         # Get config cache instance
         config_cache = get_config_cache()
 
+        # Invalidate stale Redis snapshot on startup so it rebuilds
+        # from current env vars + DB (prevents stale values across deploys)
+        await config_cache.invalidate_all(rebuild=False)
+
         # Load all configs from snapshot (Redis → DB → .env)
         config_dict = await config_cache.load_all()
 
