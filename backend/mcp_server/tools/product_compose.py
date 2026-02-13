@@ -56,6 +56,87 @@ ACCESSORY_KEYWORDS = {
 }
 
 
+def _fuzzy_product_match(query_name: str, candidate_name: str, threshold: float = 0.45) -> bool:
+    """Token-overlap Jaccard similarity for fuzzy product matching."""
+    q_tokens = set(query_name.lower().split())
+    c_tokens = set(candidate_name.lower().split())
+    if not q_tokens or not c_tokens:
+        return False
+    intersection = q_tokens & c_tokens
+    union = q_tokens | c_tokens
+    return len(intersection) / len(union) >= threshold
+
+
+def _assign_editorial_labels(review_data: dict, products_with_offers: list) -> dict:
+    """Assign editorial labels based on review quality + price data.
+    Returns {product_name: label} mapping."""
+    labels = {}
+    if not review_data:
+        return labels
+
+    # Best Overall = highest quality_score
+    sorted_by_quality = sorted(
+        review_data.items(),
+        key=lambda x: x[1].get("quality_score", 0),
+        reverse=True
+    )
+    if sorted_by_quality and sorted_by_quality[0][1].get("quality_score", 0) > 0:
+        labels[sorted_by_quality[0][0]] = "Best Overall"
+
+    # Budget Pick = lowest priced product that has reviews
+    priced_products = []
+    for p in products_with_offers:
+        offer = p.get("best_offer", {})
+        price = offer.get("price", 0) if offer else 0
+        name = p.get("name", "")
+        if price > 0 and name in review_data:
+            priced_products.append((name, price))
+
+    if priced_products:
+        cheapest = min(priced_products, key=lambda x: x[1])
+        if cheapest[0] not in labels:  # Don't overwrite Best Overall
+            labels[cheapest[0]] = "Budget Pick"
+
+    return labels
+
+
+def _find_price_comparisons(products_by_provider: dict) -> dict:
+    """Find products available on multiple retailers and compare prices.
+    Returns {product_title_normalized: {"best_retailer": str, "best_price": float, "savings": float, "other_prices": [...]}}"""
+    from collections import defaultdict
+    price_map = defaultdict(list)
+
+    for provider_name, data in products_by_provider.items():
+        for product in data["products"]:
+            title = product.get("title", "")
+            price = product.get("price", 0)
+            if title and price > 0:
+                # Use fuzzy matching to group same products
+                matched = False
+                for key in list(price_map.keys()):
+                    if _fuzzy_product_match(title, key, threshold=0.5):
+                        price_map[key].append({"retailer": provider_name, "price": price, "title": title})
+                        matched = True
+                        break
+                if not matched:
+                    price_map[title].append({"retailer": provider_name, "price": price, "title": title})
+
+    # Only return products found on 2+ retailers
+    comparisons = {}
+    for key, entries in price_map.items():
+        retailers = set(e["retailer"] for e in entries)
+        if len(retailers) >= 2:
+            sorted_entries = sorted(entries, key=lambda x: x["price"])
+            comparisons[key] = {
+                "best_retailer": sorted_entries[0]["retailer"],
+                "best_price": sorted_entries[0]["price"],
+                "savings": round(sorted_entries[-1]["price"] - sorted_entries[0]["price"], 2),
+                "other_prices": [{"retailer": e["retailer"], "price": e["price"]} for e in sorted_entries[1:]]
+            }
+
+    return comparisons
+
+
 def _filter_relevant_products(
     affiliate_products: Dict[str, List],
     user_query: str,
@@ -190,7 +271,7 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
 
             # Find matching affiliate links by product name from any provider
             matching_affiliate = next(
-                (a for a in all_affiliate_groups if product_name in a.get("product_name", "")),
+                (a for a in all_affiliate_groups if _fuzzy_product_match(product_name, a.get("product_name", ""))),
                 None
             )
 
@@ -208,6 +289,11 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
                 }
 
             products_with_offers.append(product_copy)
+
+        # Assign editorial labels based on review quality + price
+        editorial_labels = _assign_editorial_labels(review_data, products_with_offers)
+        if editorial_labels:
+            logger.info(f"[product_compose] Editorial labels: {editorial_labels}")
 
         # Generate a brief summary - no need for per-product descriptions since cards show the products
         # Build final response (assistant_text set below, may be overridden by review_data block)
@@ -282,6 +368,7 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
                     "avg_rating": bundle.get("avg_rating", 0),
                     "total_reviews": bundle.get("total_reviews", 0),
                     "consensus": consensus,
+                    "editorial_label": editorial_labels.get(product_name),
                     "sources": [
                         {
                             "site_name": s.get("site_name", ""),
@@ -439,6 +526,22 @@ Products to describe:
                 logger.info(f"[product_compose] Generated {len(descriptions)} product descriptions")
             except Exception as desc_error:
                 logger.warning(f"[product_compose] Failed to generate descriptions: {desc_error}")
+
+        # Cross-retailer price comparison — tag products with best price badges
+        price_comparisons = _find_price_comparisons(products_by_provider) if len(products_by_provider) >= 2 else {}
+        if price_comparisons:
+            logger.info(f"[product_compose] Found {len(price_comparisons)} cross-retailer price comparisons")
+            for provider_name, data in products_by_provider.items():
+                for product in data["products"]:
+                    title = product.get("title", "")
+                    for comp_key, comp_data in price_comparisons.items():
+                        if _fuzzy_product_match(title, comp_key, threshold=0.5):
+                            if comp_data["best_retailer"] == provider_name:
+                                product["best_price"] = True
+                                product["savings"] = comp_data["savings"]
+                                if comp_data["other_prices"]:
+                                    product["compared_retailer"] = comp_data["other_prices"][0]["retailer"].title()
+                            break
 
         # Add products to UI blocks
         for provider_name, data in products_by_provider.items():

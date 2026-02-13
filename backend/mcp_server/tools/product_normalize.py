@@ -18,6 +18,18 @@ if backend_dir not in sys.path:
 
 logger = get_logger(__name__)
 
+
+def _fuzzy_product_match(query_name: str, candidate_name: str, threshold: float = 0.45) -> bool:
+    """Token-overlap Jaccard similarity for fuzzy product matching."""
+    q_tokens = set(query_name.lower().split())
+    c_tokens = set(candidate_name.lower().split())
+    if not q_tokens or not c_tokens:
+        return False
+    intersection = q_tokens & c_tokens
+    union = q_tokens | c_tokens
+    return len(intersection) / len(union) >= threshold
+
+
 # Tool contract for planner
 TOOL_CONTRACT = {
     "name": "product_normalize",
@@ -78,7 +90,7 @@ async def product_normalize(state: Dict[str, Any]) -> Dict[str, Any]:
             # Merge ranking data
             if ranked_items:
                 matching_rank = next(
-                    (r for r in ranked_items if product_name in r.get("product_name", "")),
+                    (r for r in ranked_items if _fuzzy_product_match(product_name, r.get("product_name", ""))),
                     None
                 )
                 if matching_rank:
@@ -89,7 +101,7 @@ async def product_normalize(state: Dict[str, Any]) -> Dict[str, Any]:
             # Merge review aspects
             if review_aspects:
                 matching_review = next(
-                    (r for r in review_aspects if product_name in r.get("product", "")),
+                    (r for r in review_aspects if _fuzzy_product_match(product_name, r.get("product", ""))),
                     None
                 )
                 if matching_review:

@@ -133,15 +133,40 @@ IMPORTANT:
 
     elif intent == "product":
         product_type = slots.get("product_type", "products")
+
+        # Detect unfilled slots for criteria-narrowing suggestions
+        product_slots = ["budget", "brand", "features", "use_case", "size", "color", "material", "style", "gender"]
+        filled = [s for s in product_slots if slots.get(s)]
+        unfilled = [s for s in product_slots if not slots.get(s)]
+
+        unfilled_hint = ""
+        if unfilled:
+            examples = {
+                "budget": "a specific budget range",
+                "brand": "a brand preference",
+                "features": "specific features (e.g., wireless, waterproof)",
+                "use_case": "how they plan to use it",
+                "size": "a size preference",
+                "color": "a color preference",
+                "material": "a material preference",
+                "style": "a style (casual, professional, gaming)",
+                "gender": "who it's for",
+            }
+            hints = [examples[s] for s in unfilled[:3]]
+            unfilled_hint = f"\n\nUNFILLED CRITERIA the user hasn't specified yet (suggest asking about these):\n- " + "\n- ".join(hints)
+
         return f"""You are suggesting follow-up questions for PRODUCT intent about {product_type}.
 
 AVAILABLE CAPABILITIES - suggest questions based on these tools only:
 {capabilities_text}
+{unfilled_hint}
 
 IMPORTANT:
+- One suggestion should narrow by an unfilled criterion (budget, features, use case, etc.)
+- One suggestion should reference a specific product from the results if product names are provided below
 - ONLY suggest questions that can be answered by the tools listed above
 - Be specific to {product_type} when relevant
-- Use conversational tone ("Would you like...", "Want to...", "Interested in...")
+- Use conversational tone ("Would you like...", "Want to...", "Interested in...", "Do you have...")
 - Keep questions short (under 15 words)
 - DO NOT suggest questions about capabilities not listed above"""
 
@@ -195,6 +220,11 @@ async def next_step_suggestion(state: Dict[str, Any]) -> Dict[str, Any]:
         slots = state.get("slots", {})
         ui_blocks = state.get("ui_blocks", [])
 
+        # Gather top product names for product-specific suggestions
+        product_names = state.get("product_names", [])
+        normalized_products = state.get("normalized_products", [])
+        top_product_names = [p.get("name", "") for p in (normalized_products or [])[:3] if p.get("name")] or product_names[:3]
+
         logger.info(f"[next_step_suggestion] Generating suggestions for intent={intent}")
 
         # Build conversation context
@@ -229,6 +259,7 @@ CURRENT CONTEXT:
 - User's current request: {user_message}
 - Content shown to user: {content_summary}
 - User preferences: {json.dumps(slots, default=str) if slots else "None specified"}
+- Top products shown: {', '.join(top_product_names) if top_product_names else 'N/A'}
 
 GUIDANCE FOR {intent.upper()} INTENT:
 {intent_guidance}

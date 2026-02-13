@@ -18,6 +18,7 @@ interface ReviewProduct {
   avg_rating: number
   total_reviews: number
   consensus: string
+  editorial_label?: string | null
   sources: ReviewSourceItem[]
 }
 
@@ -91,6 +92,15 @@ export default function ReviewSources({ data, title = 'What Reviewers Say' }: Re
               <h4 className="font-serif text-base font-semibold text-[var(--text)] tracking-tight">
                 {product.name}
               </h4>
+              {product.editorial_label && (
+                <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide uppercase ${
+                  product.editorial_label === 'Best Overall'
+                    ? 'bg-[#E85D3A]/10 text-[#E85D3A] dark:bg-[#E85D3A]/20'
+                    : 'bg-[#1B4DFF]/10 text-[#1B4DFF] dark:bg-[#1B4DFF]/20'
+                }`}>
+                  {product.editorial_label}
+                </span>
+              )}
               {product.avg_rating > 0 && (
                 <div className="flex items-center gap-1.5">
                   <StarRatingCompact value={product.avg_rating} size={13} />

@@ -15,6 +15,9 @@ interface Product {
   rating?: number
   review_count?: number
   description?: string
+  best_price?: boolean
+  savings?: number
+  compared_retailer?: string
 }
 
 interface ProductCarouselProps {
@@ -143,10 +146,17 @@ export default function ProductCarousel({ items, title }: ProductCarouselProps) 
 
                   {/* Content */}
                   <div className="p-4 space-y-2">
-                    {/* Merchant */}
-                    <span className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
-                      {item.merchant}
-                    </span>
+                    {/* Merchant + Best Price badge */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+                        {item.merchant}
+                      </span>
+                      {item.best_price && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:bg-emerald-400/15 dark:text-emerald-400">
+                          Best Price
+                        </span>
+                      )}
+                    </div>
 
                     {/* Title */}
                     <h4 className="text-sm font-semibold text-[var(--text)] line-clamp-2 leading-snug group-hover:text-[var(--primary)] transition-colors">
@@ -178,6 +188,11 @@ export default function ProductCarousel({ items, title }: ProductCarouselProps) 
                           {item.currency === 'USD' ? '$' : item.currency}{' '}
                           {item.price?.toFixed(2) ?? 'N/A'}
                         </span>
+                        {item.best_price && item.savings != null && item.savings > 0 && (
+                          <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                            Save ${item.savings.toFixed(2)}{item.compared_retailer ? ` vs ${item.compared_retailer}` : ''}
+                          </p>
+                        )}
                       </div>
                       <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--primary)] group-hover:text-[var(--primary-hover)]">
                         View Deal
