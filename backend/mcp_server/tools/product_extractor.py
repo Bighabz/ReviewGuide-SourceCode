@@ -115,11 +115,22 @@ Return ONLY valid JSON."""
 
         logger.info(f"[product_extractor] extracted names={extracted_product_names}")
 
-        # Return product names if any were found
-        return {
-            "product_names": extracted_product_names,
-            "success": True
-        }
+        # Only write product_names if we actually extracted something.
+        # Otherwise preserve what product_search already wrote to state.
+        existing_names = state.get("product_names", [])
+        if extracted_product_names:
+            return {
+                "product_names": extracted_product_names,
+                "success": True
+            }
+        elif existing_names:
+            logger.info(f"[product_extractor] No explicit names found, preserving {len(existing_names)} from product_search")
+            return {"success": True}
+        else:
+            return {
+                "product_names": [],
+                "success": True
+            }
 
     except Exception as e:
         logger.error(f"[product_extractor] Error: {e}", exc_info=True)
