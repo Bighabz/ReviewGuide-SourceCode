@@ -36,7 +36,7 @@ export default function ContentRow({ title, subtitle, items, viewAllLink, onItem
         <div className="group/row py-3 sm:py-4 relative">
             <div className="px-4 sm:px-6 md:px-8 mb-3 sm:mb-4 flex items-end justify-between">
                 <div>
-                    <h2 className="text-xl sm:text-2xl font-bold text-[var(--text)] tracking-tight">{title}</h2>
+                    <h2 className="text-xl sm:text-2xl font-serif font-bold text-[var(--text)] tracking-tight">{title}</h2>
                     {subtitle && (
                         <p className="text-sm sm:text-base text-[var(--text-secondary)] mt-1">{subtitle}</p>
                     )}

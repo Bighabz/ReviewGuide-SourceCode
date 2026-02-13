@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -12,13 +11,11 @@ export default function CategoryPage({ params }: { params: { category: string } 
     const data = CATEGORIES[categoryId];
 
     if (!data) {
-        // If not found in known categories, try to find one that matches? 
-        // For now, strict match or 404
         return notFound();
     }
 
     return (
-        <div className="bg-[var(--background)] min-h-screen">
+        <div className="bg-[var(--background)]">
             <CategoryHero
                 title={data.title}
                 description={data.description}
@@ -26,7 +23,11 @@ export default function CategoryPage({ params }: { params: { category: string } 
                 stats={data.stats}
             />
 
-            <div className="py-8 space-y-8">
+            {/* Editorial rule separator */}
+            <div className="editorial-rule mx-4 sm:mx-6 md:mx-8" />
+
+            {/* Content rows */}
+            <div className="py-4 space-y-2">
                 {data.rows.map((row) => (
                     <ContentRow
                         key={row.id}
@@ -36,10 +37,9 @@ export default function CategoryPage({ params }: { params: { category: string } 
                     />
                 ))}
 
-                {/* Fallback if no rows */}
                 {data.rows.length === 0 && (
                     <div className="text-center py-20 text-[var(--text-muted)]">
-                        <p>More content coming soon to {data.title}...</p>
+                        <p className="font-serif text-lg italic">More content coming soon...</p>
                     </div>
                 )}
             </div>

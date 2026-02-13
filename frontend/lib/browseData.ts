@@ -301,9 +301,9 @@ export const CATEGORIES: Record<string, CategoryData> = {
             totalProducts: 12847,
         },
         rows: [
-            { id: 'flights', title: '✈️ Flight Deals', subtitle: 'Best prices from 47 airlines', items: flightDeals },
-            { id: 'hotels', title: '🏨 Top Hotels', subtitle: 'Highest rated on TripAdvisor & Booking', items: hotelDeals },
-            { id: 'destinations', title: '🗺️ Trending Destinations', subtitle: 'Where everyone is going', items: destinations },
+            { id: 'flights', title: 'Flight Deals', subtitle: 'Best prices from 47 airlines', items: flightDeals },
+            { id: 'hotels', title: 'Top Hotels', subtitle: 'Highest rated on TripAdvisor & Booking', items: hotelDeals },
+            { id: 'destinations', title: 'Trending Destinations', subtitle: 'Where everyone is going', items: destinations },
         ]
     },
     gaming: {
@@ -313,8 +313,8 @@ export const CATEGORIES: Record<string, CategoryData> = {
         heroGradient: 'linear-gradient(135deg, #7C3AED 0%, #C026D3 100%)',
         stats: { totalReviews: 5600000, totalSources: 89, totalProducts: 4500 },
         rows: [
-            { id: 'games', title: '🎮 Hot Games', subtitle: 'Trending on Steam & Reddit', items: games },
-            { id: 'pcs', title: '🖥️ Gaming PCs', subtitle: 'Performance beasts', items: gamingPCs },
+            { id: 'games', title: 'Hot Games', subtitle: 'Trending on Steam & Reddit', items: games },
+            { id: 'pcs', title: 'Gaming PCs', subtitle: 'Performance beasts', items: gamingPCs },
         ]
     },
     electronics: {
@@ -324,10 +324,10 @@ export const CATEGORIES: Record<string, CategoryData> = {
         heroGradient: 'linear-gradient(135deg, #2563EB 0%, #06B6D4 100%)',
         stats: { totalReviews: 8900000, totalSources: 342, totalProducts: 23100 },
         rows: [
-            { id: 'phones', title: '📱 Top Smartphones', subtitle: 'Latest flagships reviewed', items: phones },
-            { id: 'headphones', title: '🎧 Best Headphones', subtitle: 'Audiophile approved', items: headphones },
-            { id: 'laptops', title: '💻 Laptops', subtitle: 'Top picks for work & play', items: laptops },
-            { id: 'tablets', title: '📱 Tablets', subtitle: 'Best portable productivity', items: tablets },
+            { id: 'phones', title: 'Top Smartphones', subtitle: 'Latest flagships reviewed', items: phones },
+            { id: 'headphones', title: 'Best Headphones', subtitle: 'Audiophile approved', items: headphones },
+            { id: 'laptops', title: 'Laptops', subtitle: 'Top picks for work & play', items: laptops },
+            { id: 'tablets', title: 'Tablets', subtitle: 'Best portable productivity', items: tablets },
         ]
     },
     'home-garden': {
@@ -337,7 +337,7 @@ export const CATEGORIES: Record<string, CategoryData> = {
         heroGradient: 'linear-gradient(135deg, #F59E0B 0%, #EF4444 100%)',
         stats: { totalReviews: 3400000, totalSources: 120, totalProducts: 8900 },
         rows: [
-            { id: 'kitchen', title: '🍳 Kitchen Essentials', subtitle: 'Chef recommended', items: kitchen },
+            { id: 'kitchen', title: 'Kitchen Essentials', subtitle: 'Chef recommended', items: kitchen },
         ]
     },
     fashion: {
@@ -347,7 +347,7 @@ export const CATEGORIES: Record<string, CategoryData> = {
         heroGradient: 'linear-gradient(135deg, #DB2777 0%, #F472B6 100%)',
         stats: { totalReviews: 4100000, totalSources: 98, totalProducts: 15600 },
         rows: [
-            { id: 'sneakers', title: '👟 Sneaker drops', subtitle: 'Hype and comfort', items: sneakers },
+            { id: 'sneakers', title: 'Sneaker Drops', subtitle: 'Hype and comfort', items: sneakers },
         ]
     },
     sports: {
@@ -357,7 +357,7 @@ export const CATEGORIES: Record<string, CategoryData> = {
         heroGradient: 'linear-gradient(135deg, #EA580C 0%, #F97316 100%)',
         stats: { totalReviews: 1200000, totalSources: 67, totalProducts: 6700 },
         rows: [
-            { id: 'gym', title: '💪 Home Gym', subtitle: 'Build muscle at home', items: gym },
+            { id: 'gym', title: 'Home Gym', subtitle: 'Build muscle at home', items: gym },
         ]
     },
     beauty: {
@@ -367,7 +367,7 @@ export const CATEGORIES: Record<string, CategoryData> = {
         heroGradient: 'linear-gradient(135deg, #E11D48 0%, #FDA4AF 100%)',
         stats: { totalReviews: 6700000, totalSources: 230, totalProducts: 9800 },
         rows: [
-            { id: 'skincare', title: '✨ Skincare', subtitle: 'Dermatologist verified picks', items: skincare },
+            { id: 'skincare', title: 'Skincare', subtitle: 'Dermatologist verified picks', items: skincare },
         ]
     }
 };
@@ -385,8 +385,8 @@ const trendingMix = [
 ];
 
 export const HOME_ROWS = [
-    { id: 'baby', title: '👶 Baby & Kids Essentials', subtitle: 'Parent-approved picks', items: babyProducts },
-    { id: 'pet', title: '🐾 Pet Favorites', subtitle: 'Fur baby tested', items: petProducts },
-    { id: 'cleaning', title: '🧹 Cleaning Must-Haves', subtitle: 'Top rated vacuums & more', items: cleaningProducts },
-    { id: 'kitchen', title: '🍳 Kitchen Upgrades', subtitle: 'Viral on TikTok', items: kitchen },
+    { id: 'baby', title: 'Baby & Kids Essentials', subtitle: 'Parent-approved picks', items: babyProducts },
+    { id: 'pet', title: 'Pet Favorites', subtitle: 'Fur baby tested', items: petProducts },
+    { id: 'cleaning', title: 'Cleaning Must-Haves', subtitle: 'Top rated vacuums & more', items: cleaningProducts },
+    { id: 'kitchen', title: 'Kitchen Upgrades', subtitle: 'Viral on TikTok', items: kitchen },
 ];

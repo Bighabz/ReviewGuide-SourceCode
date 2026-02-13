@@ -12,7 +12,7 @@ import {
   User,
   X,
 } from 'lucide-react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
 const categories = [
@@ -33,6 +33,7 @@ interface CategorySidebarProps {
 
 export default function CategorySidebar({ isOpen = true, onClose }: CategorySidebarProps) {
   const router = useRouter()
+  const pathname = usePathname()
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
 
   useEffect(() => {
@@ -93,20 +94,31 @@ export default function CategorySidebar({ isOpen = true, onClose }: CategorySide
           <nav className="space-y-0.5">
             {categories.map((category) => {
               const Icon = category.icon
+              const categoryPath = category.id === 'home' ? '/browse' : `/browse/${category.id}`
+              const isActive = category.id === 'home'
+                ? pathname === '/browse'
+                : pathname === `/browse/${category.id}`
               return (
                 <button
                   key={category.id}
                   onClick={() => {
-                    const path = category.id === 'home' ? '/browse' : `/browse/${category.id}`
-                    router.push(path)
+                    router.push(categoryPath)
                     if (onClose) onClose()
                   }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-left text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-all group"
+                  className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-left transition-all group ${
+                    isActive
+                      ? 'bg-[var(--primary-light)] text-[var(--text)] font-semibold'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)]'
+                  }`}
                 >
                   <Icon
                     size={16}
                     strokeWidth={1.5}
-                    className="text-[var(--text-muted)] group-hover:text-[var(--primary)] transition-colors"
+                    className={`transition-colors ${
+                      isActive
+                        ? 'text-[var(--primary)]'
+                        : 'text-[var(--text-muted)] group-hover:text-[var(--primary)]'
+                    }`}
                   />
                   <span className="text-sm font-medium">{category.name}</span>
                 </button>
