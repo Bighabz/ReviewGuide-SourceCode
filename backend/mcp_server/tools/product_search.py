@@ -126,6 +126,7 @@ async def product_search(state: Dict[str, Any]) -> Dict[str, Any]:
     try:
         query = state.get("user_message", "")
         slots = state.get("slots", {})
+        conversation_history = state.get("conversation_history", [])
 
         # Extract optional slots for product search
         product_name = slots.get("product_name", "")
@@ -178,12 +179,34 @@ async def product_search(state: Dict[str, Any]) -> Dict[str, Any]:
         if slot_criteria:
             logger.info(f"[product_search] Slot criteria:\n{slot_criteria}")
 
-        # Build prompt
-        prompt = f"""User is looking for: "{combined_query}"
+        # Build conversation context for resolving references
+        conversation_context = ""
+        if conversation_history:
+            recent = conversation_history[-6:]
+            context_lines = []
+            for msg in recent:
+                role = msg.get("role", "user")
+                content = msg.get("content", "")
+                if content and role in ["user", "assistant"]:
+                    context_lines.append(f"{role}: {content[:200]}")
+            if context_lines:
+                conversation_context = "\n".join(context_lines)
+
+        # Build prompt with optional conversation context
+        context_block = ""
+        if conversation_context:
+            context_block = f"""Recent conversation (resolve references like "those", "the ones", "the best reviewed ones", etc.):
+{conversation_context}
+
+"""
+
+        prompt = f"""{context_block}User is looking for: "{combined_query}"
 
 Generate a list of 5-8 SPECIFIC product model names that match this request.
 
 Requirements:
+- Use conversation context to understand what the user is referring to
+- If user says "the best reviewed ones" or "those headphones", use conversation to identify the product category
 - Include brand name + specific model/version when user specifies (e.g., "iPhone 16 Pro Max")
 - If user asks for a specific product (e.g., "iPhone 16"), include variations of that product
 - Be specific: "Nike Air Zoom Pegasus 40" not just "Nike running shoes"

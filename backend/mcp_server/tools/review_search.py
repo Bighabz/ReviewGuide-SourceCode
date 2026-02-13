@@ -30,6 +30,7 @@ TOOL_CONTRACT = {
     "produces": ["review_data"],
     "citation_message": "Searching reviews across trusted sources...",
     "tool_order": 200,
+    "is_default": True,
 }
 
 # Minimum thresholds for including a product

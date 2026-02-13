@@ -217,20 +217,29 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
             product_names = comparison_data.get("products", []) if comparison_data else []
             assistant_text = f"## Product Comparison: {', '.join(product_names)}\n\nHere's a detailed specification comparison."
         elif not review_data:
-            # No review data — use LLM-only summary (original flow)
-            # Count products from each provider
+            # No review data — concierge-style summary explaining WHY these match
             total_products = sum(len(p) for p in affiliate_products.values())
             provider_names = [p.title() for p in affiliate_products.keys()]
 
-            # Generate a brief, helpful response
+            conversation_history = state.get("conversation_history", [])
+            context_summary = ""
+            if conversation_history:
+                recent = conversation_history[-4:]
+                context_summary = "\n".join([
+                    f"{msg.get('role', 'user')}: {msg.get('content', '')[:150]}"
+                    for msg in recent if msg.get('content')
+                ])
+
+            product_name_list = [p.get("name", "") for p in normalized_products[:5] if p.get("name")]
+
             assistant_text = await model_service.generate(
                 messages=[
-                    {"role": "system", "content": "You are a helpful shopping assistant. Write 1-2 SHORT sentences (max 30 words total). Be friendly and direct. Do NOT list individual products - they are shown in cards above."},
-                    {"role": "user", "content": f'User asked: "{user_message}". Found {total_products} products from {", ".join(provider_names)}. Write a brief helpful response.'}
+                    {"role": "system", "content": "You are a product concierge. Write 2-3 SHORT sentences (max 50 words). Explain WHY these products match the user's needs. Reference their criteria from the conversation (budget, features, use case). Do NOT list products — they are shown in cards below."},
+                    {"role": "user", "content": f'User asked: "{user_message}"\nContext:\n{context_summary}\nProducts: {", ".join(product_name_list)}\nSources: {", ".join(provider_names)}'}
                 ],
                 model=settings.COMPOSER_MODEL,
                 temperature=0.7,
-                max_tokens=50,
+                max_tokens=80,
                 agent_name="product_compose"
             )
             assistant_text = assistant_text.strip()
