@@ -36,7 +36,7 @@ export default function ErrorBanner({ message, onRetry }: ErrorBannerProps) {
 
         <div className="flex-1">
           <p
-            className="text-sm leading-relaxed"
+            className="text-sm leading-relaxed whitespace-pre-line"
             style={{ color: '#d92d20' }}
           >
             {message}

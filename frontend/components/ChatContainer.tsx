@@ -385,9 +385,9 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
         // Remove the empty assistant message
         setMessages((prev) => prev.filter(msg => msg.id !== assistantMessageId))
 
-        // Show error banner
+        // Show error banner with actual error for diagnosis
         setShowErrorBanner(true)
-        setErrorMessage(UI_TEXT.ERROR_MESSAGE)
+        setErrorMessage(`${UI_TEXT.ERROR_MESSAGE}\n\nDetails: ${errorMsg}`)
         setError(errorMsg)
         setIsStreaming(false)
         setIsRetrying(false)

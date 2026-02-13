@@ -24,6 +24,10 @@ class Settings(BaseSettings):
         default="http://localhost:3000,http://localhost:3001,http://localhost:3002,http://127.0.0.1:3000,http://127.0.0.1:3001",
         description="Allowed CORS origins (comma-separated string or JSON array)"
     )
+    CORS_ORIGIN_REGEX: str = Field(
+        default="",
+        description="Regex pattern for additional allowed CORS origins (e.g. Vercel preview deployments)"
+    )
 
     @validator("CORS_ORIGINS", pre=True)
     def parse_cors_origins(cls, v):
