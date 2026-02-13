@@ -17,6 +17,143 @@ from app.core.config import settings
 logger = get_logger(__name__)
 
 
+# Category-aware product variations for mock data (specs/editions, NOT accessories)
+CATEGORY_VARIATIONS = {
+    "laptop": [
+        "Intel i7, 16GB RAM, 512GB SSD",
+        "AMD Ryzen 7, 32GB RAM, 1TB SSD",
+        "Intel i9, 64GB RAM, 2TB SSD",
+        "AMD Ryzen 9, 16GB RAM, 512GB SSD",
+        "Intel i5, 8GB RAM, 256GB SSD",
+    ],
+    "computer": [
+        "Intel i7, 32GB RAM, 1TB SSD Tower",
+        "AMD Ryzen 9, 64GB RAM, 2TB NVMe",
+        "Intel Xeon, 128GB ECC RAM, 4TB",
+        "AMD Threadripper, 256GB RAM, 8TB",
+        "Intel i9, 64GB RAM, 2TB SSD Workstation",
+    ],
+    "server": [
+        "Dual Xeon, 256GB ECC, 8TB RAID",
+        "AMD EPYC 64-Core, 512GB RAM",
+        "Intel Xeon W, 128GB RAM, 4TB NVMe",
+        "GPU Server - 4x RTX 4090, 256GB RAM",
+        "Tower Server - 64GB RAM, 2TB SSD",
+    ],
+    "gpu": [
+        "RTX 4090 24GB GDDR6X",
+        "RTX 4080 Super 16GB",
+        "RTX 3090 Ti 24GB",
+        "AMD RX 7900 XTX 24GB",
+        "RTX A6000 48GB Professional",
+    ],
+    "phone": [
+        "128GB Midnight Black",
+        "256GB Starlight Silver",
+        "512GB Deep Purple",
+        "128GB Blue Titanium",
+        "256GB Natural Titanium",
+    ],
+    "headphones": [
+        "Noise Cancelling - Black",
+        "Wireless - Silver",
+        "Over-Ear Studio - Midnight Blue",
+        "Sport - Neon Green",
+        "Premium - Rose Gold",
+    ],
+    "monitor": [
+        '27" 4K IPS 144Hz',
+        '32" QHD 165Hz Curved',
+        '34" Ultrawide WQHD',
+        '24" FHD 240Hz Gaming',
+        '27" OLED 4K HDR',
+    ],
+    "keyboard": [
+        "Mechanical RGB - Cherry MX Brown",
+        "Wireless Low-Profile - White",
+        "65% Compact - Hot-Swappable",
+        "Full-Size Ergonomic - Split",
+        "TKL Gaming - Linear Switches",
+    ],
+    "camera": [
+        "Mirrorless 45MP Body Only",
+        "Full Frame 30MP + 24-70mm Kit",
+        "APS-C 26MP + 18-55mm Kit",
+        "Mirrorless 61MP Professional",
+        "Compact 20MP 24-200mm Zoom",
+    ],
+    "tablet": [
+        '11" 256GB WiFi - Space Gray',
+        '12.9" 512GB WiFi+Cellular',
+        '10.9" 128GB WiFi - Blue',
+        '11" 1TB WiFi - Silver',
+        '12.9" 256GB WiFi - Starlight',
+    ],
+    "tv": [
+        '65" OLED 4K Smart TV',
+        '55" QLED 4K 120Hz',
+        '75" Mini-LED 4K HDR',
+        '50" LED 4K Smart TV',
+        '77" OLED 4K Dolby Vision',
+    ],
+    "general": [
+        "- Pro Edition",
+        "- Standard Edition",
+        "- Premium Model",
+        "- Latest Generation",
+        "- Deluxe Version",
+    ],
+}
+
+# Base prices by category for realistic mock data
+CATEGORY_BASE_PRICES = {
+    "laptop": 899.99,
+    "computer": 999.99,
+    "server": 1999.99,
+    "gpu": 799.99,
+    "phone": 699.99,
+    "headphones": 249.99,
+    "monitor": 399.99,
+    "keyboard": 129.99,
+    "camera": 1299.99,
+    "tablet": 499.99,
+    "tv": 799.99,
+    "general": 199.99,
+}
+
+# Keywords for category detection
+CATEGORY_KEYWORDS = {
+    "laptop": ["laptop", "notebook", "macbook", "chromebook", "ultrabook"],
+    "computer": ["computer", "desktop", "pc", "workstation", "llm", "llms", "ai server", "hosting"],
+    "server": ["server", "rack", "nas", "hosting server"],
+    "gpu": ["gpu", "graphics card", "video card", "rtx", "radeon"],
+    "phone": ["phone", "iphone", "smartphone", "android", "galaxy", "pixel"],
+    "headphones": ["headphone", "earphone", "earbud", "airpod", "earpiece", "headset"],
+    "monitor": ["monitor", "display", "screen"],
+    "keyboard": ["keyboard", "keeb", "mechanical keyboard"],
+    "camera": ["camera", "dslr", "mirrorless", "camcorder"],
+    "tablet": ["tablet", "ipad", "surface pro"],
+    "tv": ["tv", "television", "smart tv", "oled tv"],
+}
+
+
+def _detect_category(query: str, category_hint: Optional[str] = None) -> str:
+    """Detect product category from query keywords or category hint."""
+    if category_hint:
+        hint_lower = category_hint.lower()
+        for cat in CATEGORY_KEYWORDS:
+            if cat in hint_lower:
+                return cat
+
+    query_lower = query.lower()
+    for cat, keywords in CATEGORY_KEYWORDS.items():
+        for kw in keywords:
+            if kw in query_lower:
+                return cat
+
+    return "general"
+
+
 # PA-API hosts by country
 PAAPI_HOSTS: Dict[str, str] = {
     "US": "webservices.amazon.com",
@@ -247,7 +384,7 @@ class AmazonAffiliateProvider(BaseAffiliateProvider):
         limit: int,
         country_code: str,
     ) -> List[AffiliateProduct]:
-        """Return mock products for development - generates query-specific products"""
+        """Return mock products for development - generates category-aware products"""
         import random
         import hashlib
 
@@ -255,16 +392,20 @@ class AmazonAffiliateProvider(BaseAffiliateProvider):
         query_hash = int(hashlib.md5(query.encode()).hexdigest()[:8], 16)
         random.seed(query_hash)
 
-        # Generate mock products with the query as the title
-        results = []
-        base_prices = [99.99, 149.99, 199.99, 249.99, 299.99, 399.99, 499.99, 599.99, 799.99, 999.99]
+        # Detect category for realistic variations
+        detected_category = _detect_category(query, category)
+        variations = CATEGORY_VARIATIONS.get(detected_category, CATEGORY_VARIATIONS["general"])
+        base_price = CATEGORY_BASE_PRICES.get(detected_category, 199.99)
+
         ratings = [4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9]
 
+        results = []
         for i in range(min(limit, 5)):
-            # Generate unique but deterministic mock data for this query
-            price_idx = (query_hash + i) % len(base_prices)
+            # Deterministic price variance: +/- 30% from base
+            price_offset = ((query_hash + i * 13) % 60 - 30) / 100.0
+            price = round(base_price * (1.0 + price_offset), 2)
             rating_idx = (query_hash + i * 3) % len(ratings)
-            review_count = 100 + ((query_hash + i * 7) % 9900)  # 100-10000 reviews
+            review_count = 100 + ((query_hash + i * 7) % 9900)
 
             asin = f"MOCK{query_hash % 1000000:06d}{i}"
             affiliate_link = generate_amazon_affiliate_link(
@@ -273,17 +414,17 @@ class AmazonAffiliateProvider(BaseAffiliateProvider):
                 associate_tag=self.associate_tag,
             )
 
-            # Use query as base title with variation
+            # First result = exact query, rest = query + spec variation
             if i == 0:
-                title = query  # First result is exact match
+                title = query
             else:
-                variations = ["Case", "Screen Protector", "Charger", "Stand", "Cover"]
-                title = f"{query} {variations[i % len(variations)]}"
+                variation = variations[i % len(variations)]
+                title = f"{query} - {variation}"
 
             results.append(AffiliateProduct(
                 product_id=asin,
                 title=title,
-                price=base_prices[price_idx],
+                price=price,
                 currency="USD",
                 affiliate_link=affiliate_link,
                 merchant="Amazon",
@@ -295,7 +436,7 @@ class AmazonAffiliateProvider(BaseAffiliateProvider):
                 source_url=affiliate_link,
             ))
 
-        logger.info(f"Amazon mock search: generated {len(results)} products for '{query}'")
+        logger.info(f"Amazon mock: generated {len(results)} {detected_category} products for '{query}'")
         return results
 
     async def _search_real_api(

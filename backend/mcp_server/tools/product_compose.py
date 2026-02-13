@@ -47,6 +47,68 @@ PROVIDER_CONFIG = {
     # "walmart": {"title": "Shop on Walmart", "type": "walmart_products", "order": 3},
 }
 
+# Accessory keywords for relevance filtering
+ACCESSORY_KEYWORDS = {
+    "case", "charger", "protector", "cable", "adapter",
+    "stand", "cover", "sleeve", "mount", "holder", "film",
+    "tempered glass", "cleaning kit", "skin", "sticker",
+    "screen protector",
+}
+
+
+def _filter_relevant_products(
+    affiliate_products: Dict[str, List],
+    user_query: str,
+    category: str = None,
+) -> Dict[str, List]:
+    """
+    Filter out accessory products that don't match the user's intent.
+    Skips filtering if the user is actually looking for accessories.
+    """
+    query_lower = user_query.lower()
+
+    # If user is searching for accessories, don't filter
+    for kw in ACCESSORY_KEYWORDS:
+        if kw in query_lower:
+            return affiliate_products
+
+    filtered = {}
+    total_before = 0
+    total_after = 0
+
+    for provider_name, provider_groups in affiliate_products.items():
+        filtered_groups = []
+        for group in provider_groups:
+            offers = group.get("offers", [])
+            total_before += len(offers)
+
+            clean_offers = []
+            for offer in offers:
+                title_lower = (offer.get("title") or "").lower()
+                is_accessory = any(kw in title_lower for kw in ACCESSORY_KEYWORDS)
+                if not is_accessory:
+                    clean_offers.append(offer)
+
+            total_after += len(clean_offers)
+
+            if clean_offers:
+                filtered_groups.append({
+                    **group,
+                    "offers": clean_offers,
+                })
+
+        if filtered_groups:
+            filtered[provider_name] = filtered_groups
+
+    removed = total_before - total_after
+    if removed > 0:
+        from app.core.centralized_logger import get_logger
+        get_logger(__name__).info(
+            f"[product_compose] Filter: {total_before} → {total_after} products ({removed} filtered)"
+        )
+
+    return filtered
+
 
 @tool_error_handler(tool_name="product_compose", error_message="Failed to compose product response")
 async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
@@ -84,9 +146,13 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
         # Read from state
         user_message = state.get("user_message", "")
         normalized_products = state.get("normalized_products", [])
-        affiliate_products = state.get("affiliate_products", {})  # Dynamic: {"ebay": [...], "amazon": [...]}
+        affiliate_products_raw = state.get("affiliate_products", {})  # Dynamic: {"ebay": [...], "amazon": [...]}
         intent = state.get("intent", "product")
         slots = state.get("slots")
+        category = slots.get("category") if slots else None
+
+        # Filter out accessory junk from any provider
+        affiliate_products = _filter_relevant_products(affiliate_products_raw, user_message, category)
         comparison_table = state.get("comparison_table")
         review_data = state.get("review_data", {})  # product_name -> ReviewBundle dict from review_search
 

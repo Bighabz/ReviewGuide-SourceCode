@@ -149,24 +149,23 @@ class AffiliateManager:
             self._initialize_amazon_provider()
             return
 
-        # Initialize eBay provider if configured
-        if settings.EBAY_APP_ID and settings.EBAY_CERT_ID:
-            logger.info("Initializing eBay affiliate provider")
-            try:
-                ebay_provider = EbayAffiliateProvider(
-                    app_id=settings.EBAY_APP_ID,
-                    cert_id=settings.EBAY_CERT_ID,
-                    campaign_id=settings.EBAY_CAMPAIGN_ID,
-                    custom_id=settings.EBAY_AFFILIATE_CUSTOM_ID,
-                )
-                self.register_provider("ebay", ebay_provider)
+        # Always initialize eBay provider (has mock mode when no credentials)
+        logger.info("Initializing eBay affiliate provider")
+        try:
+            ebay_provider = EbayAffiliateProvider(
+                app_id=settings.EBAY_APP_ID,
+                cert_id=settings.EBAY_CERT_ID,
+                campaign_id=settings.EBAY_CAMPAIGN_ID,
+                custom_id=settings.EBAY_AFFILIATE_CUSTOM_ID,
+            )
+            self.register_provider("ebay", ebay_provider)
 
-                # Set eBay as primary if it's the first provider
-                if not self.primary_provider:
-                    self.primary_provider = "ebay"
+            # Set eBay as primary if it's the first provider
+            if not self.primary_provider:
+                self.primary_provider = "ebay"
 
-            except Exception as e:
-                logger.error(f"Failed to initialize eBay provider: {e}")
+        except Exception as e:
+            logger.error(f"Failed to initialize eBay provider: {e}")
 
         # Initialize Amazon provider
         self._initialize_amazon_provider()

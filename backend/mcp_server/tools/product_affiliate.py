@@ -70,9 +70,10 @@ async def product_affiliate(
         product_names = state.get("product_names", [])
         max_offers = settings.MAX_AFFILIATE_OFFERS_PER_PRODUCT
 
-        # Get country code from slots (passed from frontend)
+        # Get country code and category from slots (passed from frontend)
         slots = state.get("slots", {})
         country_code = slots.get("country_code", settings.AMAZON_DEFAULT_COUNTRY)
+        category = slots.get("category")
 
         # Prepare product names to search
         products_to_search = []
@@ -117,7 +118,8 @@ async def product_affiliate(
                     # Check if provider supports country_code (like Amazon)
                     search_kwargs = {
                         "query": product_name,
-                        "limit": max_offers
+                        "limit": max_offers,
+                        "category": category,
                     }
 
                     # Add country_code for providers that support it

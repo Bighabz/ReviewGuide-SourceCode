@@ -1,6 +1,7 @@
 """
 eBay Affiliate Network Provider
-Integrates with eBay Partner Network API for product search and affiliate link generation
+Integrates with eBay Partner Network API for product search and affiliate link generation.
+Supports mock mode (development) and real Browse API (production).
 """
 from app.core.centralized_logger import get_logger
 import httpx
@@ -12,6 +13,99 @@ from app.services.affiliate.base import BaseAffiliateProvider, AffiliateProduct
 from app.core.config import settings
 
 logger = get_logger(__name__)
+
+
+# eBay-flavored category variations for mock data
+EBAY_CATEGORY_VARIATIONS = {
+    "laptop": [
+        "Intel i7, 16GB, 512GB SSD - Free Shipping",
+        "AMD Ryzen 7, 32GB, 1TB SSD - Top Rated Plus",
+        "Intel i9, 64GB, 2TB SSD - Fast 'N Free",
+        "AMD Ryzen 9, 16GB, 512GB - Certified Refurbished",
+        "Intel i5, 8GB, 256GB SSD - Buy It Now",
+    ],
+    "computer": [
+        "Intel i7, 32GB RAM, 1TB SSD Desktop - Free Shipping",
+        "AMD Ryzen 9, 64GB RAM, 2TB NVMe Tower",
+        "Intel Xeon, 128GB ECC, 4TB Workstation",
+        "AMD Threadripper, 256GB RAM - Top Rated Seller",
+        "Intel i9, 64GB, 2TB SSD Custom Build",
+    ],
+    "server": [
+        "Dual Xeon, 256GB ECC, 8TB RAID - Tested",
+        "AMD EPYC 64-Core, 512GB RAM - Seller Refurbished",
+        "Intel Xeon W, 128GB, 4TB NVMe - Free Shipping",
+        "GPU Server 4x RTX 4090, 256GB - Buy It Now",
+        "Tower Server 64GB RAM, 2TB SSD - Top Rated",
+    ],
+    "gpu": [
+        "RTX 4090 24GB GDDR6X - Free Shipping",
+        "RTX 4080 Super 16GB - Top Rated Plus",
+        "RTX 3090 Ti 24GB - Certified Refurbished",
+        "AMD RX 7900 XTX 24GB - Buy It Now",
+        "RTX A6000 48GB Professional - Fast 'N Free",
+    ],
+    "phone": [
+        "128GB Unlocked - Excellent Condition",
+        "256GB Factory Sealed - Free Shipping",
+        "512GB Unlocked - Top Rated Seller",
+        "128GB Certified Refurbished",
+        "256GB New in Box - Buy It Now",
+    ],
+    "headphones": [
+        "Noise Cancelling - New Sealed",
+        "Wireless Over-Ear - Free Shipping",
+        "Studio Quality - Top Rated Plus",
+        "Sport Wireless - Certified Refurbished",
+        "Premium Edition - Buy It Now",
+    ],
+    "general": [
+        "New - Factory Sealed",
+        "New - Open Box",
+        "Brand New - Free Shipping",
+        "Latest Model - Top Rated Seller",
+        "New - Buy It Now",
+    ],
+}
+
+# eBay base prices (typically 5-10% below Amazon)
+EBAY_CATEGORY_BASE_PRICES = {
+    "laptop": 849.99,
+    "computer": 949.99,
+    "server": 1849.99,
+    "gpu": 749.99,
+    "phone": 649.99,
+    "headphones": 229.99,
+    "general": 179.99,
+}
+
+# Keywords for category detection (shared logic with Amazon)
+EBAY_CATEGORY_KEYWORDS = {
+    "laptop": ["laptop", "notebook", "macbook", "chromebook", "ultrabook"],
+    "computer": ["computer", "desktop", "pc", "workstation", "llm", "llms", "ai server", "hosting"],
+    "server": ["server", "rack", "nas", "hosting server"],
+    "gpu": ["gpu", "graphics card", "video card", "rtx", "radeon"],
+    "phone": ["phone", "iphone", "smartphone", "android", "galaxy", "pixel"],
+    "headphones": ["headphone", "earphone", "earbud", "airpod", "earpiece", "headset"],
+    "general": [],
+}
+
+
+def _detect_ebay_category(query: str, category_hint: Optional[str] = None) -> str:
+    """Detect product category from query keywords or category hint."""
+    if category_hint:
+        hint_lower = category_hint.lower()
+        for cat in EBAY_CATEGORY_KEYWORDS:
+            if cat in hint_lower:
+                return cat
+
+    query_lower = query.lower()
+    for cat, keywords in EBAY_CATEGORY_KEYWORDS.items():
+        for kw in keywords:
+            if kw in query_lower:
+                return cat
+
+    return "general"
 
 
 # eBay marketplace IDs by country code
@@ -100,6 +194,7 @@ class EbayAffiliateProvider(BaseAffiliateProvider):
         self.custom_id = custom_id or settings.EBAY_AFFILIATE_CUSTOM_ID
         self.timeout = timeout
         self.oauth_token = None  # Will be generated on demand
+        self.api_enabled = bool(self.app_id and self.cert_id)
 
         # eBay API endpoints
         self.base_url = "https://api.ebay.com"
@@ -109,10 +204,10 @@ class EbayAffiliateProvider(BaseAffiliateProvider):
         # Client for HTTP requests
         self.client = httpx.AsyncClient(timeout=self.timeout)
 
-        if not all([self.app_id, self.cert_id]):
-            logger.warning(
-                "eBay credentials not fully configured. "
-                "Set EBAY_APP_ID and EBAY_CERT_ID in environment."
+        if not self.api_enabled:
+            logger.info(
+                "eBay API credentials not configured — running in mock mode. "
+                "Set EBAY_APP_ID and EBAY_CERT_ID to enable real API."
             )
 
         if not self.campaign_id:
@@ -121,6 +216,10 @@ class EbayAffiliateProvider(BaseAffiliateProvider):
                 "Affiliate tracking will not be active. "
                 "Set EBAY_CAMPAIGN_ID in environment."
             )
+
+        logger.info(
+            f"eBay provider initialized: api_enabled={self.api_enabled}"
+        )
 
     def get_provider_name(self) -> str:
         """Return provider name"""
@@ -202,6 +301,12 @@ class EbayAffiliateProvider(BaseAffiliateProvider):
         # Determine marketplace based on country code
         effective_country = (country_code or settings.AMAZON_DEFAULT_COUNTRY).upper()
         marketplace_id = EBAY_MARKETPLACES.get(effective_country, "EBAY_US")
+
+        # Use mock data when API credentials are not configured
+        if not self.api_enabled:
+            return await self._search_mock_data(
+                query, category, brand, min_price, max_price, limit, effective_country
+            )
 
         logger.info("=" * 80)
         logger.info("EBAY SEARCH - INPUT PARAMETERS:")
@@ -293,6 +398,68 @@ class EbayAffiliateProvider(BaseAffiliateProvider):
         except Exception as e:
             logger.error(f"eBay search error: {e}", exc_info=True)
             return []
+
+    async def _search_mock_data(
+        self,
+        query: str,
+        category: Optional[str],
+        brand: Optional[str],
+        min_price: Optional[float],
+        max_price: Optional[float],
+        limit: int,
+        country_code: str,
+    ) -> List[AffiliateProduct]:
+        """Return mock products for development - generates eBay-flavored results"""
+        import random
+
+        # Deterministic generation based on query
+        query_hash = int(hashlib.md5(query.encode()).hexdigest()[:8], 16)
+        random.seed(query_hash + 7)  # Offset from Amazon so results differ
+
+        detected_category = _detect_ebay_category(query, category)
+        variations = EBAY_CATEGORY_VARIATIONS.get(detected_category, EBAY_CATEGORY_VARIATIONS["general"])
+        base_price = EBAY_CATEGORY_BASE_PRICES.get(detected_category, 179.99)
+
+        seller_names = ["tech_deals_usa", "electronics_hub", "best_value_store", "top_rated_seller", "warehouse_direct"]
+
+        results = []
+        for i in range(min(limit, 5)):
+            # Price variance: +/- 25% from base
+            price_offset = ((query_hash + i * 17) % 50 - 25) / 100.0
+            price = round(base_price * (1.0 + price_offset), 2)
+            shipping = round(random.uniform(0, 12.99), 2) if i % 3 != 0 else 0.0
+            seller = seller_names[(query_hash + i) % len(seller_names)]
+
+            item_id = f"v1|EBMOCK{query_hash % 1000000:06d}{i}|0"
+
+            # Generate affiliate link
+            affiliate_link = self._generate_affiliate_url(item_id, country_code=country_code)
+
+            # First result = exact query, rest = query + eBay-style variation
+            if i == 0:
+                title = query
+            else:
+                variation = variations[i % len(variations)]
+                title = f"{query} - {variation}"
+
+            results.append(AffiliateProduct(
+                product_id=item_id,
+                title=title,
+                price=price,
+                currency="USD",
+                affiliate_link=affiliate_link,
+                merchant=f"eBay ({seller})",
+                image_url=f"https://placehold.co/400x400/e8e8e8/333333?text={query.replace(' ', '+')}",
+                rating=None,  # eBay Browse API doesn't return ratings
+                review_count=None,
+                condition="New",
+                shipping_cost=shipping,
+                availability=True,
+                source_url=affiliate_link,
+            ))
+
+        logger.info(f"eBay mock: generated {len(results)} {detected_category} products for '{query}'")
+        return results
 
     def _build_search_query(
         self,
