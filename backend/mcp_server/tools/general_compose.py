@@ -69,23 +69,24 @@ async def general_compose(
 
         logger.info(f"[general_compose] Composing response for: {user_message}")
 
+        # Always load conversation history for context awareness
+        conversation_history = state.get("conversation_history", [])
+
         if not search_results:
             # No search results - generate conversational response using LLM
-            conversation_history = state.get("conversation_history", [])
-
             # Build messages with actual conversation history as structured messages
             messages = [
-                {"role": "system", "content": "You are a friendly shopping assistant. Respond conversationally to casual messages. Be warm and engaging. Keep responses under 50 words."},
+                {"role": "system", "content": "You are a friendly shopping assistant. You remember everything the user has told you in this conversation — their name, preferences, pets, family members, budget, etc. Use these personal details naturally when responding. Be warm, engaging, and personalized. Keep responses under 50 words."},
             ]
 
             # Add recent history as actual message objects so the LLM sees real context
             if conversation_history:
-                for msg in conversation_history[-6:]:
+                for msg in conversation_history[-10:]:
                     role = msg.get("role", "user")
                     content = msg.get("content", "")
                     if content and role in ("user", "assistant", "human", "ai"):
                         mapped_role = "assistant" if role in ("assistant", "ai") else "user"
-                        messages.append({"role": mapped_role, "content": content[:300]})
+                        messages.append({"role": mapped_role, "content": content[:500]})
 
             messages.append({"role": "user", "content": user_message})
 
@@ -93,7 +94,7 @@ async def general_compose(
                 messages=messages,
                 model=settings.COMPOSER_MODEL,
                 temperature=0.8,
-                max_tokens=100,
+                max_tokens=150,
                 agent_name="general_compose_conversational"
             )
 
@@ -111,19 +112,32 @@ async def general_compose(
         for idx, result in enumerate(search_results[:5], 1):
             context += f"[{idx}] {result.get('title', '')}\n{result.get('snippet', '')}\n\n"
 
+        # Build conversation context for search-results path
+        conversation_context = ""
+        if conversation_history:
+            recent = conversation_history[-6:]
+            history_lines = []
+            for msg in recent:
+                role = msg.get("role", "user")
+                content = msg.get("content", "")
+                if content and role in ("user", "assistant", "human", "ai"):
+                    history_lines.append(f"{role}: {content[:200]}")
+            if history_lines:
+                conversation_context = "Recent conversation:\n" + "\n".join(history_lines) + "\n\n"
+
         # Generate response using LLM
         prompt = f"""User asked: "{user_message}"
 
-Based on these search results, provide a clear, accurate answer:
+{conversation_context}Based on these search results, provide a clear, accurate answer:
 
 {context}
 
-Answer the user's question directly and concisely. Use citation markers [1], [2], etc. when referencing sources."""
+Answer the user's question directly and concisely. If the user's question refers to something from the conversation (like their name, preferences, or previous topics), answer from conversation context instead of search results. Use citation markers [1], [2], etc. when referencing sources."""
 
         # Callbacks are automatically inherited from LangGraph context
         assistant_text = await model_service.generate(
             messages=[
-                {"role": "system", "content": "You are a helpful AI assistant. Provide accurate, well-sourced answers to questions."},
+                {"role": "system", "content": "You are a helpful AI assistant. You remember everything the user has told you in this conversation. Provide accurate, personalized answers. Use search results for factual questions, but use conversation history for personal questions."},
                 {"role": "user", "content": prompt}
             ],
             model=settings.COMPOSER_MODEL,
