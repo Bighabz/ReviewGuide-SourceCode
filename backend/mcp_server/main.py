@@ -42,6 +42,7 @@ from tools.travel_compose import travel_compose
 from tools.intro_compose import intro_compose
 from tools.unclear_compose import unclear_compose
 from tools.next_step_suggestion import next_step_suggestion
+from tools.review_search import review_search
 
 
 @app.list_tools()
@@ -65,6 +66,11 @@ async def list_tools() -> List[Tool]:
         Tool(
             name="product_search",
             description="Search for products on the web/catalog. Reads: user_message, slots. Writes: search_results, products.",
+            inputSchema=state_schema
+        ),
+        Tool(
+            name="review_search",
+            description="Search for real product reviews from trusted sources (Wirecutter, Reddit, RTINGS). Reads: product_names, slots. Writes: review_data.",
             inputSchema=state_schema
         ),
         Tool(
@@ -182,6 +188,8 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
         # Route to appropriate tool function - all tools receive state
         if name == "product_search":
             result = await product_search(state)
+        elif name == "review_search":
+            result = await review_search(state)
         elif name == "product_evidence":
             result = await product_evidence(state)
         elif name == "product_affiliate":

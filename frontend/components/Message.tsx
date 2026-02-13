@@ -16,6 +16,7 @@ import ItineraryView from './ItineraryView'
 import ComparisonTable from './ComparisonTable'
 import ListBlock from './ListBlock'
 import DestinationInfo from './DestinationInfo'
+import ReviewSources from './ReviewSources'
 import { useState, useEffect } from 'react'
 import { formatTimestamp, formatFullTimestamp, SUGGESTION_CLICK_PREFIX } from '@/lib/utils'
 
@@ -61,6 +62,24 @@ export default function Message({ message }: MessageProps) {
     } catch (err) {
       console.error('Failed to copy text:', err)
     }
+  }
+
+  // Render review sources block (from SerpAPI review search)
+  const renderReviewSources = () => {
+    if (!message.ui_blocks || message.ui_blocks.length === 0) {
+      return null
+    }
+
+    const reviewBlocks = message.ui_blocks.filter(block => block.type === 'review_sources')
+    if (reviewBlocks.length === 0) return null
+
+    return (
+      <div className="space-y-6 mb-6">
+        {reviewBlocks.map((block, idx) => (
+          <ReviewSources key={idx} data={block.data || { products: [] }} title={block.title} />
+        ))}
+      </div>
+    )
   }
 
   // Separate carousel and product cards rendering
@@ -559,7 +578,10 @@ export default function Message({ message }: MessageProps) {
                 </div>
               )}
 
-              {/* 2. Render provider-specific carousels (eBay, Amazon, etc.) */}
+              {/* 2. Render review sources (from real review search) */}
+              {renderReviewSources()}
+
+              {/* 3. Render provider-specific carousels (eBay, Amazon, etc.) */}
               {renderProviderCarousels()}
 
               {/* 3. Render new format products (Our Recommendations) */}

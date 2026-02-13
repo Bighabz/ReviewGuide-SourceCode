@@ -117,8 +117,12 @@ class Settings(BaseSettings):
     # Feature flags for high-risk APIs
     ENABLE_SERPAPI: bool = Field(
         default=False,
-        description="Enable SerpApi (Tier 4) - HIGH LEGAL RISK, requires user consent"
+        description="Enable SerpApi for review search"
     )
+    SERPAPI_API_KEY: str = Field(default="", description="SerpAPI key for review search")
+    SERPAPI_MAX_SOURCES: int = Field(default=8, description="Max review sources per product")
+    SERPAPI_CACHE_TTL: int = Field(default=86400, description="Redis cache TTL in seconds (24h)")
+    SERPAPI_TIMEOUT: float = Field(default=15.0, description="SerpAPI request timeout")
     ENABLE_REDDIT_API: bool = Field(
         default=False,
         description="Enable Reddit API (Tier 3) - Requires commercial license and user consent"

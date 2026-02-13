@@ -107,14 +107,14 @@ API_REGISTRY: dict[str, APIConfig] = {
     ),
 
     # ============================================
-    # TIER 4 - High risk, consent required
+    # TIER 2 - Review search (core feature)
     # ============================================
     "serpapi": APIConfig(
         name="serpapi",
-        mcp_tool="product_search",
+        mcp_tool="review_search",
         provider="serpapi",
         cost_cents=1,
-        requires_consent=True,
+        requires_consent=False,
         feature_flag="ENABLE_SERPAPI",
     ),
 

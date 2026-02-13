@@ -51,6 +51,9 @@ class GraphState(TypedDict):
     evidence_citations: Annotated[List[str], operator.add]
     confidence_score: float  # 0-1 confidence in recommendations
 
+    # Review Data (from SerpAPI review search)
+    review_data: Dict[str, Any]  # product_name -> ReviewBundle dict
+
     # Product Normalization
     entity: Optional[Dict[str, Any]]
     entity_key: Optional[str]

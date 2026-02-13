@@ -88,6 +88,7 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
         intent = state.get("intent", "product")
         slots = state.get("slots")
         comparison_table = state.get("comparison_table")
+        review_data = state.get("review_data", {})  # product_name -> ReviewBundle dict from review_search
 
         # Log provider info
         providers_with_data = list(affiliate_products.keys())
@@ -98,7 +99,7 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
         comparison_data = state.get("comparison_data")
 
         # Check if we have any data to display
-        if not normalized_products and not affiliate_products:
+        if not normalized_products and not affiliate_products and not review_data:
             return {
                 "assistant_text": "I couldn't find any products matching your criteria.",
                 "ui_blocks": [],
@@ -143,12 +144,14 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
             products_with_offers.append(product_copy)
 
         # Generate a brief summary - no need for per-product descriptions since cards show the products
-        # Build final response
+        # Build final response (assistant_text set below, may be overridden by review_data block)
+        assistant_text = ""
         if comparison_html:
             # Comparison mode - show intro before comparison table
             product_names = comparison_data.get("products", []) if comparison_data else []
             assistant_text = f"## Product Comparison: {', '.join(product_names)}\n\nHere's a detailed specification comparison."
-        else:
+        elif not review_data:
+            # No review data — use LLM-only summary (original flow)
             # Count products from each provider
             total_products = sum(len(p) for p in affiliate_products.values())
             provider_names = [p.title() for p in affiliate_products.keys()]
@@ -165,9 +168,78 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
                 agent_name="product_compose"
             )
             assistant_text = assistant_text.strip()
+        # else: assistant_text was already built from review_data above
 
         # Create UI blocks dynamically based on available providers
         ui_blocks = []
+
+        # Add review sources block if review_data exists (from review_search tool)
+        if review_data:
+            review_products = []
+            for product_name, bundle in review_data.items():
+                if not bundle.get("sources"):
+                    continue
+
+                # Generate consensus summary via LLM
+                source_snippets = "\n".join([
+                    f"- {s.get('site_name', 'Review')}: {s.get('snippet', '')}"
+                    for s in bundle.get("sources", [])[:5]
+                ])
+
+                try:
+                    consensus = await model_service.generate(
+                        messages=[
+                            {"role": "system", "content": "You summarize product review consensus. Write 2-3 sentences explaining why this product is highly rated. Mention specific strengths reviewers agree on. Reference source names naturally (e.g., 'According to Wirecutter and RTINGS...'). Be concise and factual."},
+                            {"role": "user", "content": f"Product: {product_name}\nAvg Rating: {bundle.get('avg_rating', 0)}/5 from {bundle.get('total_reviews', 0)} reviews\n\nReview excerpts:\n{source_snippets}\n\nWrite a 2-3 sentence consensus summary."}
+                        ],
+                        model=settings.COMPOSER_MODEL,
+                        temperature=0.5,
+                        max_tokens=120,
+                        agent_name="review_consensus"
+                    )
+                    consensus = consensus.strip()
+                except Exception as consensus_err:
+                    logger.warning(f"[product_compose] Failed to generate consensus for {product_name}: {consensus_err}")
+                    consensus = ""
+
+                review_products.append({
+                    "name": product_name,
+                    "avg_rating": bundle.get("avg_rating", 0),
+                    "total_reviews": bundle.get("total_reviews", 0),
+                    "consensus": consensus,
+                    "sources": [
+                        {
+                            "site_name": s.get("site_name", ""),
+                            "url": s.get("url", ""),
+                            "title": s.get("title", ""),
+                            "snippet": s.get("snippet", ""),
+                            "rating": s.get("rating"),
+                            "favicon_url": s.get("favicon_url", ""),
+                            "date": s.get("date"),
+                        }
+                        for s in bundle.get("sources", [])[:6]
+                    ],
+                })
+
+            if review_products:
+                ui_blocks.append({
+                    "type": "review_sources",
+                    "title": "What Reviewers Say",
+                    "data": {
+                        "products": review_products,
+                    }
+                })
+
+                # Update assistant_text to be review-first
+                source_count = sum(len(p["sources"]) for p in review_products)
+                assistant_text = f"Based on reviews from {source_count} trusted sources, here's what stands out:\n\n"
+
+                # Add brief per-product highlights
+                for rp in review_products[:3]:
+                    if rp["consensus"]:
+                        assistant_text += f"**{rp['name']}** — {rp['consensus']}\n\n"
+
+                logger.info(f"[product_compose] Added review_sources block with {len(review_products)} products")
 
         # Add comparison HTML if exists (from product_comparison tool)
         if comparison_html:

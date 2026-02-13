@@ -98,6 +98,11 @@ apscheduler==3.10.4
 amadeus==12.0.0
 
 # =============================
+# Review Search (SerpAPI)
+# =============================
+google-search-results==2.4.2
+
+# =============================
 # TOON Format (Token-efficient LLM data format)
 # =============================
 toon-python==0.1.2
