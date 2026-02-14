@@ -358,7 +358,7 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
             product_name_list = [p.get("name", "") for p in normalized_products[:5] if p.get("name")]
 
             # Build returning-user preference note for the concierge prompt
-            user_prefs = state.get("metadata", {}).get("user_preferences", {})
+            user_prefs = (state.get("metadata") or {}).get("user_preferences", {})
             pref_note = ""
             if user_prefs.get("brands") or user_prefs.get("categories"):
                 past_cats = list(user_prefs.get("categories", {}).keys())[:2]
@@ -648,7 +648,7 @@ Products to describe:
         logger.info(f"[product_compose] Saving search context: category={new_context['category']}, {len(product_names)} products")
 
         # Fire-and-forget: extract preferences from this query for cross-session memory
-        meta_user_id = state.get("metadata", {}).get("user_id")
+        meta_user_id = (state.get("metadata") or {}).get("user_id")
         if meta_user_id and slots:
             import asyncio
             from app.services.preference_service import update_user_preferences

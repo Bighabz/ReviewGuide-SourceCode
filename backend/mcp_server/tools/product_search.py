@@ -221,7 +221,7 @@ async def product_search(state: Dict[str, Any]) -> Dict[str, Any]:
 """
 
         # Build user preference context hints (from cross-session memory)
-        user_prefs = state.get("metadata", {}).get("user_preferences", {})
+        user_prefs = (state.get("metadata") or {}).get("user_preferences", {})
         pref_context = ""
         if user_prefs:
             parts = []
