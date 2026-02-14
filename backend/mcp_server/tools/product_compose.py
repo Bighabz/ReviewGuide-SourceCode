@@ -627,7 +627,7 @@ Products to describe:
             "top_prices": {
                 p["name"]: p["best_offer"]["price"]
                 for p in products_with_offers
-                if p.get("best_offer", {}).get("price")
+                if (p.get("best_offer") or {}).get("price")
             },
             "avg_rating": {
                 name: rd.get("avg_rating", 0)
