@@ -27,7 +27,7 @@ TOOL_CONTRACT = {
         "post": ["product_ranking"]  # Compose is auto-added at end of intent
     },
     "produces": ["affiliate_products"],
-    "citation_message": "Finding purchase links...",
+    "citation_message": "Comparing prices across retailers...",
     "is_default": True
 }
 

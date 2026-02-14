@@ -33,7 +33,7 @@ TOOL_CONTRACT = {
         "post": []  # Compose is auto-added at end of intent
     },
     "produces": ["destination_facts"],
-    "citation_message": "Getting destination info...",
+    "citation_message": "Researching your destination...",
     "tool_order": 100
 }
 

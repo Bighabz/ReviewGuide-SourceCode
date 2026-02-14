@@ -28,14 +28,14 @@ TOOL_CONTRACT = {
         "post": ["product_normalize"]
     },
     "produces": ["review_data"],
-    "citation_message": "Searching reviews across trusted sources...",
+    "citation_message": "Checking Wirecutter, Reddit, RTINGS for reviews...",
     "tool_order": 200,
     "is_default": True,
 }
 
 # Minimum thresholds for including a product
-MIN_AVG_RATING = 4.0
-MIN_TOTAL_REVIEWS = 50
+MIN_AVG_RATING = 3.5
+MIN_TOTAL_REVIEWS = 5
 MIN_SOURCE_TYPES = 2  # Require at least 2 different source types
 
 
@@ -153,9 +153,11 @@ async def review_search(state: Dict[str, Any]) -> Dict[str, Any]:
             has_rating = bundle.avg_rating >= MIN_AVG_RATING
             has_reviews = bundle.total_reviews >= MIN_TOTAL_REVIEWS
             has_sources = len(bundle.sources) > 0
+            source_type_count = _count_source_types([{"site_name": s.site_name} for s in bundle.sources])
+            has_diverse_sources = source_type_count >= MIN_SOURCE_TYPES
 
-            # Accept if either rating OR review count meets threshold, and has sources
-            if has_sources and (has_rating or has_reviews):
+            # Accept if has sources AND (rating OR review count OR diverse source types)
+            if has_sources and (has_rating or has_reviews or has_diverse_sources):
                 bundle_dict = bundle.to_dict()
                 bundle_dict["quality_score"] = _quality_score(bundle.avg_rating, bundle.total_reviews)
                 bundle_dict["source_type_count"] = _count_source_types(bundle_dict.get("sources", []))

@@ -36,6 +36,7 @@ export interface Message {
   next_suggestions?: NextSuggestion[]  // Follow-up questions from next_step_suggestion tool
   isSuggestionClick?: boolean  // True when message was triggered by clicking a suggestion button
   isThinking?: boolean  // True while waiting for real tokens (status updates hidden)
+  statusText?: string   // Current tool status text (e.g., "Checking reviews...")
 }
 
 interface ChatContainerProps {
@@ -317,8 +318,8 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
           prev.map((msg) =>
             msg.id === currentMessageIdRef.current
               ? isPlaceholder
-                ? { ...msg, isThinking: true }  // Show thinking indicator, don't set text
-                : { ...msg, content: msg.content + token, isThinking: false }
+                ? { ...msg, isThinking: true, statusText: token }  // Show status text while working
+                : { ...msg, content: msg.content + token, isThinking: false, statusText: undefined }
               : msg
           )
         )

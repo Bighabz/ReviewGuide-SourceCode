@@ -33,7 +33,7 @@ TOOL_CONTRACT = {
     "produces": ["flights"],
     "required_slots": ["origin", "destination", "departure_date", "duration_days", "adults"],
     "optional_slots": ["return_date", "children"],
-    "citation_message": "Searching for flights...",
+    "citation_message": "Checking flight options...",
     "tool_order": 100,
     "slot_types": {
         "origin": {"type": "string", "format": "city"},

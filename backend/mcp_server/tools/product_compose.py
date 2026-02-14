@@ -26,7 +26,7 @@ TOOL_CONTRACT = {
         "post": []
     },
     "produces": ["assistant_text", "ui_blocks", "citations"],
-    "citation_message": "Creating recommendations...",
+    "citation_message": "Putting together your recommendations...",
     "tool_order": 800,
     "is_default": True,
     "is_required": True

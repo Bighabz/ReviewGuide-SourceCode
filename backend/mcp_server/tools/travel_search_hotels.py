@@ -37,7 +37,7 @@ TOOL_CONTRACT = {
         "check_in": "departure_date",
         "check_out": "return_date",
     },
-    "citation_message": "Searching for hotels...",
+    "citation_message": "Browsing hotels and stays...",
     "tool_order": 100,
     "slot_types": {
         "destination": {"type": "string", "format": "city"},

@@ -552,12 +552,13 @@ export default function Message({ message }: MessageProps) {
             )
           ) : (
             <div className="w-full">
-              {/* Thinking indicator — shown while waiting for real tokens */}
+              {/* Status indicator — shown while tools are working */}
               {!message.content && message.isThinking && (
-                <div className="flex items-center gap-1.5 py-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--text-muted)] animate-pulse" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--text-muted)] animate-pulse [animation-delay:0.15s]" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--text-muted)] animate-pulse [animation-delay:0.3s]" />
+                <div className="flex items-center gap-2 py-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-pulse" />
+                  <span className="text-sm text-[var(--text-secondary)] font-medium tracking-tight">
+                    {message.statusText || 'Thinking...'}
+                  </span>
                 </div>
               )}
 
