@@ -55,15 +55,33 @@ async def unclear_compose(state: Dict[str, Any]) -> Dict[str, Any]:
         logger.info("Generating unclear input response...")
 
         user_message = state.get("user_message", "")
+        conversation_history = state.get("conversation_history", [])
 
-        prompt = f"""The user entered something that appears to be gibberish or unclear text: "{user_message}"
+        # Build conversation context so the LLM can answer context-dependent questions
+        history_context = ""
+        if conversation_history:
+            recent = conversation_history[-10:]  # Last 10 messages
+            history_lines = []
+            for msg in recent:
+                role = msg.get("role", "unknown")
+                content = msg.get("content", "")
+                if content and role in ["user", "assistant"]:
+                    history_lines.append(f"{role.capitalize()}: {content[:200]}")
+            if history_lines:
+                history_context = "\n\nConversation so far:\n" + "\n".join(history_lines)
 
-Generate a short, friendly message that:
-1. Acknowledges we didn't understand their input
-2. Politely asks them to rephrase or enter a meaningful question
-3. Optionally gives 1-2 example questions they could ask
+        prompt = f"""The user's message was classified as unclear: "{user_message}"
+{history_context}
 
-Keep it brief (2-3 sentences max), warm, and helpful. Don't be condescending."""
+If you can figure out what the user means from the conversation context, answer their question directly in a friendly way.
+For example, if they said "whats my name" and earlier introduced themselves, just tell them their name.
+
+If you truly cannot determine what they mean, generate a short friendly message that:
+1. Acknowledges we didn't understand
+2. Politely asks them to rephrase
+3. Gives 1-2 example questions they could ask
+
+Keep it brief (2-3 sentences max), warm, and helpful."""
 
         response = await model_service.generate(
             messages=[
@@ -71,7 +89,7 @@ Keep it brief (2-3 sentences max), warm, and helpful. Don't be condescending."""
             ],
             model=settings.COMPOSER_MODEL,
             temperature=0.7,
-            max_tokens=150,
+            max_tokens=200,
             agent_name="unclear"
         )
 

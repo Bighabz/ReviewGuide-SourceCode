@@ -69,6 +69,7 @@ async def travel_compose(state: Dict[str, Any]) -> Dict[str, Any]:
     hotels = state.get("hotels")
     flights = state.get("flights")
     destination_facts = state.get("destination_facts")
+    general_travel_info = state.get("general_travel_info")
     travel_results = state.get("travel_results")
     intent = state.get("intent", "travel")
 
@@ -78,14 +79,16 @@ async def travel_compose(state: Dict[str, Any]) -> Dict[str, Any]:
     logger.info(f"[travel_compose] hotels from state: {hotels}")
     logger.info(f"[travel_compose] flights from state: {flights}")
     logger.info(f"[travel_compose] destination_facts from state: {destination_facts}")
+    logger.info(f"[travel_compose] general_travel_info from state: {bool(general_travel_info)}")
 
     # Generate assistant text
     has_itinerary = itinerary and len(itinerary) > 0
     has_hotels = hotels and len(hotels) > 0
     has_flights = flights and len(flights) > 0
     has_destination_facts = destination_facts and isinstance(destination_facts, dict)
+    has_general_info = general_travel_info and len(str(general_travel_info).strip()) > 0
 
-    logger.info(f"[travel_compose] has_itinerary={has_itinerary}, has_hotels={has_hotels}, has_flights={has_flights}, has_destination_facts={has_destination_facts}")
+    logger.info(f"[travel_compose] has_itinerary={has_itinerary}, has_hotels={has_hotels}, has_flights={has_flights}, has_destination_facts={has_destination_facts}, has_general_info={has_general_info}")
 
     # Build intro text directly without LLM call for speed
     # Extract key info from slots
@@ -93,36 +96,41 @@ async def travel_compose(state: Dict[str, Any]) -> Dict[str, Any]:
     destination = slots.get("destination", "your destination")
     duration = slots.get("duration_days", "")
 
-    # Build a simple but informative intro
-    parts = []
-    if duration:
-        parts.append(f"Here's your {duration}-day trip to {destination}!")
+    # If we only have general_travel_info (no structured data), use it directly as the response
+    if has_general_info and not has_itinerary and not has_hotels and not has_flights and not has_destination_facts:
+        logger.info(f"[travel_compose] Using general_travel_info as direct response ({len(str(general_travel_info))} chars)")
+        assistant_text = str(general_travel_info)
     else:
-        parts.append(f"Here's information about {destination}!")
+        # Build a simple but informative intro
+        parts = []
+        if duration:
+            parts.append(f"Here's your {duration}-day trip to {destination}!")
+        else:
+            parts.append(f"Here's information about {destination}!")
 
-    if has_itinerary and has_hotels and has_flights:
-        parts.append("I've prepared a complete itinerary with activities, plus hotel and flight options for you.")
-    elif has_itinerary:
-        parts.append("I've created a day-by-day itinerary with activities, meals, and highlights.")
-    elif has_hotels and has_flights:
-        parts.append("I've found hotel and flight options for your trip.")
-    elif has_hotels:
-        parts.append("I've found hotel options for your stay.")
-    elif has_flights:
-        parts.append("I've found flight options for your trip.")
-    elif has_destination_facts:
-        # Extract activities, attractions, restaurants from destination_facts
-        activities = destination_facts.get("activities", [])
-        attractions = destination_facts.get("attractions", [])
-        restaurants = destination_facts.get("restaurants", [])
-        weather = destination_facts.get("weather", "")
+        if has_itinerary and has_hotels and has_flights:
+            parts.append("I've prepared a complete itinerary with activities, plus hotel and flight options for you.")
+        elif has_itinerary:
+            parts.append("I've created a day-by-day itinerary with activities, meals, and highlights.")
+        elif has_hotels and has_flights:
+            parts.append("I've found hotel and flight options for your trip.")
+        elif has_hotels:
+            parts.append("I've found hotel options for your stay.")
+        elif has_flights:
+            parts.append("I've found flight options for your trip.")
+        elif has_destination_facts:
+            # Extract activities, attractions, restaurants from destination_facts
+            activities = destination_facts.get("activities", [])
+            attractions = destination_facts.get("attractions", [])
+            restaurants = destination_facts.get("restaurants", [])
+            weather = destination_facts.get("weather", "")
 
-        if activities or attractions or restaurants:
-            parts.append("I've gathered some recommendations for your trip.")
-        elif weather:
-            parts.append("Here's what you should know about the destination.")
+            if activities or attractions or restaurants:
+                parts.append("I've gathered some recommendations for your trip.")
+            elif weather:
+                parts.append("Here's what you should know about the destination.")
 
-    assistant_text = " ".join(parts)
+        assistant_text = " ".join(parts)
 
     # Create UI blocks
     ui_blocks = []
