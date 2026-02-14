@@ -360,7 +360,7 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
 
           setMessages((prev) => [...prev, followupMessage])
           currentMessageIdRef.current = followupMessageId
-        } else if (data.ui_blocks || data.itinerary) {
+        } else if (data.ui_blocks || data.itinerary || data.followups) {
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === currentMessageIdRef.current
@@ -368,6 +368,7 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
                   ...msg,
                   ...(data.ui_blocks && data.ui_blocks.length > 0 ? { ui_blocks: data.ui_blocks } : {}),
                   ...(data.itinerary ? { itinerary: data.itinerary } : {}),
+                  ...(data.followups ? { followups: data.followups } : {}),
                 }
                 : msg
             )

@@ -608,7 +608,42 @@ export default function Message({ message }: MessageProps) {
               {renderProductReviews()}
               {renderProductCards()}
 
-              {/* 10. Render conclusion text */}
+              {/* 10. Render clarifier follow-up questions (structured slot-filling) */}
+              {message.followups && typeof message.followups === 'object' && !Array.isArray(message.followups) && (
+                <div className="w-full mt-5">
+                  <div className="border border-[var(--border)] rounded-xl p-4 bg-[var(--surface)]">
+                    {message.followups.intro && (
+                      <p className="text-sm font-medium text-[var(--text)] mb-3">
+                        {message.followups.intro}
+                      </p>
+                    )}
+                    <div className="space-y-1.5">
+                      {message.followups.questions && message.followups.questions.map((q: { slot: string; question: string }, idx: number) => (
+                        <button
+                          key={idx}
+                          className="w-full text-left px-3.5 py-2.5 rounded-lg border border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)] hover:bg-[var(--primary-light)] transition-all text-sm text-[var(--text)] flex items-center justify-between group"
+                          onClick={() => {
+                            const event = new CustomEvent('sendSuggestion', {
+                              detail: { question: q.question }
+                            })
+                            window.dispatchEvent(event)
+                          }}
+                        >
+                          <span>{q.question}</span>
+                          <ArrowRight size={14} strokeWidth={1.5} className="opacity-0 group-hover:opacity-100 transition-opacity text-[var(--primary)]" />
+                        </button>
+                      ))}
+                    </div>
+                    {message.followups.closing && (
+                      <p className="mt-3 text-xs italic text-[var(--text-muted)]">
+                        {message.followups.closing}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* 11. Render conclusion text */}
               {message.ui_blocks?.filter((b: any) => b.type === 'conclusion').map((block: any, idx: number) => (
                 <p key={`conclusion-${idx}`} className="text-sm text-[var(--text-muted)] mt-4 italic">
                   {block.data?.text}
