@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import { Message as MessageType } from './ChatContainer'
 import Message from './Message'
 
@@ -10,43 +10,67 @@ interface MessageListProps {
 }
 
 export default function MessageList({ messages, isStreaming }: MessageListProps) {
-  const [userScrolledUp, setUserScrolledUp] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const userScrolledUpRef = useRef(false)
   const prevMessageCountRef = useRef(messages.length)
+  const isAutoScrollingRef = useRef(false)
 
-  // Detect user scroll intent
+  // Detect INTENTIONAL user scroll (wheel/touch), not programmatic scroll
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
 
-    const handleScroll = () => {
+    const handleUserScroll = () => {
       const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100
-      setUserScrolledUp(!isNearBottom)
+      if (!isNearBottom) {
+        userScrolledUpRef.current = true
+      }
     }
 
-    container.addEventListener('scroll', handleScroll)
-    return () => container.removeEventListener('scroll', handleScroll)
+    const handleScrollEnd = () => {
+      const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100
+      if (isNearBottom && !isAutoScrollingRef.current) {
+        userScrolledUpRef.current = false
+      }
+    }
+
+    container.addEventListener('wheel', handleUserScroll, { passive: true })
+    container.addEventListener('touchmove', handleUserScroll, { passive: true })
+    container.addEventListener('scrollend', handleScrollEnd)
+
+    return () => {
+      container.removeEventListener('wheel', handleUserScroll)
+      container.removeEventListener('touchmove', handleUserScroll)
+      container.removeEventListener('scrollend', handleScrollEnd)
+    }
   }, [])
 
-  // Auto-scroll only for new messages (not updates to existing ones like follow-up suggestions)
+  const scrollToBottom = () => {
+    if (userScrolledUpRef.current) return
+    isAutoScrollingRef.current = true
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    setTimeout(() => {
+      isAutoScrollingRef.current = false
+    }, 350)
+  }
+
+  // Scroll on new messages only
   useEffect(() => {
     const newCount = messages.length
     const isNewMessage = newCount > prevMessageCountRef.current
     prevMessageCountRef.current = newCount
 
     if (isNewMessage) {
-      setUserScrolledUp(false)
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-    } else if (!userScrolledUp) {
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+      userScrolledUpRef.current = false
+      scrollToBottom()
     }
-  }, [messages, userScrolledUp])
+  }, [messages.length])
 
-  // When streaming completes, scroll only if user hasn't scrolled up
+  // Scroll when streaming completes
   useEffect(() => {
-    if (!isStreaming && !userScrolledUp) {
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (!isStreaming) {
+      scrollToBottom()
     }
   }, [isStreaming])
 
