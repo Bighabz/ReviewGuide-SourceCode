@@ -75,4 +75,17 @@ export const categories: BrowseCategory[] = [
       'Great home treadmills under $1000',
     ],
   },
+  {
+    slug: 'fashion-style',
+    name: 'Fashion & Style',
+    tagline: 'Sneakers, watches & wardrobe essentials reviewed',
+    image: '/images/browse/fashion-style.jpg',
+    icon: 'Shirt',
+    queries: [
+      'Best white sneakers for everyday wear',
+      'Affordable gold jewelry that won\'t tarnish',
+      'Best streetwear brands in 2026',
+      'Top-rated watches under $500',
+    ],
+  },
 ]

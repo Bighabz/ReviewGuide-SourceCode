@@ -6,6 +6,7 @@ import {
   Home,
   Heart,
   Mountain,
+  Shirt,
   User,
   X,
 } from 'lucide-react'
@@ -18,6 +19,7 @@ const ICON_MAP: Record<string, any> = {
   Home,
   Heart,
   Mountain,
+  Shirt,
 }
 
 interface CategorySidebarProps {
