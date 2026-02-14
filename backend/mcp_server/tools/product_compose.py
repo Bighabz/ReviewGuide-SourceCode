@@ -607,6 +607,31 @@ Products to describe:
             })
             logger.info(f"[product_compose] Added {len(data['products'])} {provider_name} products to UI")
 
+        # Generate a brief conclusion to show below product cards
+        num_products = sum(len(d["products"]) for d in products_by_provider.values())
+        num_providers = len(products_by_provider)
+        try:
+            conclusion_text = await model_service.generate(
+                messages=[
+                    {"role": "system", "content": f"Today is {datetime.utcnow().strftime('%B %Y')}. Write ONE short sentence (max 25 words) wrapping up a product search. Mention the number of results and where they're from. Be warm and conversational. Do NOT list products or prices. Do NOT use markdown."},
+                    {"role": "user", "content": f'User asked: "{user_message}"\nShowing {num_products} products from {num_providers} retailer(s). Providers: {", ".join(products_by_provider.keys())}'}
+                ],
+                model=settings.COMPOSER_MODEL,
+                temperature=0.7,
+                max_tokens=50,
+                agent_name="product_conclusion"
+            )
+            conclusion_text = conclusion_text.strip()
+        except Exception as conc_err:
+            logger.warning(f"[product_compose] Failed to generate conclusion: {conc_err}")
+            conclusion_text = f"Showing {num_products} results across {num_providers} retailer{'s' if num_providers != 1 else ''} — prices and availability may vary."
+
+        ui_blocks.append({
+            "type": "conclusion",
+            "data": {"text": conclusion_text}
+        })
+        logger.info(f"[product_compose] Added conclusion block: {conclusion_text[:80]}")
+
         # Create citations
         citations = [p["url"] for p in normalized_products if p.get("url")][:5]
 

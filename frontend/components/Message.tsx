@@ -608,6 +608,12 @@ export default function Message({ message }: MessageProps) {
               {renderProductReviews()}
               {renderProductCards()}
 
+              {/* 10. Render conclusion text */}
+              {message.ui_blocks?.filter((b: any) => b.type === 'conclusion').map((block: any, idx: number) => (
+                <p key={`conclusion-${idx}`} className="text-sm text-[var(--text-muted)] mt-4 italic">
+                  {block.data?.text}
+                </p>
+              ))}
 
               {/* Timestamp for assistant */}
               <div
