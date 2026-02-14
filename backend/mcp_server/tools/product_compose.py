@@ -7,6 +7,7 @@ Formats final product response with UI blocks and citations.
 import sys
 import os
 import json
+from datetime import datetime
 from typing import Dict, Any, List
 from app.core.error_manager import tool_error_handler
 
@@ -137,6 +138,43 @@ def _find_price_comparisons(products_by_provider: dict) -> dict:
     return comparisons
 
 
+def _is_follow_up_query(query: str, last_context: dict) -> bool:
+    """Detect if query references previous search results."""
+    if not last_context:
+        return False
+
+    q = query.lower().strip()
+
+    reference_signals = [
+        "that one", "the first", "the second", "the third",
+        "cheapest", "most expensive", "best rated", "any of",
+        "compare them", "which one", "between those",
+        "more about", "tell me more", "go back to",
+        "the one with", "how about the",
+    ]
+    if any(signal in q for signal in reference_signals):
+        return True
+
+    # Very short query with no product category noun
+    if len(q.split()) <= 4:
+        return True
+
+    return False
+
+
+def _find_in_history(query: str, history: list) -> dict | None:
+    """Scan search_history for a matching previous context."""
+    q = query.lower()
+    for ctx in reversed(history):
+        cat = ctx.get("category", "").lower()
+        ptype = ctx.get("product_type", "").lower()
+        if cat and cat in q:
+            return ctx
+        if ptype and ptype in q:
+            return ctx
+    return None
+
+
 def _filter_relevant_products(
     affiliate_products: Dict[str, List],
     user_query: str,
@@ -230,7 +268,8 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
         affiliate_products_raw = state.get("affiliate_products", {})  # Dynamic: {"ebay": [...], "amazon": [...]}
         intent = state.get("intent", "product")
         slots = state.get("slots")
-        category = slots.get("category") if slots else None
+        last_search_context = state.get("last_search_context", {})
+        category = (slots.get("category") if slots else None) or last_search_context.get("category")
 
         # Filter out accessory junk from any provider
         affiliate_products = _filter_relevant_products(affiliate_products_raw, user_message, category)
@@ -320,12 +359,12 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
 
             assistant_text = await model_service.generate(
                 messages=[
-                    {"role": "system", "content": "You are a product concierge. Write 2-3 SHORT sentences (max 50 words). Explain WHY these products match the user's needs. Reference their criteria from the conversation (budget, features, use case). Do NOT list products — they are shown in cards below."},
+                    {"role": "system", "content": "You are a product concierge. Write 2-3 SHORT sentences (max 60 words). Explain WHY these products match the user's needs. Reference their criteria from the conversation (budget, features, use case). Do NOT list products — they are shown in cards below. End with a brief, warm follow-up that shows you remember the user's context. Keep it to one sentence. Reference specific details they mentioned — names, preferences, use cases — to show you're paying attention."},
                     {"role": "user", "content": f'User asked: "{user_message}"\nContext:\n{context_summary}\nProducts: {", ".join(product_name_list)}\nSources: {", ".join(provider_names)}'}
                 ],
                 model=settings.COMPOSER_MODEL,
                 temperature=0.7,
-                max_tokens=80,
+                max_tokens=120,
                 agent_name="product_compose"
             )
             assistant_text = assistant_text.strip()
@@ -400,6 +439,9 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
                 for rp in review_products[:3]:
                     if rp["consensus"]:
                         assistant_text += f"**{rp['name']}** — {rp['consensus']}\n\n"
+
+                # Add warm closing line
+                assistant_text += "Want me to dive deeper into any of these, or compare specific models side-by-side?"
 
                 logger.info(f"[product_compose] Added review_sources block with {len(review_products)} products")
 
@@ -559,10 +601,45 @@ Products to describe:
         provider_summary = ", ".join([f"{len(affiliate_products.get(p, []))} {p}" for p in sorted_providers])
         logger.info(f"[product_compose] Generated response: {len(assistant_text)} chars, providers: {provider_summary}")
 
+        # Build search context for follow-up queries
+        product_names = [p.get("name", "") for p in normalized_products if p.get("name")]
+        new_context = {
+            "category": slots.get("category", "") if slots else "",
+            "product_type": slots.get("product_type", "") if slots else "",
+            "product_names": product_names,
+            "budget": slots.get("budget") if slots else None,
+            "brand": slots.get("brand") if slots else None,
+            "features": slots.get("features") if slots else None,
+            "use_case": slots.get("use_case") if slots else None,
+            "top_prices": {
+                p["name"]: p["best_offer"]["price"]
+                for p in products_with_offers
+                if p.get("best_offer", {}).get("price")
+            },
+            "avg_rating": {
+                name: rd.get("avg_rating", 0)
+                for name, rd in review_data.items()
+            } if review_data else {},
+            "query": user_message,
+            "timestamp": datetime.utcnow().isoformat(),
+            "turn_index": len(state.get("conversation_history", [])),
+        }
+
+        # Push previous context to history
+        prev = state.get("last_search_context", {})
+        history = list(state.get("search_history", []))
+        if prev:
+            history.append(prev)
+            history = history[-5:]
+
+        logger.info(f"[product_compose] Saving search context: category={new_context['category']}, {len(product_names)} products")
+
         return {
             "assistant_text": assistant_text,
             "ui_blocks": ui_blocks,
             "citations": citations,
+            "last_search_context": new_context,
+            "search_history": history,
             "success": True
         }
 

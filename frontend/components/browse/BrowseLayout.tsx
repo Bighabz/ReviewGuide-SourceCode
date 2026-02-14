@@ -1,103 +1,67 @@
+'use client'
 
-'use client';
-
-import React, { useState, createContext, useContext } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import UnifiedTopbar from '../UnifiedTopbar';
-import CategorySidebar from '../CategorySidebar';
-import SearchInput from './SearchInput';
-
-// Keep filter state type for compatibility with browse page
-export interface FilterState {
-    categories: string[];
-    priceRange: [number, number] | null;
-    minRating: number | null;
-    sortBy: 'relevance' | 'price_low' | 'price_high' | 'rating' | 'reviews';
-}
-
-// Context for sharing filter state between layout and page
-interface FilterContextType {
-    filters: FilterState;
-    setFilters: (filters: FilterState) => void;
-    isHomepage: boolean;
-    setIsHomepage: (value: boolean) => void;
-}
-
-const FilterContext = createContext<FilterContextType | null>(null);
-
-export function useFilters() {
-    const context = useContext(FilterContext);
-    if (!context) {
-        return {
-            filters: {
-                categories: [],
-                priceRange: null,
-                minRating: null,
-                sortBy: 'relevance' as const
-            },
-            setFilters: () => { },
-            isHomepage: true,
-            setIsHomepage: () => { }
-        };
-    }
-    return context;
-}
+import React, { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import UnifiedTopbar from '../UnifiedTopbar'
+import CategorySidebar from '../CategorySidebar'
 
 export default function BrowseLayout({ children }: { children: React.ReactNode }) {
-    const router = useRouter();
-    const pathname = usePathname();
-    const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [isHomepage, setIsHomepage] = useState(true);
-    const [filters, setFilters] = useState<FilterState>({
-        categories: [],
-        priceRange: null,
-        minRating: null,
-        sortBy: 'relevance'
-    });
+  const router = useRouter()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
-    const handleSearch = (query: string) => {
-        // Navigate to chat with the search query
-        router.push(`/chat?q=${encodeURIComponent(query)}&new=1`);
-    };
+  const handleSearch = (query: string) => {
+    router.push(`/chat?q=${encodeURIComponent(query)}&new=1`)
+  }
 
-    return (
-        <FilterContext.Provider value={{ filters, setFilters, isHomepage, setIsHomepage }}>
-            <div className="min-h-screen bg-[var(--background)] text-[var(--text)]">
-                {/* Unified Navigation */}
-                <UnifiedTopbar
-                    onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-                    onSearch={handleSearch}
-                    onNewChat={() => router.push('/chat?new=1')}
-                    onHistoryClick={() => router.push('/chat')}
-                />
+  return (
+    <div className="min-h-screen bg-[var(--background)] text-[var(--text)]">
+      {/* Unified Navigation */}
+      <UnifiedTopbar
+        onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+        onSearch={handleSearch}
+        onNewChat={() => router.push('/chat?new=1')}
+        onHistoryClick={() => router.push('/chat')}
+      />
 
-                {/* Category Sidebar (desktop) - Always visible on lg */}
-                <aside className="hidden lg:block fixed left-0 top-14 sm:top-16 bottom-0 w-56 z-30">
-                    <CategorySidebar />
-                </aside>
+      {/* Category Sidebar (desktop) */}
+      <aside className="hidden lg:block fixed left-0 top-14 sm:top-16 bottom-0 w-56 z-30">
+        <CategorySidebar />
+      </aside>
 
-                {/* Mobile Sidebar Overlay - Only render when open */}
-                {sidebarOpen && (
-                    <CategorySidebar
-                        isOpen={sidebarOpen}
-                        onClose={() => setSidebarOpen(false)}
-                    />
-                )}
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <CategorySidebar
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        />
+      )}
 
-                {/* Main Content - always offset for sidebar on lg */}
-                <main className={`lg:ml-56 pt-14 sm:pt-16 min-h-[calc(100vh-4rem)] ${!isHomepage ? 'pb-24' : ''}`}>
-                    {children}
-                </main>
+      {/* Main Content */}
+      <main className="lg:ml-56 pt-14 sm:pt-16 min-h-[calc(100vh-4rem)]">
+        {children}
+      </main>
+    </div>
+  )
+}
 
-                {/* Sticky Chat Bar at Bottom - Only on non-homepage */}
-                {!isHomepage && (
-                    <div className="fixed bottom-0 left-0 right-0 z-40 bg-[var(--background)]/80 backdrop-blur-xl border-t border-[var(--border)] p-4 lg:pl-[15rem]">
-                        <div className="max-w-3xl mx-auto px-4">
-                            <SearchInput placeholder="Ask AI about any product..." />
-                        </div>
-                    </div>
-                )}
-            </div>
-        </FilterContext.Provider>
-    );
+// Keep export for backward compatibility with any remaining imports
+export interface FilterState {
+  categories: string[]
+  priceRange: [number, number] | null
+  minRating: number | null
+  sortBy: 'relevance' | 'price_low' | 'price_high' | 'rating' | 'reviews'
+}
+
+export function useFilters() {
+  return {
+    filters: {
+      categories: [] as string[],
+      priceRange: null as [number, number] | null,
+      minRating: null as number | null,
+      sortBy: 'relevance' as const,
+    },
+    setFilters: () => {},
+    isHomepage: true,
+    setIsHomepage: () => {},
+  }
 }

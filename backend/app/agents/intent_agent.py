@@ -43,10 +43,13 @@ class IntentAgent(BaseAgent):
 
             # Get conversation history from state (already limited by ChatHistoryManager)
             conversation_history = state.get("conversation_history", [])
+            last_search_context = state.get("last_search_context", {})
             logger.info(f"[Intent Agent] Using {len(conversation_history)} messages from history for context")
+            if last_search_context:
+                logger.info(f"[Intent Agent] Last search context: category={last_search_context.get('category')}, products={len(last_search_context.get('product_names', []))}")
 
             # Call LLM for intent classification with history context
-            intent_result = await self._quick_intent_classification(text, conversation_history)
+            intent_result = await self._quick_intent_classification(text, conversation_history, last_search_context)
             intent = intent_result["intent"]
 
             return {"intent": intent}
@@ -56,10 +59,20 @@ class IntentAgent(BaseAgent):
             return {"intent": "general"}
 
 
-    async def _quick_intent_classification(self, text: str, conversation_history: list = None) -> Dict[str, Any]:
+    async def _quick_intent_classification(self, text: str, conversation_history: list = None, last_search_context: dict = None) -> Dict[str, Any]:
         """Call 1: Quick intent classification only (lightweight, ~1-2s)"""
 
-        system_prompt = """You are a fast intent classifier. Classify the user's CURRENT message into ONE category.
+        # Build context hint from last search if available
+        context_hint = ""
+        if last_search_context and last_search_context.get("category"):
+            cat = last_search_context.get("category", "")
+            products = ", ".join(last_search_context.get("product_names", [])[:3])
+            context_hint = f"""
+ACTIVE PRODUCT CONTEXT:
+The user was recently searching for {cat} products. Products discussed: {products}.
+Short follow-up messages like "cheapest one", "which is best", "compare them", "tell me more" should be classified as "product" since they reference this active context."""
+
+        system_prompt = f"""You are a fast intent classifier. Classify the user's CURRENT message into ONE category.
 
 Categories:
 - intro → greetings, asking what the bot can do, or asking for help, not an bot option choose
@@ -68,7 +81,7 @@ Categories:
 - travel → anything related to trip planning, destinations, activities at a location, accommodations, transportation, or travel comparisons
 - general → information only
 - unclear → gibberish, random characters, nonsense text
-
+{context_hint}
 CRITICAL CONTEXT RULE:
 When conversation history is provided, you MUST consider it. If the user's current message is a follow-up or continuation of a previous topic, maintain that topic's intent. A short or ambiguous message in an ongoing conversation should inherit the context's intent, not be classified as "general" or "unclear".
 
@@ -77,9 +90,9 @@ However, if the current message clearly indicates a new intent (contains specifi
 Think about: "What is the user trying to accomplish in THIS conversation?" not just "What does this single message mean in isolation?"
 
 Return ONLY valid JSON:
-{
+{{
   "intent": "intro|product|service|travel|general|unclear"
-}"""
+}}"""
 
         # Build messages with conversation history for context
         messages = [{"role": "system", "content": system_prompt}]

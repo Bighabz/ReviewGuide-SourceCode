@@ -248,6 +248,21 @@ class Settings(BaseSettings):
     )
     AMAZON_DEFAULT_COUNTRY: str = Field(default="US", description="Default country code for Amazon links")
 
+    # Walmart Affiliate (placeholder — not yet implemented)
+    WALMART_API_ENABLED: bool = Field(default=False, description="Enable Walmart affiliate API")
+    WALMART_API_KEY: str = Field(default="", description="Walmart Affiliate API key")
+    WALMART_AFFILIATE_ID: str = Field(default="", description="Walmart Impact Radius affiliate ID")
+
+    # Best Buy Affiliate (placeholder — not yet implemented)
+    BESTBUY_API_ENABLED: bool = Field(default=False, description="Enable Best Buy affiliate API")
+    BESTBUY_API_KEY: str = Field(default="", description="Best Buy Affiliate API key")
+    BESTBUY_AFFILIATE_ID: str = Field(default="", description="Best Buy affiliate tracking ID")
+
+    # Target Affiliate (placeholder — not yet implemented)
+    TARGET_API_ENABLED: bool = Field(default=False, description="Enable Target affiliate API")
+    TARGET_API_KEY: str = Field(default="", description="Target Affiliate API key")
+    TARGET_AFFILIATE_ID: str = Field(default="", description="Target Impact Radius affiliate ID")
+
     # IP Geolocation
     IPINFO_TOKEN: str = Field(default="", description="IPInfo.io API token for IP geolocation")
 

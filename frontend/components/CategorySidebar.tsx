@@ -1,30 +1,24 @@
 'use client'
 
 import {
-  Compass,
   Plane,
   Laptop,
-  Sparkles,
   Home,
-  Gamepad2,
-  Shirt,
-  Dumbbell,
+  Heart,
+  Mountain,
   User,
   X,
 } from 'lucide-react'
-import { useRouter, usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
+import { categories } from '@/lib/categoryConfig'
 
-const categories = [
-  { id: 'home', name: 'Discover', icon: Compass, isHome: true },
-  { id: 'travel', name: 'Travel', icon: Plane },
-  { id: 'electronics', name: 'Electronics', icon: Laptop },
-  { id: 'gaming', name: 'Gaming', icon: Gamepad2 },
-  { id: 'home-garden', name: 'Kitchen', icon: Home },
-  { id: 'fashion', name: 'Fashion', icon: Shirt },
-  { id: 'sports', name: 'Sports', icon: Dumbbell },
-  { id: 'beauty', name: 'Beauty', icon: Sparkles },
-]
+const ICON_MAP: Record<string, any> = {
+  Plane,
+  Laptop,
+  Home,
+  Heart,
+  Mountain,
+}
 
 interface CategorySidebarProps {
   isOpen?: boolean
@@ -32,30 +26,41 @@ interface CategorySidebarProps {
 }
 
 export default function CategorySidebar({ isOpen = true, onClose }: CategorySidebarProps) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const [theme, setTheme] = useState<'light' | 'dark'>('light')
+  const [activeSlug, setActiveSlug] = useState<string | null>(null)
+  const observerRef = useRef<IntersectionObserver | null>(null)
 
+  // IntersectionObserver to highlight active category on scroll
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null
-    setTheme(savedTheme || 'light')
+    const sections = categories
+      .map((cat) => document.getElementById(`category-${cat.slug}`))
+      .filter(Boolean) as HTMLElement[]
 
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
-          const newTheme = document.documentElement.getAttribute('data-theme') as 'light' | 'dark' | null
-          if (newTheme) setTheme(newTheme)
+    if (sections.length === 0) return
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            const slug = entry.target.id.replace('category-', '')
+            setActiveSlug(slug)
+          }
         }
-      })
-    })
+      },
+      { rootMargin: '-20% 0px -60% 0px', threshold: 0 }
+    )
 
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
-    return () => observer.disconnect()
+    sections.forEach((section) => observerRef.current?.observe(section))
+
+    return () => observerRef.current?.disconnect()
   }, [])
 
-  const logoSrc = theme === 'dark'
-    ? '/images/1815e5dc-c4db-4248-9aeb-0a815fd87a4b.png'
-    : '/images/8f4c1971-a5b0-474e-9fb1-698e76324f0b.png'
+  const handleClick = (slug: string) => {
+    document.getElementById(`category-${slug}`)?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    })
+    if (onClose) onClose()
+  }
 
   return (
     <>
@@ -93,18 +98,12 @@ export default function CategorySidebar({ isOpen = true, onClose }: CategorySide
           </div>
           <nav className="space-y-0.5">
             {categories.map((category) => {
-              const Icon = category.icon
-              const categoryPath = category.id === 'home' ? '/browse' : `/browse/${category.id}`
-              const isActive = category.id === 'home'
-                ? pathname === '/browse'
-                : pathname === `/browse/${category.id}`
+              const Icon = ICON_MAP[category.icon] || Laptop
+              const isActive = activeSlug === category.slug
               return (
                 <button
-                  key={category.id}
-                  onClick={() => {
-                    router.push(categoryPath)
-                    if (onClose) onClose()
-                  }}
+                  key={category.slug}
+                  onClick={() => handleClick(category.slug)}
                   className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-left transition-all group ${
                     isActive
                       ? 'bg-[var(--primary-light)] text-[var(--text)] font-semibold'

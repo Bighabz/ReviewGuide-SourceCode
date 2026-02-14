@@ -70,10 +70,11 @@ async def product_affiliate(
         product_names = state.get("product_names", [])
         max_offers = settings.MAX_AFFILIATE_OFFERS_PER_PRODUCT
 
-        # Get country code and category from slots (passed from frontend)
+        # Get country code and category from slots, with context fallback
         slots = state.get("slots", {})
+        last_search_context = state.get("last_search_context", {})
         country_code = slots.get("country_code", settings.AMAZON_DEFAULT_COUNTRY)
-        category = slots.get("category")
+        category = slots.get("category") or last_search_context.get("category")
 
         # Prepare product names to search
         products_to_search = []

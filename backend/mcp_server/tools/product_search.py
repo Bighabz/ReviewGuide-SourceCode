@@ -127,18 +127,31 @@ async def product_search(state: Dict[str, Any]) -> Dict[str, Any]:
         query = state.get("user_message", "")
         slots = state.get("slots", {})
         conversation_history = state.get("conversation_history", [])
+        last_search_context = state.get("last_search_context", {})
+        search_history = state.get("search_history", [])
 
-        # Extract optional slots for product search
+        # Check if user is referencing a previous search ("go back to vacuums")
+        if search_history and not slots.get("category"):
+            q_lower = query.lower()
+            for ctx in reversed(search_history):
+                cat = ctx.get("category", "").lower()
+                ptype = ctx.get("product_type", "").lower()
+                if (cat and cat in q_lower) or (ptype and ptype in q_lower):
+                    last_search_context = ctx
+                    logger.info(f"[product_search] Found matching history context: category={cat}")
+                    break
+
+        # Extract optional slots for product search, with context fallback
         product_name = slots.get("product_name", "")
-        category = slots.get("category", "")
-        brand = slots.get("brand", "")
-        budget = slots.get("budget", "")
+        category = slots.get("category", "") or last_search_context.get("category", "")
+        brand = slots.get("brand", "") or last_search_context.get("brand") or ""
+        budget = slots.get("budget", "") or last_search_context.get("budget") or ""
         size = slots.get("size", "")
         color = slots.get("color", "")
         material = slots.get("material", "")
         style = slots.get("style", "")
-        features = slots.get("features", "")
-        use_case = slots.get("use_case", "")
+        features = slots.get("features", "") or last_search_context.get("features") or ""
+        use_case = slots.get("use_case", "") or last_search_context.get("use_case") or ""
         gender = slots.get("gender", "")
 
         # Build search criteria from slots
@@ -192,12 +205,19 @@ async def product_search(state: Dict[str, Any]) -> Dict[str, Any]:
             if context_lines:
                 conversation_context = "\n".join(context_lines)
 
+        # Add previous search context for follow-up resolution
+        prev_products_block = ""
+        if last_search_context.get("product_names"):
+            prev_names = ", ".join(last_search_context["product_names"][:5])
+            prev_cat = last_search_context.get("category", "")
+            prev_products_block = f"\nPreviously discussed products ({prev_cat}): {prev_names}\n"
+
         # Build prompt with optional conversation context
         context_block = ""
-        if conversation_context:
-            context_block = f"""Recent conversation (resolve references like "those", "the ones", "the best reviewed ones", etc.):
+        if conversation_context or prev_products_block:
+            context_block = f"""Recent conversation (resolve references like "those", "the ones", "the best reviewed ones", "cheapest one", etc.):
 {conversation_context}
-
+{prev_products_block}
 """
 
         prompt = f"""{context_block}User is looking for: "{combined_query}"

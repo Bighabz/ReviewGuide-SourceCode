@@ -91,6 +91,10 @@ class GraphState(TypedDict):
     # Tool Status Updates (for tool citation messages)
     tool_citations: Annotated[List[Dict[str, str]], operator.add]  # [{tool: "travel_search_hotels", message: "Searching for hotels..."}]
 
+    # Search Context Persistence (for follow-up queries)
+    last_search_context: Dict[str, Any]  # Current/latest product search context
+    search_history: List[Dict[str, Any]]  # Previous search contexts (max 5)
+
     # Errors
     errors: Annotated[List[str], operator.add]
 

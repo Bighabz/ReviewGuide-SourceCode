@@ -74,6 +74,32 @@ class ClarifierAgent(BaseAgent):
                     "proceed_to_execution": True  # Skip to next agent
                 }
 
+            # Skip clarification for follow-up queries when search context exists
+            last_search_context = state.get("last_search_context", {})
+            if last_search_context and intent == "product":
+                user_msg = (state.get("sanitized_text") or state.get("user_message", "")).lower().strip()
+                reference_signals = [
+                    "that one", "the first", "the second", "the third",
+                    "cheapest", "most expensive", "best rated", "any of",
+                    "compare them", "which one", "between those",
+                    "more about", "tell me more", "go back to",
+                    "the one with", "how about the",
+                ]
+                is_follow_up = any(signal in user_msg for signal in reference_signals) or len(user_msg.split()) <= 4
+                if is_follow_up:
+                    logger.info(f"[Clarifier Agent] Follow-up query detected with search context — skipping clarification")
+                    # Inherit unfilled slots from context
+                    current_slots = state.get("slots", {})
+                    for key in ["budget", "brand", "features", "use_case", "category", "product_type"]:
+                        if not current_slots.get(key) and last_search_context.get(key):
+                            current_slots[key] = last_search_context[key]
+                    return {
+                        "slots": current_slots,
+                        "followups": [],
+                        "missing_required_slots": [],
+                        "proceed_to_execution": True
+                    }
+
             # Check if halt state exists (resumed session)
             halt_state = await HaltStateManager.get_halt_state(session_id)
 

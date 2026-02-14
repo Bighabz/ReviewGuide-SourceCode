@@ -7,6 +7,7 @@ import ErrorBanner from './ErrorBanner'
 import { streamChat, fetchConversationHistory } from '@/lib/chatApi'
 import { SUGGESTION_CLICK_PREFIX } from '@/lib/utils'
 import { TRENDING_SEARCHES, UI_TEXT, CHAT_CONFIG } from '@/lib/constants'
+import { saveRecentSearch } from '@/lib/recentSearches'
 
 export interface FollowupQuestion {
   slot: string
@@ -375,6 +376,23 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
           )
         }
         setIsStreaming(false)
+
+        // Save to recent searches if product results were shown
+        if (data.ui_blocks && pendingUserMessage) {
+          const productBlock = data.ui_blocks.find(
+            (b: any) => b.type === 'product_cards' || b.type === 'ebay_products' || b.type === 'amazon_products'
+          )
+          if (productBlock) {
+            const items = productBlock.data?.items || productBlock.items || productBlock.data || []
+            saveRecentSearch({
+              query: pendingUserMessage,
+              productNames: (Array.isArray(items) ? items : []).slice(0, 3).map((i: any) => i.title || i.name || '').filter(Boolean),
+              category: productBlock.category || '',
+              timestamp: Date.now(),
+            })
+          }
+        }
+
         setPendingUserMessage('')
         setIsRetrying(false)
         setIsReconnecting(false)
@@ -551,7 +569,7 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
       {/* Messages */}
       {messages.length > 0 && (
         <>
-          <MessageList messages={messages} />
+          <MessageList messages={messages} isStreaming={isStreaming} />
 
           {/* Reconnecting indicator */}
           {isReconnecting && (
