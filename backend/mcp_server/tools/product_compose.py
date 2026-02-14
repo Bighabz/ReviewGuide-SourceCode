@@ -357,10 +357,23 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
 
             product_name_list = [p.get("name", "") for p in normalized_products[:5] if p.get("name")]
 
+            # Build returning-user preference note for the concierge prompt
+            user_prefs = state.get("metadata", {}).get("user_preferences", {})
+            pref_note = ""
+            if user_prefs.get("brands") or user_prefs.get("categories"):
+                past_cats = list(user_prefs.get("categories", {}).keys())[:2]
+                past_brands = list(user_prefs.get("brands", {}).keys())[:2]
+                parts = []
+                if past_cats:
+                    parts.append(f"often searches for {', '.join(past_cats)}")
+                if past_brands:
+                    parts.append(f"favors {', '.join(past_brands)}")
+                pref_note = f"\nReturning user who {' and '.join(parts)}."
+
             assistant_text = await model_service.generate(
                 messages=[
                     {"role": "system", "content": "You are a product concierge. Write 2-3 SHORT sentences (max 60 words). Explain WHY these products match the user's needs. Reference their criteria from the conversation (budget, features, use case). Do NOT list products — they are shown in cards below. End with a brief, warm follow-up that shows you remember the user's context. Keep it to one sentence. Reference specific details they mentioned — names, preferences, use cases — to show you're paying attention."},
-                    {"role": "user", "content": f'User asked: "{user_message}"\nContext:\n{context_summary}\nProducts: {", ".join(product_name_list)}\nSources: {", ".join(provider_names)}'}
+                    {"role": "user", "content": f'User asked: "{user_message}"\nContext:\n{context_summary}{pref_note}\nProducts: {", ".join(product_name_list)}\nSources: {", ".join(provider_names)}'}
                 ],
                 model=settings.COMPOSER_MODEL,
                 temperature=0.7,
@@ -633,6 +646,13 @@ Products to describe:
             history = history[-5:]
 
         logger.info(f"[product_compose] Saving search context: category={new_context['category']}, {len(product_names)} products")
+
+        # Fire-and-forget: extract preferences from this query for cross-session memory
+        meta_user_id = state.get("metadata", {}).get("user_id")
+        if meta_user_id and slots:
+            import asyncio
+            from app.services.preference_service import update_user_preferences
+            asyncio.create_task(update_user_preferences(meta_user_id, slots or {}, new_context))
 
         return {
             "assistant_text": assistant_text,

@@ -105,7 +105,8 @@ async def generate_chat_stream(
     message: str,
     session_id: str,
     user_id: int,
-    country_code: Optional[str] = None
+    country_code: Optional[str] = None,
+    user_preferences: Optional[dict] = None
 ) -> AsyncGenerator[str, None]:
     """
     Generate SSE stream for chat responses with Langfuse tracking
@@ -267,6 +268,8 @@ async def generate_chat_stream(
                 # NOTE: Do NOT add langfuse_handler or callbacks here!
                 # CallbackHandler is passed via LangGraph config, not state
                 # Adding it to state causes massive JSON serialization that crashes browser
+                "user_id": user_id,
+                "user_preferences": user_preferences or {},
             },
             "created_at": datetime.now(timezone.utc),
         }
@@ -874,6 +877,10 @@ async def chat_stream(
 
     logger.debug(f"Session {session_id} → DB ID: {db_session_id}, user: {returned_user_id}, country: {country_code}")
 
+    # Load user preferences for cross-session context
+    from app.services.preference_service import load_user_preferences
+    user_preferences = await load_user_preferences(db, returned_user_id) if returned_user_id else {}
+
     # Return streaming response with user_id
     # Note: ChatHistoryManager is used internally for saving/loading messages
     return StreamingResponse(
@@ -881,7 +888,8 @@ async def chat_stream(
             chat_request.message,
             session_id,
             returned_user_id,
-            country_code  # Pass detected/stored country_code
+            country_code,  # Pass detected/stored country_code
+            user_preferences  # Pass loaded preferences
         ),
         media_type="text/event-stream",
         headers={

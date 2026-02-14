@@ -1,6 +1,7 @@
 """User model"""
 from datetime import datetime
 from sqlalchemy import Column, String, DateTime, Integer, Boolean
+from sqlalchemy.dialects.postgresql import JSONB
 
 from app.core.database import Base
 
@@ -13,6 +14,7 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     locale = Column(String(10), default="en", nullable=False)
     extended_search_enabled = Column(Boolean, default=False, nullable=False)
+    preferences = Column(JSONB, default=dict, server_default='{}', nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 

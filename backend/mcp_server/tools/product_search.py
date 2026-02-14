@@ -220,7 +220,21 @@ async def product_search(state: Dict[str, Any]) -> Dict[str, Any]:
 {prev_products_block}
 """
 
-        prompt = f"""{context_block}User is looking for: "{combined_query}"
+        # Build user preference context hints (from cross-session memory)
+        user_prefs = state.get("metadata", {}).get("user_preferences", {})
+        pref_context = ""
+        if user_prefs:
+            parts = []
+            if user_prefs.get("brands"):
+                top = sorted(user_prefs["brands"].items(), key=lambda x: x[1], reverse=True)[:3]
+                parts.append(f"frequently searches: {', '.join(b[0] for b in top)}")
+            if user_prefs.get("budget_ranges"):
+                parts.append(f"typical budget: {user_prefs['budget_ranges'][0]}")
+            if parts:
+                pref_context = f"\nUser preferences (for context only, do not override query): {'; '.join(parts)}"
+                logger.info(f"[product_search] User preferences: {pref_context.strip()}")
+
+        prompt = f"""{context_block}User is looking for: "{combined_query}"{pref_context}
 
 Generate a list of 5-8 SPECIFIC product model names that match this request.
 
