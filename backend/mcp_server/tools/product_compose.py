@@ -57,7 +57,7 @@ ACCESSORY_KEYWORDS = {
 }
 
 
-def _fuzzy_product_match(query_name: str, candidate_name: str, threshold: float = 0.45) -> bool:
+def _fuzzy_product_match(query_name: str, candidate_name: str, threshold: float = 0.35) -> bool:
     """Token-overlap Jaccard similarity for fuzzy product matching."""
     q_tokens = set(query_name.lower().split())
     c_tokens = set(candidate_name.lower().split())
@@ -497,7 +497,7 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
             provider_products = []
             for affiliate_group in provider_data:
                 if affiliate_group.get("offers"):
-                    for offer in affiliate_group["offers"][:3]:  # Top 3 offers per product
+                    for offer in affiliate_group["offers"][:5]:  # Top 5 offers per product
                         product_item = {
                             "title": offer.get("title", ""),
                             "price": offer.get("price", 0),

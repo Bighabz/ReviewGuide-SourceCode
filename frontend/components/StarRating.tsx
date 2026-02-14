@@ -18,8 +18,9 @@ export function StarRating({
     showCount = false,
     count
 }: StarRatingProps) {
-    const fullStars = Math.floor(value)
-    const hasHalfStar = value % 1 >= 0.5
+    const clamped = Math.min(Math.max(value, 0), max)
+    const fullStars = Math.floor(clamped)
+    const hasHalfStar = clamped % 1 >= 0.5
     const emptyStars = max - fullStars - (hasHalfStar ? 1 : 0)
 
     return (

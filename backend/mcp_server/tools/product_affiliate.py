@@ -81,7 +81,7 @@ async def product_affiliate(
 
         # First try to get names from normalized_products
         if products:
-            for product in products[:5]:  # Limit to top 5 products
+            for product in products[:8]:  # Limit to top 8 products
                 product_name = product.get("title") or product.get("name") or ""
                 if product_name:
                     products_to_search.append(product_name)
@@ -89,7 +89,7 @@ async def product_affiliate(
         # Fallback to product_names if normalized_products is empty
         if not products_to_search and product_names:
             logger.info("[product_affiliate] Using product_names as fallback (normalized_products was empty)")
-            products_to_search = product_names[:5]
+            products_to_search = product_names[:8]
 
         logger.info(f"[product_affiliate] Finding links for {len(products_to_search)} products (country={country_code})")
 
