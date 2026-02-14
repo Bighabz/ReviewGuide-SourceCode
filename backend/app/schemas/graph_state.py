@@ -70,6 +70,7 @@ class GraphState(TypedDict):
     travel_info: Optional[Dict[str, Any]]  # Enriched travel information (destination, dates, budget, etc.)
     hotels: List[Dict[str, Any]]
     flights: List[Dict[str, Any]]
+    cars: List[Dict[str, Any]]  # Rental car PLP search links
     itinerary: List[Dict[str, Any]]
     travel_results: Optional[Dict[str, Any]]  # Combined travel planning results
 

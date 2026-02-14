@@ -146,6 +146,51 @@ class ExpediaPLPLinkGenerator:
         return url
 
 
+    @staticmethod
+    def generate_car_rental_search_url(
+        location: str,
+        pickup_date: Optional[date] = None,
+        dropoff_date: Optional[date] = None,
+        pickup_time: str = "1000AM",
+        dropoff_time: str = "1000AM"
+    ) -> str:
+        """
+        Generate Expedia car rental search PLP URL.
+
+        Format:
+        https://www.expedia.com/carsearch?locn=<LOCATION>&date1=MM/DD/YYYY&time1=1000AM&date2=MM/DD/YYYY&time2=1000AM&partnerId=...
+
+        Args:
+            location: Pickup city or location
+            pickup_date: Pickup date (uses today + 30 days if not provided)
+            dropoff_date: Drop-off date (uses pickup + 5 days if not provided)
+            pickup_time: Pickup time in Expedia format (default 10:00 AM)
+            dropoff_time: Drop-off time in Expedia format (default 10:00 AM)
+
+        Returns:
+            Expedia car rental search URL with affiliate partner ID
+        """
+        encoded_location = quote_plus(location)
+
+        if not pickup_date:
+            pickup_date = date.today() + timedelta(days=30)
+        if not dropoff_date:
+            dropoff_date = pickup_date + timedelta(days=5)
+
+        pickup_str = pickup_date.strftime('%m/%d/%Y')
+        dropoff_str = dropoff_date.strftime('%m/%d/%Y')
+
+        url = (
+            f"https://www.expedia.com/carsearch?"
+            f"locn={encoded_location}"
+            f"&date1={pickup_str}&time1={pickup_time}"
+            f"&date2={dropoff_str}&time2={dropoff_time}"
+            f"&partnerId={EXPEDIA_PARTNER_ID}"
+        )
+
+        return url
+
+
 @ProviderRegistry.register_hotel_provider("expedia_plp")
 class ExpediaPLPHotelProvider(HotelProvider):
     """

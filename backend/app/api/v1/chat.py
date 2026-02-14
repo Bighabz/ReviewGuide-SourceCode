@@ -251,6 +251,7 @@ async def generate_chat_stream(
             "travel_info": halt_state_data.get("travel_info", {}) if halt_state_data else {},
             "hotels": halt_state_data.get("hotels", []) if halt_state_data else [],
             "flights": halt_state_data.get("flights", []) if halt_state_data else [],
+            "cars": halt_state_data.get("cars", []) if halt_state_data else [],
             "itinerary": halt_state_data.get("itinerary", []) if halt_state_data else [],
             "travel_results": halt_state_data.get("travel_results") if halt_state_data else None,
             "stream_chunk_data": None,

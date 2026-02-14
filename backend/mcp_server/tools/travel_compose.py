@@ -68,6 +68,7 @@ async def travel_compose(state: Dict[str, Any]) -> Dict[str, Any]:
     itinerary = state.get("itinerary")
     hotels = state.get("hotels")
     flights = state.get("flights")
+    cars = state.get("cars")
     destination_facts = state.get("destination_facts")
     general_travel_info = state.get("general_travel_info")
     travel_results = state.get("travel_results")
@@ -85,10 +86,11 @@ async def travel_compose(state: Dict[str, Any]) -> Dict[str, Any]:
     has_itinerary = itinerary and len(itinerary) > 0
     has_hotels = hotels and len(hotels) > 0
     has_flights = flights and len(flights) > 0
+    has_cars = cars and len(cars) > 0
     has_destination_facts = destination_facts and isinstance(destination_facts, dict)
     has_general_info = general_travel_info and len(str(general_travel_info).strip()) > 0
 
-    logger.info(f"[travel_compose] has_itinerary={has_itinerary}, has_hotels={has_hotels}, has_flights={has_flights}, has_destination_facts={has_destination_facts}, has_general_info={has_general_info}")
+    logger.info(f"[travel_compose] has_itinerary={has_itinerary}, has_hotels={has_hotels}, has_flights={has_flights}, has_cars={has_cars}, has_destination_facts={has_destination_facts}, has_general_info={has_general_info}")
 
     # Build intro text directly without LLM call for speed
     # Extract key info from slots
@@ -118,6 +120,9 @@ async def travel_compose(state: Dict[str, Any]) -> Dict[str, Any]:
             parts.append("I've found hotel options for your stay.")
         elif has_flights:
             parts.append("I've found flight options for your trip.")
+
+        if has_cars:
+            parts.append("I've also found rental car options for you.")
         elif has_destination_facts:
             # Extract activities, attractions, restaurants from destination_facts
             activities = destination_facts.get("activities", [])
@@ -143,6 +148,9 @@ async def travel_compose(state: Dict[str, Any]) -> Dict[str, Any]:
     if has_hotels:
         ui_blocks.append({"type": "hotels", "data": hotels[:5]})
         logger.info(f"[travel_compose] Added hotels UI block with {len(hotels[:5])} hotels")
+    if has_cars:
+        ui_blocks.append({"type": "cars", "data": cars})
+        logger.info(f"[travel_compose] Added cars UI block with {len(cars)} car rental links")
 
     # Add destination facts UI blocks
     if has_destination_facts:

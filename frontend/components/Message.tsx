@@ -16,6 +16,7 @@ import ItineraryView from './ItineraryView'
 import ComparisonTable from './ComparisonTable'
 import ListBlock from './ListBlock'
 import DestinationInfo from './DestinationInfo'
+import CarRentalCard from './CarRentalCard'
 import ReviewSources from './ReviewSources'
 import { useState, useEffect } from 'react'
 import { formatTimestamp, formatFullTimestamp, SUGGESTION_CLICK_PREFIX } from '@/lib/utils'
@@ -357,6 +358,21 @@ export default function Message({ message }: MessageProps) {
     )
   }
 
+  const renderCarRentals = () => {
+    if (!message.ui_blocks || message.ui_blocks.length === 0) return null
+
+    const carBlocks = message.ui_blocks.filter(block => block.type === 'cars')
+    if (carBlocks.length === 0) return null
+
+    return (
+      <div className="space-y-6 mt-6 w-full">
+        {carBlocks.map((block, idx) => (
+          <CarRentalCard key={idx} cars={block.data || []} />
+        ))}
+      </div>
+    )
+  }
+
   const renderItinerary = () => {
     // Check for itinerary in ui_blocks first
     if (message.ui_blocks && message.ui_blocks.length > 0) {
@@ -596,6 +612,7 @@ export default function Message({ message }: MessageProps) {
 
               {/* 6. Render travel UI blocks */}
               {renderTravelCards()}
+              {renderCarRentals()}
               {renderItinerary()}
               {renderDestinationFacts()}
 
