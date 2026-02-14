@@ -8,6 +8,7 @@ Returns ONLY product names - other tools handle specs, reviews, affiliate links.
 import sys
 import os
 import json
+import datetime
 from typing import Dict, Any, List
 from app.core.error_manager import tool_error_handler
 
@@ -254,7 +255,7 @@ Return ONLY a JSON object with product names:
         # Use PRODUCT_SEARCH_MODEL with configurable max_tokens (important for reasoning models)
         response = await model_service.generate(
             messages=[
-                {"role": "system", "content": "You are a product name generator. Generate product names based on user's request. NEVER refuse or say a product doesn't exist. Always return valid JSON with product names."},
+                {"role": "system", "content": f"You are a product name generator. Today's date is {datetime.date.today().isoformat()}. Generate product names based on user's request using the LATEST models and versions available as of today. For example, if asked about iPhones, use the current generation (not older ones). NEVER refuse or say a product doesn't exist. Always return valid JSON with product names."},
                 {"role": "user", "content": prompt}
             ],
             model=settings.PRODUCT_SEARCH_MODEL,

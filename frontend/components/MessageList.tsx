@@ -13,6 +13,7 @@ export default function MessageList({ messages, isStreaming }: MessageListProps)
   const [userScrolledUp, setUserScrolledUp] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const prevMessageCountRef = useRef(messages.length)
 
   // Detect user scroll intent
   useEffect(() => {
@@ -28,17 +29,23 @@ export default function MessageList({ messages, isStreaming }: MessageListProps)
     return () => container.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // Auto-scroll only when user hasn't scrolled up
+  // Auto-scroll only for new messages (not updates to existing ones like follow-up suggestions)
   useEffect(() => {
-    if (!userScrolledUp) {
+    const newCount = messages.length
+    const isNewMessage = newCount > prevMessageCountRef.current
+    prevMessageCountRef.current = newCount
+
+    if (isNewMessage) {
+      setUserScrolledUp(false)
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    } else if (!userScrolledUp) {
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
   }, [messages, userScrolledUp])
 
-  // Snap to bottom + reset flag when streaming completes
+  // When streaming completes, scroll only if user hasn't scrolled up
   useEffect(() => {
-    if (!isStreaming) {
-      setUserScrolledUp(false)
+    if (!isStreaming && !userScrolledUp) {
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
   }, [isStreaming])
