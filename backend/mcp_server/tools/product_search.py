@@ -46,48 +46,6 @@ TOOL_CONTRACT = {
 }
 
 
-async def _normalize_query(query: str, model_service, settings, logger) -> str:
-    """
-    Fix typos and expand abbreviations in user queries using a fast LLM call.
-    Returns the original query on any error.
-    """
-    try:
-        response = await model_service.generate(
-            messages=[
-                {"role": "system", "content": (
-                    "You fix typos and expand common tech abbreviations in product search queries. "
-                    "Return the FULL corrected query, not just the changed word. "
-                    "Return ONLY a JSON object: {\"normalized\": \"full corrected query\", \"changes\": [\"description of change\"]}. "
-                    "If no changes needed, return the original query as normalized. "
-                    "Examples: "
-                    "'best computer for hosting lllms' -> 'best computer for hosting LLMs', "
-                    "'wireles headfones under 200' -> 'wireless headphones under 200', "
-                    "'best moniter for programing' -> 'best monitor for programming'."
-                )},
-                {"role": "user", "content": query}
-            ],
-            model=settings.PRODUCT_SEARCH_MODEL,
-            temperature=0.0,
-            max_tokens=100,
-            response_format={"type": "json_object"},
-            agent_name="query_normalize"
-        )
-
-        data = json.loads(response)
-        normalized = data.get("normalized", query).strip()
-        changes = data.get("changes", [])
-
-        if normalized and normalized != query:
-            logger.info(f"[query_normalize] '{query}' -> '{normalized}' (changes: {changes})")
-            return normalized
-
-        return query
-
-    except Exception as e:
-        logger.warning(f"[query_normalize] Failed, using original query: {e}")
-        return query
-
-
 @tool_error_handler(tool_name="product_search", error_message="Failed to search products")
 async def product_search(state: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -185,9 +143,6 @@ async def product_search(state: Dict[str, Any]) -> Dict[str, Any]:
         combined_query = query
         if slot_criteria:
             combined_query = f"{query}\n\nAdditional criteria:\n{slot_criteria}"
-
-        # Normalize query to fix typos and expand abbreviations
-        combined_query = await _normalize_query(combined_query, model_service, settings, logger)
 
         logger.info(f"[product_search] Query: {query}")
         if slot_criteria:

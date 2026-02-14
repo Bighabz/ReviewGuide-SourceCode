@@ -265,6 +265,34 @@ class ClarifierAgent(BaseAgent):
                     missing_required_slots.append(slot)
                     logger.info(f"  Missing required slot: '{slot}' (needed by {tools_by_required_slot[slot]})")
 
+        # Travel intent: inject sensible defaults so we produce results immediately
+        intent = state.get("intent", "")
+        if intent == "travel" and missing_required_slots:
+            from datetime import datetime, timedelta
+            defaults = {
+                "adults": 2,
+                "duration_days": 5,
+                "departure_date": (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d"),
+            }
+            for slot_name, default_value in defaults.items():
+                if slot_name in missing_required_slots and (slot_name not in current_slots or not current_slots[slot_name]):
+                    current_slots[slot_name] = default_value
+                    logger.info(f"[Clarifier Agent] Injected travel default: {slot_name}={default_value}")
+            # Apply departure_date as check_in if check_in is missing
+            if "check_in" not in current_slots or not current_slots["check_in"]:
+                if current_slots.get("departure_date"):
+                    current_slots["check_in"] = current_slots["departure_date"]
+            # Recalculate missing required slots after defaults
+            missing_required_slots = [
+                slot for slot in all_required_slots
+                if (slot not in current_slots or not current_slots[slot])
+                and not (slot in slot_replacements and (slot_replacements[slot] in current_slots and current_slots[slot_replacements[slot]]))
+            ]
+            if missing_required_slots:
+                logger.info(f"[Clarifier Agent] Still missing after travel defaults: {missing_required_slots}")
+            else:
+                logger.info(f"[Clarifier Agent] All travel slots filled via defaults, proceeding")
+
         # Check if all slots are now filled after extraction
         if not missing_required_slots:
             logger.info(f"[Clarifier Agent] All required slots extracted from initial message, proceeding to execution")

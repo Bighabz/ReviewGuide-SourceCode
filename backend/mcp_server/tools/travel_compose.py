@@ -192,6 +192,13 @@ async def travel_compose(state: Dict[str, Any]) -> Dict[str, Any]:
             })
             logger.info(f"[travel_compose] Added destination_info UI block")
 
+    # Add a conclusion that invites the user to refine their search
+    destination = state.get("slots", {}).get("destination", "your destination")
+    ui_blocks.append({
+        "type": "conclusion",
+        "data": {"text": f"Want better results? Tell me your travel dates, number of travelers, or whether you prefer beach, city, or countryside — and I'll tailor everything for {destination}."}
+    })
+
     logger.info(f"[travel_compose] Total UI blocks created: {len(ui_blocks)}")
     logger.info(f"[travel_compose] UI blocks: {ui_blocks}")
 
