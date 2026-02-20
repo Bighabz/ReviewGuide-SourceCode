@@ -30,7 +30,7 @@ TOOL_CONTRACT = {
     "intent": "travel",
     "tools": {
         "pre": [],  # Entry-point tool - no dependencies
-        "post": []  # Compose is auto-added at end of intent
+        "post": ["travel_search_hotels", "travel_search_flights", "travel_search_cars"]
     },
     "produces": ["itinerary"],
     "required_slots": ["destination", "duration_days"],

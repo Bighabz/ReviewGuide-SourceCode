@@ -30,7 +30,7 @@ TOOL_CONTRACT = {
     "not_for": ["travel itinerary"],
     "tools": {
         "pre": [],  # Entry-point tool - no dependencies
-        "post": []  # Compose is auto-added at end of intent
+        "post": ["travel_search_hotels", "travel_search_flights"]
     },
     "produces": ["destination_facts"],
     "citation_message": "Researching your destination...",

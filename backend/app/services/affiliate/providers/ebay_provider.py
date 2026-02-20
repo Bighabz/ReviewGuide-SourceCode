@@ -7,6 +7,7 @@ from app.core.centralized_logger import get_logger
 import httpx
 import base64
 import hashlib
+import time
 from typing import List, Dict, Any, Optional
 from urllib.parse import quote, urlencode
 from app.services.affiliate.base import BaseAffiliateProvider, AffiliateProduct
@@ -194,6 +195,7 @@ class EbayAffiliateProvider(BaseAffiliateProvider):
         self.custom_id = custom_id or settings.EBAY_AFFILIATE_CUSTOM_ID
         self.timeout = timeout
         self.oauth_token = None  # Will be generated on demand
+        self.token_expires_at = 0  # Unix timestamp when token expires
         self.api_enabled = bool(self.app_id and self.cert_id)
 
         # eBay API endpoints
@@ -225,18 +227,24 @@ class EbayAffiliateProvider(BaseAffiliateProvider):
         """Return provider name"""
         return "eBay"
 
+    def _invalidate_token(self):
+        """Clear cached OAuth token so the next call fetches a fresh one."""
+        self.oauth_token = None
+        self.token_expires_at = 0
+
     async def _get_oauth_token(self) -> str:
         """
         Generate OAuth token from App ID and Cert ID
 
         Uses client_credentials flow with Basic Auth
         Token is valid for ~2 hours (7200 seconds)
+        Refreshes automatically 5 minutes before expiry.
 
         Returns:
             OAuth access token
         """
-        if self.oauth_token:
-            # TODO: Add token expiry check in production
+        # Return cached token if still valid (with 5-minute buffer)
+        if self.oauth_token and time.time() < (self.token_expires_at - 300):
             return self.oauth_token
 
         try:
@@ -254,7 +262,7 @@ class EbayAffiliateProvider(BaseAffiliateProvider):
                 "scope": "https://api.ebay.com/oauth/api_scope"
             }
 
-            logger.debug("Requesting eBay OAuth token")
+            logger.info("Requesting new eBay OAuth token")
             response = await self.client.post(
                 self.oauth_url,
                 headers=headers,
@@ -267,10 +275,14 @@ class EbayAffiliateProvider(BaseAffiliateProvider):
 
             token_data = response.json()
             self.oauth_token = token_data["access_token"]
-            logger.info("Successfully obtained eBay OAuth token")
+            # eBay tokens typically expire in 7200 seconds (2 hours)
+            expires_in = token_data.get("expires_in", 7200)
+            self.token_expires_at = time.time() + expires_in
+            logger.info(f"Successfully obtained eBay OAuth token (expires in {expires_in}s)")
             return self.oauth_token
 
         except Exception as e:
+            self._invalidate_token()
             logger.error(f"Failed to get eBay OAuth token: {str(e)}", exc_info=True)
             raise
 
@@ -351,6 +363,14 @@ class EbayAffiliateProvider(BaseAffiliateProvider):
             logger.info(f"  eBay API URL: {url}")
             logger.info(f"  Request params: {params}")
             response = await self.client.get(url, headers=headers, params=params)
+
+            if response.status_code == 401:
+                # Token expired — refresh and retry once
+                logger.warning("eBay API returned 401 — refreshing OAuth token and retrying")
+                self._invalidate_token()
+                token = await self._get_oauth_token()
+                headers["Authorization"] = f"Bearer {token}"
+                response = await self.client.get(url, headers=headers, params=params)
 
             if response.status_code != 200:
                 logger.error(
