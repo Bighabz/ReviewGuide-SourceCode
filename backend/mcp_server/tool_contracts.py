@@ -9,7 +9,7 @@ import sys
 from app.core.centralized_logger import get_logger
 from pathlib import Path
 from typing import Dict, List
-from toon_python import encode
+from app.lib.toon_python import encode
 
 logger = get_logger(__name__)
 

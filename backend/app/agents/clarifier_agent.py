@@ -24,7 +24,7 @@ from tool_contracts import get_tool_contracts_dict  # noqa: E402
 from ..schemas.graph_state import GraphState
 from .base_agent import BaseAgent
 from ..services.halt_state_manager import HaltStateManager
-from toon_python import encode
+from app.lib.toon_python import encode
 
 logger = get_logger(__name__)
 
