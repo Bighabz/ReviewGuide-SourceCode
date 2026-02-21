@@ -296,13 +296,14 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
       }
     }
 
-    // Create assistant message placeholder
+    // Create assistant message placeholder with thinking state
     const assistantMessageId = (Date.now() + 1).toString()
     const assistantMessage: Message = {
       id: assistantMessageId,
       role: 'assistant',
       content: '',
       timestamp: new Date(),
+      isThinking: true,  // Show "Thinking..." immediately until first real token
     }
 
     setMessages((prev) => [...prev, assistantMessage])

@@ -323,22 +323,13 @@ async def generate_chat_stream(
 
         # Main loop: check both citation buffer and event queue
         while True:
-            # First, stream any citations in buffer
+            # Drain citation buffer (log only, don't stream to frontend)
             while citation_buffer:
                 citation = citation_buffer.pop(0)
                 tool_name = citation.get("tool", "")
                 message = citation.get("message", "")
                 if message:
-                    # Extract short tool name (e.g., "travel_search_hotels" -> "search_hotels")
-                    tool_short_name = tool_name.split("_", 1)[1] if "_" in tool_name else tool_name
-
-                    status_chunk = {
-                        "status_update": message,
-                        "tool": tool_short_name,
-                        "done": False,
-                    }
-                    yield f"data: {json.dumps(status_chunk)}\n\n"
-                    logger.info(f"📤 Streamed tool citation from buffer: {tool_name} - {message}")
+                    logger.info(f"🔇 Tool citation (suppressed): {tool_name} - {message}")
 
             # Then try to get event with short timeout
             try:
@@ -352,25 +343,12 @@ async def generate_chat_stream(
             event_type = event.get("event")
             event_name = event.get("name", "")
 
-            # Detect when agents START (on_chain_start) - send status messages
+            # Detect when agents START (on_chain_start) - log only, don't stream to frontend
             if event_type == "on_chain_start":
-                # Dynamic lookup of agent instance and its status message
                 agent_instance = AGENT_NAME_TO_INSTANCE.get(event_name)
                 if agent_instance and hasattr(agent_instance, 'on_chain_start_message') and agent_instance.on_chain_start_message:
-                    # Special handling for clarifier: only send for second pass (after itinerary)
-                    if event_name == "agent_travel_clarifier" and last_node_name != "itinerary":
-                        continue
-
-                    # Extract short agent name from event_name (e.g., "agent_travel_planner" -> "planner")
                     agent_short_name = event_name.split("_")[-1] if "_" in event_name else event_name
-
-                    status_chunk = {
-                        "status_update": agent_instance.on_chain_start_message,
-                        "agent": agent_short_name,
-                        "done": False,
-                    }
-                    yield f"data: {json.dumps(status_chunk)}\n\n"
-                    logger.info(f"📤 Sent status update from {event_name}: {agent_instance.on_chain_start_message}")
+                    logger.info(f"🔇 Agent status (suppressed): {event_name} - {agent_instance.on_chain_start_message}")
                     last_node_name = agent_short_name
 
             # Detect when nodes complete and check next_agent (for immediate status messages)
@@ -409,35 +387,18 @@ async def generate_chat_stream(
                                 data_already_streamed = True
                                 logger.info(f"📤 Streamed {data_type} from {event_name}")
 
-                    # Check if next_agent=travel_planner for early status message
+                    # Log travel planner transition (no longer streamed to frontend)
                     if isinstance(output_data, dict) and output_data.get("next_agent") == "travel_planner":
-                        # Send status message immediately BEFORE travel_planner starts
-                        status_chunk = {
-                            "status_update": "✈️ Finding the best flights and hotels...",
-                            "agent": "planner",
-                            "done": False,
-                        }
-                        yield f"data: {json.dumps(status_chunk)}\n\n"
-                        logger.info(f"🏨 Sent status update EARLY (from {event_name} completion with next_agent=travel_planner)")
+                        logger.info(f"🔇 Travel planner status (suppressed): from {event_name}")
                         last_node_name = "planner"
 
         # Wait for event task to complete
         await event_task
 
-        # Stream any remaining citations in buffer
+        # Drain any remaining citations (log only)
         while citation_buffer:
             citation = citation_buffer.pop(0)
-            tool_name = citation.get("tool", "")
-            message = citation.get("message", "")
-            if message:
-                tool_short_name = tool_name.split("_", 1)[1] if "_" in tool_name else tool_name
-                status_chunk = {
-                    "status_update": message,
-                    "tool": tool_short_name,
-                    "done": False,
-                }
-                yield f"data: {json.dumps(status_chunk)}\n\n"
-                logger.info(f"📤 Streamed remaining citation from buffer: {tool_name} - {message}")
+            logger.info(f"🔇 Remaining citation (suppressed): {citation.get('tool')} - {citation.get('message')}")
 
         # Fallback: if we didn't get final state from events, use astream to get it
         if not result_state:

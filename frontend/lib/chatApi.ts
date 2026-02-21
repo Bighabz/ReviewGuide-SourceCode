@@ -162,9 +162,11 @@ export async function streamChat({
                 onClear()
               }
 
-              // Handle status updates (e.g., "writing itinerary...")
+              // Status updates are suppressed — backend no longer sends them,
+              // but ignore any that leak through for safety
               if (chunk.status_update) {
-                onToken(chunk.status_update, true)  // true = placeholder that will be replaced
+                // Do nothing — frontend shows generic "Thinking..." instead
+                continue
               }
 
               if (chunk.token) {

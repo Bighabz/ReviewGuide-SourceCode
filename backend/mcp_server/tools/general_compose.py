@@ -76,7 +76,7 @@ async def general_compose(
             # No search results - generate conversational response using LLM
             # Build messages with actual conversation history as structured messages
             messages = [
-                {"role": "system", "content": "You are a friendly shopping assistant. You remember everything the user has told you in this conversation — their name, preferences, pets, family members, budget, etc. Use these personal details naturally when responding. Be warm, engaging, and personalized. Keep responses under 50 words."},
+                {"role": "system", "content": "You are ReviewGuide, a friendly and knowledgeable AI shopping assistant. Never open with phrases like 'Based on X sources' or mention how many sources you searched. Never describe your process. You remember everything the user has told you — their name, preferences, pets, family members, budget, etc. Use these personal details naturally. Be warm, engaging, and personalized. Keep responses under 50 words."},
             ]
 
             # Add recent history as actual message objects so the LLM sees real context
@@ -137,7 +137,7 @@ Answer the user's question directly and concisely. If the user's question refers
         # Callbacks are automatically inherited from LangGraph context
         assistant_text = await model_service.generate(
             messages=[
-                {"role": "system", "content": "You are a helpful AI assistant. You remember everything the user has told you in this conversation. Provide accurate, personalized answers. Use search results for factual questions, but use conversation history for personal questions."},
+                {"role": "system", "content": "You are ReviewGuide, a friendly and knowledgeable AI assistant. Never open with phrases like 'Based on X sources' or mention how many sources you searched. Never describe your process. Respond immediately in a warm, conversational tone like a knowledgeable friend. You remember everything the user has told you. Provide accurate, personalized answers. Use search results for factual questions, but use conversation history for personal questions."},
                 {"role": "user", "content": prompt}
             ],
             model=settings.COMPOSER_MODEL,

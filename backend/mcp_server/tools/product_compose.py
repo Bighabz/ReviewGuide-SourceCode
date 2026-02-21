@@ -420,7 +420,7 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
 
             llm_tasks['concierge'] = model_service.generate(
                 messages=[
-                    {"role": "system", "content": "You are a product concierge. Write 2-3 SHORT sentences (max 60 words). Explain WHY these products match the user's needs. Reference their criteria from the conversation (budget, features, use case). Do NOT list products — they are shown in cards below. End with a brief, warm follow-up that shows you remember the user's context. Keep it to one sentence. Reference specific details they mentioned — names, preferences, use cases — to show you're paying attention."},
+                    {"role": "system", "content": "You are ReviewGuide, a friendly and knowledgeable AI shopping assistant. Never open with phrases like 'Based on X sources' or mention how many sources you searched. Never describe your process. Write 2-3 SHORT sentences (max 60 words). Explain WHY these products match the user's needs. Reference their criteria from the conversation (budget, features, use case). Do NOT list products — they are shown in cards below. End with a brief, warm follow-up that shows you remember the user's context."},
                     {"role": "user", "content": f'User asked: "{user_message}"\nContext:\n{context_summary}{pref_note}\nProducts: {", ".join(product_name_list)}\nSources: {", ".join(provider_names)}'}
                 ],
                 model=settings.COMPOSER_MODEL,
@@ -442,7 +442,7 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
                 ])
                 llm_tasks[f'consensus:{product_name}'] = model_service.generate(
                     messages=[
-                        {"role": "system", "content": "You summarize product review consensus. Write 2-3 sentences explaining why this product is highly rated. Mention specific strengths reviewers agree on. Weave in source names only when it adds credibility (e.g., 'Wirecutter highlights its noise cancellation' rather than 'According to Wirecutter and RTINGS...'). Be concise and factual."},
+                        {"role": "system", "content": "You summarize product review consensus. Never open with 'Based on X sources' or mention how many sources you searched. Write 2-3 sentences explaining why this product is highly rated. Mention specific strengths reviewers agree on. Weave in source names only when it adds credibility (e.g., 'Wirecutter highlights its noise cancellation' rather than 'According to Wirecutter and RTINGS...'). Be concise and factual."},
                         {"role": "user", "content": f"Product: {product_name}\nAvg Rating: {bundle.get('avg_rating', 0)}/5 from {bundle.get('total_reviews', 0)} reviews\n\nReview excerpts:\n{source_snippets}\n\nWrite a 2-3 sentence consensus summary."}
                     ],
                     model=settings.COMPOSER_MODEL,
@@ -456,7 +456,7 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
             if review_bundles:
                 llm_tasks['opener'] = model_service.generate(
                     messages=[
-                        {"role": "system", "content": "Write a warm 1-2 sentence intro for product review results. Reference what the user asked for — their budget, use case, or features. Sound like a knowledgeable friend, not a search engine. NEVER mention source counts, number of reviews, or 'trusted sources'. Max 30 words."},
+                        {"role": "system", "content": "Write a warm 1-2 sentence intro for product review results. Reference what the user asked for — their budget, use case, or features. Sound like a knowledgeable friend, not a search engine. NEVER mention source counts, number of reviews, or 'trusted sources'. Never describe your process. Respond immediately in a conversational tone. Max 30 words."},
                         {"role": "user", "content": f'User asked: "{user_message}"'}
                     ],
                     model=settings.COMPOSER_MODEL,
@@ -513,7 +513,7 @@ Products to describe:
         if products_by_provider:
             llm_tasks['conclusion'] = model_service.generate(
                 messages=[
-                    {"role": "system", "content": f"Today is {datetime.utcnow().strftime('%B %Y')}. Write ONE short sentence (max 25 words) wrapping up a product search. Mention the number of results and where they're from. Be warm and conversational. Do NOT list products or prices. Do NOT use markdown."},
+                    {"role": "system", "content": f"Today is {datetime.utcnow().strftime('%B %Y')}. Write ONE short sentence (max 25 words) wrapping up a product search. Mention the number of results and where they're from. Be warm and conversational. Never describe your process or mention 'sources'. Do NOT list products or prices. Do NOT use markdown."},
                     {"role": "user", "content": f'User asked: "{user_message}"\nShowing {num_products} products from {num_providers} retailer(s). Providers: {", ".join(products_by_provider.keys())}'}
                 ],
                 model=settings.COMPOSER_MODEL,
