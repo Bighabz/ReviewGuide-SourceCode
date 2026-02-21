@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { ChevronLeft, ChevronRight, ExternalLink, Star } from 'lucide-react'
+import FunPlaceholder from './ui/FunPlaceholder'
 import { motion } from 'framer-motion'
+import { trackAffiliateClick } from '@/lib/trackAffiliate'
 
 interface Product {
   product_id: string
@@ -46,6 +48,37 @@ function StarRatingInline({ value, size = 12 }: { value: number; size?: number }
       {Array.from({ length: emptyStars }).map((_, i) => (
         <Star key={`empty-${i}`} size={size} fill="none" stroke="#D6D3CD" strokeWidth={1.5} />
       ))}
+    </div>
+  )
+}
+
+function ProductImage({ item }: { item: Product }) {
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
+
+  if (!item.image_url || error) {
+    return (
+      <div className="aspect-square overflow-hidden bg-[var(--surface)]">
+        <FunPlaceholder productId={item.product_id || item.title} className="w-full h-full" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="aspect-square overflow-hidden bg-[var(--surface)] relative">
+      {loading && (
+        <div className="absolute inset-0 z-10">
+          <FunPlaceholder productId={item.product_id || item.title} className="w-full h-full" />
+        </div>
+      )}
+      <img
+        src={item.image_url}
+        alt={item.title}
+        loading="lazy"
+        className={`w-full h-full object-cover group-hover:scale-105 transition-all duration-300 ${loading ? 'opacity-0' : 'opacity-100'}`}
+        onLoad={() => setLoading(false)}
+        onError={() => { setError(true); setLoading(false) }}
+      />
     </div>
   )
 }
@@ -126,23 +159,18 @@ export default function ProductCarousel({ items, title }: ProductCarouselProps) 
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block group"
+                onClick={(e) => {
+                  e.preventDefault()
+                  trackAffiliateClick({
+                    provider: item.merchant || 'unknown',
+                    product_name: item.title,
+                    url: item.affiliate_link,
+                  })
+                }}
               >
                 <div className="bg-[var(--surface-elevated)] border border-[var(--border)] rounded-xl overflow-hidden product-card-hover">
-                  {/* Image */}
-                  <div className="aspect-square overflow-hidden bg-[var(--surface)]">
-                    {item.image_url ? (
-                      <img
-                        src={item.image_url}
-                        alt={item.title}
-                        loading="lazy"
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-[var(--text-muted)] text-sm">
-                        No Image
-                      </div>
-                    )}
-                  </div>
+                  {/* Image with fun loading/error placeholder */}
+                  <ProductImage item={item} />
 
                   {/* Content */}
                   <div className="p-4 space-y-2">

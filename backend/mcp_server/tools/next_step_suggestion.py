@@ -298,7 +298,7 @@ Return ONLY valid JSON:
         # Generate suggestions using LLM
         response = await model_service.generate(
             messages=[
-                {"role": "system", "content": "You generate helpful, contextual follow-up questions. Be warm, specific, and concise."},
+                {"role": "system", "content": "You generate helpful, contextual follow-up questions — like a friend who remembers what they said earlier. Be warm, specific, and concise."},
                 {"role": "user", "content": prompt}
             ],
             model=settings.DEFAULT_MODEL,

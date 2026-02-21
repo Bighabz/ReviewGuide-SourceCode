@@ -58,7 +58,7 @@ async def intro_compose(state: Dict[str, Any]) -> Dict[str, Any]:
         user_prompt = """Generate a brief, friendly introduction for a smart assistant that helps with product reviews, travel planning, and general information.
 
 Requirements:
-- Start with a warm greeting
+- Start with a warm, natural greeting — like texting a knowledgeable friend, not a corporate chatbot
 - One sentence describing what you help with
 - Include 3 diverse example questions (using bullet points)
 - End with an encouraging invitation to ask anything
