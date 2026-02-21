@@ -11,7 +11,7 @@ import os
 from app.core.database import Base
 from app.models import (
     User, Session, ConversationMessage, AffiliateMerchant,
-    AffiliateLink, ProductIndex, AirportCache
+    AffiliateLink, ProductIndex, AirportCache, AffiliateClick
 )
 from app.core.config import settings
 
