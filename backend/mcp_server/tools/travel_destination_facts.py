@@ -72,6 +72,26 @@ async def travel_destination_facts(state: Dict[str, Any]) -> Dict[str, Any]:
 
         logger.info(f"[travel_destination_facts] Getting facts for {destination}")
 
+        # Fetch real-time web results via Perplexity (if configured)
+        web_context = ""
+        try:
+            from app.services.search.config import get_search_manager
+            search_manager = get_search_manager()
+            if search_manager:
+                search_query = f"{destination} travel tips"
+                if month:
+                    search_query += f" {month}"
+                search_results = await search_manager.search(
+                    query=search_query,
+                    intent="travel",
+                    max_results=5
+                )
+                if search_results:
+                    web_context = "\n".join([f"- {r.title}: {r.snippet}" for r in search_results])
+                    logger.info(f"[travel_destination_facts] Got {len(search_results)} web results")
+        except Exception as search_err:
+            logger.warning(f"[travel_destination_facts] Web search failed, continuing with LLM-only: {search_err}")
+
         # Build conversation context
         history_context = ""
         if conversation_history:
@@ -85,9 +105,12 @@ async def travel_destination_facts(state: Dict[str, Any]) -> Dict[str, Any]:
             if history_lines:
                 history_context = "\n\nConversation context:\n" + "\n".join(history_lines)
 
-        prompt = f"""Provide travel information for {destination} based on what the user is asking about.
+        web_section = f"\n\nRecent travel information:\n{web_context}\n" if web_context else ""
+        knowledge_source = " and the web results below" if web_context else ""
+        prompt = f"""Provide travel information for {destination} based on what the user is asking about{knowledge_source}.
 
 User's question: {user_message}
+{web_section}
 {f"Specific month: {month}" if month else ""}
 {history_context}
 

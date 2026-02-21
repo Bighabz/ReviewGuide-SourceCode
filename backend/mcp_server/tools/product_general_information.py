@@ -65,9 +65,28 @@ async def product_general_information(state: Dict[str, Any]) -> Dict[str, Any]:
         # Use perplexity for web search (if available in settings)
         search_query = user_message
 
-        # Build prompt for general product knowledge
-        prompt = f"""Answer this product-related question using your knowledge: "{user_message}"
+        # Fetch real-time web results via Perplexity (if configured)
+        web_context = ""
+        try:
+            from app.services.search.config import get_search_manager
+            search_manager = get_search_manager()
+            if search_manager:
+                search_results = await search_manager.search(
+                    query=search_query,
+                    intent="product",
+                    max_results=5
+                )
+                if search_results:
+                    web_context = "\n".join([f"- {r.title}: {r.snippet}" for r in search_results])
+                    logger.info(f"[product_general_information] Got {len(search_results)} web results")
+        except Exception as search_err:
+            logger.warning(f"[product_general_information] Web search failed, continuing with LLM-only: {search_err}")
 
+        # Build prompt for general product knowledge
+        web_section = f"\n\nRecent web results:\n{web_context}\n" if web_context else ""
+        knowledge_source = "your knowledge and the web results below" if web_context else "your knowledge"
+        prompt = f"""Answer this product-related question using {knowledge_source}: "{user_message}"
+{web_section}
 Provide a helpful, accurate answer that explains the concept clearly.
 Focus on:
 - Technical explanations if asked

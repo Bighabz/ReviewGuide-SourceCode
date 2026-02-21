@@ -68,8 +68,28 @@ async def travel_general_information(state: Dict[str, Any]) -> Dict[str, Any]:
         if destination:
             search_query = f"{user_message} {destination}"
 
+        # Fetch real-time web results via Perplexity (if configured)
+        web_context = ""
+        try:
+            from app.services.search.config import get_search_manager
+            search_manager = get_search_manager()
+            if search_manager:
+                search_results = await search_manager.search(
+                    query=search_query,
+                    intent="travel",
+                    max_results=5
+                )
+                if search_results:
+                    web_context = "\n".join([f"- {r.title}: {r.snippet}" for r in search_results])
+                    logger.info(f"[travel_general_information] Got {len(search_results)} web results")
+        except Exception as search_err:
+            logger.warning(f"[travel_general_information] Web search failed, continuing with LLM-only: {search_err}")
+
         # Build prompt for general travel knowledge
-        prompt = f"""Answer this travel-related question using your knowledge: "{user_message}"
+        web_section = f"\n\nRecent web results:\n{web_context}\n" if web_context else ""
+        knowledge_source = "your knowledge and the web results below" if web_context else "your knowledge"
+        prompt = f"""Answer this travel-related question using {knowledge_source}: "{user_message}"
+{web_section}
 {f"Destination context: {destination}" if destination else ""}
 
 Provide a helpful, accurate answer that explains the concept clearly.
