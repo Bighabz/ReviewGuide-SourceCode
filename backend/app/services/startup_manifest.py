@@ -36,6 +36,7 @@ class StartupManifest:
     llm_model: str
     rate_limiting_enabled: bool
     all_critical_providers_ok: bool
+    degradation_policies: dict[str, str] = dataclasses.field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -301,6 +302,12 @@ def build_startup_manifest() -> StartupManifest:
         openai_report = next(p for p in providers if p.provider == "openai")
         all_critical_ok = openai_report.status == "ok"
 
+        # ------------------------------------------------------------------
+        # Degradation policies (RFC §4.3)
+        # ------------------------------------------------------------------
+        from app.services.degradation_policy import DegradationPolicy
+        degradation_policies = DegradationPolicy.get_all_policies()
+
         return StartupManifest(
             timestamp=datetime.now(timezone.utc).isoformat(),
             providers=providers,
@@ -308,6 +315,7 @@ def build_startup_manifest() -> StartupManifest:
             llm_model=llm_model,
             rate_limiting_enabled=rate_limiting_enabled,
             all_critical_providers_ok=all_critical_ok,
+            degradation_policies=degradation_policies,
         )
 
     except Exception as exc:
@@ -371,5 +379,11 @@ def log_startup_manifest(manifest: StartupManifest) -> None:
         f"rate_limiting={manifest.rate_limiting_enabled}  "
         f"all_critical_ok={manifest.all_critical_providers_ok}"
     )
+
+    if manifest.degradation_policies:
+        lines.append("[startup] Degradation policies (RFC §4.3):")
+        for component, policy in manifest.degradation_policies.items():
+            icon = "O" if policy == "fail_open" else "X"
+            lines.append(f"  [{icon}] {component:<20} — {policy}")
 
     logger.info("\n".join(lines))
