@@ -97,6 +97,27 @@ class Settings(BaseSettings):
         default=True,
         description="Enable rate limiting for chat endpoint"
     )
+    TRUSTED_PROXY_CIDRS: List[str] = Field(
+        default_factory=list,
+        description="CIDR ranges of trusted reverse proxies (e.g. ['10.0.0.0/8']). "
+                    "X-Forwarded-For is only trusted from these IPs."
+    )
+
+    @validator("TRUSTED_PROXY_CIDRS", pre=True)
+    def parse_trusted_proxy_cidrs(cls, v):
+        if isinstance(v, list):
+            return v
+        if isinstance(v, str):
+            v = v.strip()
+            if v.startswith("["):
+                try:
+                    return json.loads(v)
+                except json.JSONDecodeError:
+                    pass
+            if v:
+                return [cidr.strip() for cidr in v.split(",") if cidr.strip()]
+        return []
+
     RATE_LIMIT_GUEST_REQUESTS: int = Field(
         default=20,
         description="Max requests per time window for guest users"

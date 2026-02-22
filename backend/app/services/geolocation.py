@@ -6,6 +6,7 @@ import httpx
 from typing import Optional
 from app.core.centralized_logger import get_logger
 from app.core.config import settings
+from app.core.ip_utils import get_real_client_ip
 
 logger = get_logger(__name__)
 
@@ -65,8 +66,10 @@ async def detect_country_from_ip(ip_address: str) -> Optional[str]:
 
 def extract_client_ip(request) -> str:
     """
-    Extract client's real IP address from request
-    Handles proxies, load balancers, and CloudFlare
+    Extract client's real IP address from request.
+    Handles proxies and load balancers.  X-Forwarded-For and other proxy
+    headers are only trusted when the connecting IP falls within
+    TRUSTED_PROXY_CIDRS; otherwise request.client.host is returned directly.
 
     Args:
         request: FastAPI Request object
@@ -74,24 +77,4 @@ def extract_client_ip(request) -> str:
     Returns:
         Client IP address
     """
-    # Check CloudFlare header first (most reliable if using CF)
-    cf_ip = request.headers.get("CF-Connecting-IP")
-    if cf_ip:
-        return cf_ip
-
-    # Check X-Forwarded-For (standard proxy header)
-    forwarded_for = request.headers.get("X-Forwarded-For")
-    if forwarded_for:
-        # Take the first IP (original client)
-        return forwarded_for.split(",")[0].strip()
-
-    # Check X-Real-IP (nginx)
-    real_ip = request.headers.get("X-Real-IP")
-    if real_ip:
-        return real_ip
-
-    # Fallback to direct client IP
-    if request.client:
-        return request.client.host
-
-    return "127.0.0.1"
+    return get_real_client_ip(request, settings.TRUSTED_PROXY_CIDRS)
