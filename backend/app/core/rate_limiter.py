@@ -9,6 +9,7 @@ from redis.asyncio import Redis
 from fastapi import HTTPException, status
 
 from app.core.config import settings
+from app.services.degradation_policy import DegradationPolicy
 
 logger = get_logger(__name__)
 
@@ -105,9 +106,16 @@ class RateLimiter:
         except HTTPException:
             raise  # Re-raise rate limit exception
         except Exception as e:
-            # If Redis fails, log error but don't block request
-            logger.error(f"Rate limiter error: {e}", exc_info=True)
-            # Fail open - allow request if rate limiter is broken
+            if DegradationPolicy.is_fail_closed("redis_rate_limit"):
+                logger.warning(
+                    f"[DegradationPolicy] redis_rate_limit failure — policy=fail_closed, blocking request: {e}"
+                )
+                raise HTTPException(
+                    status_code=503,
+                    detail="Rate limiting service temporarily unavailable. Please try again."
+                )
+            # Default: fail_open — allow request through, log as WARNING
+            logger.warning(f"[DegradationPolicy] redis_rate_limit failure — failing open: {e}")
 
     async def get_remaining_requests(
         self,

@@ -67,6 +67,17 @@ class ChatHistoryManager:
             except Exception as e:
                 logger.warning(f"[ChatHistoryManager] Redis cache read failed: {e}")
 
+            # Fast path: check if session has any history at all (lightweight key existence check)
+            try:
+                exists_key = f"session:{session_id}:has_history"
+                has_history = await redis_client.exists(exists_key)
+                if not has_history:
+                    logger.info(f"[ChatHistoryManager] New session {session_id} — skipping DB load")
+                    return []
+            except Exception as e:
+                logger.warning(f"[ChatHistoryManager] Redis exists check failed: {e}")
+                # Fall through to DB load
+
         # Fall back to database
         logger.info(f"[ChatHistoryManager] Cache miss, loading from database for session {session_id}")
 
@@ -156,6 +167,67 @@ class ChatHistoryManager:
                     logger.debug(f"[ChatHistoryManager] Updated cache with new message for session {session_id}")
             except Exception as e:
                 logger.warning(f"[ChatHistoryManager] Cache update failed: {e}")
+
+    @staticmethod
+    async def save_turn(
+        session_id: str,
+        user_content: str,
+        assistant_content: str,
+        user_metadata: Optional[Dict] = None,
+        assistant_metadata: Optional[Dict] = None,
+    ) -> bool:
+        """
+        Save both user and assistant messages atomically in one DB transaction.
+        Should be called via asyncio.create_task() — does not block stream finalization.
+
+        Args:
+            session_id: Session ID
+            user_content: User message text
+            assistant_content: Assistant message text
+            user_metadata: Optional metadata for user message
+            assistant_metadata: Optional metadata for assistant message
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            from app.repositories.conversation_repository import ConversationRepository
+            from app.core.database import get_db
+            from app.core.redis_client import get_redis
+
+            db_gen = get_db()
+            db = await anext(db_gen)
+            redis = await get_redis()
+
+            try:
+                conversation_repo = ConversationRepository(db=db, redis=redis)
+                # Save both messages in a single batch call (atomic DB write)
+                messages = [
+                    {"role": "user", "content": user_content, "message_metadata": user_metadata},
+                    {"role": "assistant", "content": assistant_content, "message_metadata": assistant_metadata},
+                ]
+                success = await conversation_repo.save_messages_batch(session_id=session_id, messages=messages)
+                if not success:
+                    logger.error(f"[ChatHistoryManager] save_messages_batch failed for session {session_id}")
+                    return False
+
+                # Invalidate cache once after both saves
+                await ChatHistoryManager.invalidate_cache(session_id)
+
+                # Mark session as having history (lightweight key, 24h TTL)
+                if redis_client is not None:
+                    try:
+                        await redis_client.set(f"session:{session_id}:has_history", "1", ex=86400)
+                    except Exception as e:
+                        logger.warning(f"[ChatHistoryManager] Failed to set has_history marker: {e}")
+
+                logger.info(f"[ChatHistoryManager] Saved turn (user+assistant) for session {session_id}")
+                return True
+            finally:
+                await db_gen.aclose()
+        except Exception as e:
+            logger.error(f"[ChatHistoryManager] Error saving turn: {e}", exc_info=True)
+            return False
 
     @staticmethod
     async def save_user_message(
