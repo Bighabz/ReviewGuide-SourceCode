@@ -77,7 +77,15 @@ async def product_general_information(state: Dict[str, Any]) -> Dict[str, Any]:
                     max_results=5
                 )
                 if search_results:
-                    web_context = "\n".join([f"- {r.title}: {r.snippet}" for r in search_results])
+                    from app.services.search.web_context import build_web_context
+                    wc = build_web_context(
+                        results=search_results,
+                        query=search_query,
+                        slots=slots,
+                    )
+                    web_context = wc.text
+                    if wc.omitted_count:
+                        logger.info(f"[product_general_information] Web context: {wc.source_count} sources used, {wc.omitted_count} omitted, ~{wc.token_estimate} tokens")
                     logger.info(f"[product_general_information] Got {len(search_results)} web results")
         except Exception as search_err:
             logger.warning(f"[product_general_information] Web search failed, continuing with LLM-only: {search_err}")
