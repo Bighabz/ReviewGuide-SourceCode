@@ -14,10 +14,12 @@ logger = get_logger(__name__)
 
 # Prompt injection heuristics — lines containing these patterns are stripped
 _INJECTION_PATTERNS = re.compile(
-    r"ignore (previous|all|prior)|system\s*:|<\|.*?\|>|\[INST\]|<<SYS>>|"
+    r"ignore (previous|all|prior)|system\s*:|assistant\s*:|user\s*:|"
+    r"<\|.*?\|>|\[INST\]|<<SYS>>|<!--.*?-->|"
     r"you are now|disregard (previous|prior|all)|new instructions|"
-    r"override (previous|prior)|forget (previous|prior|all)",
-    re.IGNORECASE,
+    r"override (previous|prior)|forget (previous|prior|all)|"
+    r"[\u200b\u200c\u200d\u202a-\u202e\ufeff]",  # Unicode direction overrides / zero-width chars
+    re.IGNORECASE | re.DOTALL,
 )
 
 # Max characters per individual snippet (before token estimation)
@@ -44,8 +46,8 @@ def _sanitize_snippet(text: str) -> str:
     text = " ".join(safe_lines)
     # Strip basic HTML entities
     text = re.sub(r"&[a-z]+;|&#\d+;", " ", text)
-    # Strip markdown formatting
-    text = re.sub(r"[*_`#\[\]()>]", "", text)
+    # Strip markdown formatting (keep brackets/parens — appear legitimately in product/place names)
+    text = re.sub(r"[*_`#>]", "", text)
     # Normalize whitespace
     text = re.sub(r"\s+", " ", text).strip()
     return text
@@ -126,11 +128,11 @@ def build_web_context(
     budget_chars = max_tokens * _CHARS_PER_TOKEN
 
     for score, line in kept:
-        if total_chars + len(line) + 4 > budget_chars:  # +4 for "- \n"
+        if total_chars + len(line) + 3 > budget_chars:  # +3 for "- " (2) + "\n" (1)
             omitted += 1
             continue
         lines.append(f"- {line}")
-        total_chars += len(line) + 4
+        total_chars += len(line) + 3
 
     text = "\n".join(lines)
     token_estimate = total_chars // _CHARS_PER_TOKEN

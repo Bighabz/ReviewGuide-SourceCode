@@ -10,7 +10,6 @@ import sys
 import os
 import json
 from typing import Dict, Any
-from app.core.error_manager import tool_error_handler
 
 # Add backend to path (portable path)
 backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
