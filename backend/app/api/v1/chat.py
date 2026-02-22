@@ -818,6 +818,30 @@ async def chat_stream(
     # Generate or use provided session ID
     session_id = chat_request.session_id or str(uuid.uuid4())
 
+    # SECURITY: Check session ownership before resolving user
+    # Prevents anonymous clients from loading another user's session context
+    # by guessing/supplying a known session_id.
+    if chat_request.session_id:
+        from sqlalchemy import cast, String as SQLString
+        from app.models.session import Session as SessionModel
+        _stmt = select(SessionModel).where(
+            cast(SessionModel.meta['client_session_id'], SQLString) == session_id
+        )
+        _result = await db.execute(_stmt)
+        _existing_session = _result.scalar_one_or_none()
+        if (
+            _existing_session is not None
+            and _existing_session.user_id is not None
+            and not current_user  # Only enforce for anonymous requests; JWT-auth handled by session_service
+            and chat_request.user_id != _existing_session.user_id  # Client didn't claim this user_id
+        ):
+            logger.warning(
+                f"[security] Anonymous client supplied session_id={session_id} owned by "
+                f"user_id={_existing_session.user_id} but claimed user_id={chat_request.user_id}. "
+                "Forcing new session context."
+            )
+            session_id = str(uuid.uuid4())  # Force new session — do not load other user's state
+
     colored_logger.api_input({
         "message": chat_request.message,
         "session_id": session_id,
@@ -838,23 +862,6 @@ async def chat_stream(
         )
 
     logger.debug(f"Session {session_id} → DB ID: {db_session_id}, user: {returned_user_id}, country: {country_code}")
-
-    # SECURITY: Verify session ownership before loading halt state / history.
-    # If the session already exists in the DB and belongs to a different user,
-    # force a new session context to prevent one user from loading another user's state.
-    from sqlalchemy import cast, String as SQLString
-    from app.models.session import Session as SessionModel
-    _stmt = select(SessionModel).where(
-        cast(SessionModel.meta['client_session_id'], SQLString) == session_id
-    )
-    _result = await db.execute(_stmt)
-    _existing_session = _result.scalar_one_or_none()
-    if _existing_session is not None and _existing_session.user_id != returned_user_id:
-        logger.warning(
-            f"[security] Session {session_id} belongs to user {_existing_session.user_id}, "
-            f"not {returned_user_id}. Forcing new session context."
-        )
-        session_id = str(uuid.uuid4())  # Force new session, don't load other user's state
 
     # Load user preferences for cross-session context
     from app.services.preference_service import load_user_preferences
