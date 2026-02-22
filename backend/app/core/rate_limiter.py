@@ -106,7 +106,15 @@ class RateLimiter:
         except HTTPException:
             raise  # Re-raise rate limit exception
         except Exception as e:
-            # Policy: redis_rate_limit = fail_open → allow request through
+            if DegradationPolicy.is_fail_closed("redis_rate_limit"):
+                logger.warning(
+                    f"[DegradationPolicy] redis_rate_limit failure — policy=fail_closed, blocking request: {e}"
+                )
+                raise HTTPException(
+                    status_code=503,
+                    detail="Rate limiting service temporarily unavailable. Please try again."
+                )
+            # Default: fail_open — allow request through, log as WARNING
             logger.warning(f"[DegradationPolicy] redis_rate_limit failure — failing open: {e}")
 
     async def get_remaining_requests(

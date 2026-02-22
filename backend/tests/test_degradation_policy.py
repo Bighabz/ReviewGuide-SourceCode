@@ -106,6 +106,24 @@ def test_get_all_policies_returns_all_components():
         )
 
 
+def test_get_all_policies_reflects_live_env_override():
+    """get_all_policies() must reflect active env overrides, not just table defaults."""
+    DP = _get_policy_class()
+    os.environ["DEGRADE_AMAZON"] = "fail_closed"
+    os.environ["DEGRADE_OPENAI"] = "fail_open"
+    try:
+        policies = DP.get_all_policies()
+        assert policies["amazon"] == DP.FAIL_CLOSED, (
+            "amazon should reflect env override fail_closed"
+        )
+        assert policies["openai"] == DP.FAIL_OPEN, (
+            "openai should reflect env override fail_open (away from default fail_closed)"
+        )
+    finally:
+        os.environ.pop("DEGRADE_AMAZON", None)
+        os.environ.pop("DEGRADE_OPENAI", None)
+
+
 # ---------------------------------------------------------------------------
 # Convenience helpers
 # ---------------------------------------------------------------------------
