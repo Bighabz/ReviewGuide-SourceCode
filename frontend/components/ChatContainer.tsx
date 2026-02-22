@@ -686,7 +686,7 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                style={{ flexShrink: 0, color: '#E85D3A' }}
+                style={{ flexShrink: 0, color: 'var(--accent)' }}
                 aria-hidden="true"
               >
                 <circle cx="12" cy="12" r="10" />

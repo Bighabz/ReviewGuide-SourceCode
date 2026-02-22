@@ -77,7 +77,7 @@
   --stream-status-font: var(--font-dm-sans, system-ui, sans-serif);
   --stream-status-size: 0.875rem;
   --stream-status-weight: 400;
-  --stream-status-color: var(--text-muted);
+  --stream-status-color: var(--text-secondary);
   --stream-status-opacity: 0.7;
 
   /* Content streaming */
@@ -143,7 +143,7 @@
   /* ═══════════════════════════════════════════
      RFC §2.6 — Streaming State Tokens (Dark)
      All streaming tokens resolve via semantic vars above:
-       --stream-status-color → --text-muted → #78716C (dark)
+       --stream-status-color → --text-secondary → #A8A29E (dark)
        --stream-content-color → --text → #F5F0EB (dark)
        --citation-color → --primary → #6B8AFF (dark)
      No additional overrides needed.
@@ -376,7 +376,6 @@ a, button, input, textarea, select {
   font-size: var(--stream-status-size);
   font-weight: var(--stream-status-weight);
   color: var(--stream-status-color);
-  opacity: var(--stream-status-opacity);
   transition: opacity 150ms ease-out;
 }
 
