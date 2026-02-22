@@ -7,6 +7,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from typing import AsyncGenerator, Optional
 import json
+import time
 from app.core.centralized_logger import get_logger
 import uuid
 import asyncio
@@ -129,6 +130,28 @@ def is_consent_confirmation(request) -> bool:
 
 
 
+async def _write_request_metric(metric_data: dict) -> None:
+    """
+    RFC §4.2 — Fire-and-forget helper to persist QoS metrics to the database.
+
+    Opens its own DB session (following the chat_history_manager pattern) so it
+    can run as an asyncio.create_task() without holding a reference to the
+    request-scoped session which may already be closed.
+    """
+    try:
+        from app.models.request_metric import RequestMetric
+        db_gen = get_db()
+        db = await anext(db_gen)
+        try:
+            metric = RequestMetric(**metric_data)
+            db.add(metric)
+            await db.commit()
+        finally:
+            await db_gen.aclose()
+    except Exception as e:
+        logger.warning(f"[qos] Failed to write request metric: {e}")
+
+
 async def generate_chat_stream(
     message: str,
     session_id: str,
@@ -148,6 +171,9 @@ async def generate_chat_stream(
         country_code: User's country code for regional affiliate links
         request_id: RFC §4.1 correlation ID propagated from X-Interaction-ID header
     """
+    # RFC §4.2 — capture stream start time for total_duration_ms calculation
+    stream_start_time = time.time()
+
     # Generate conversation_id for this query
     conversation_id = str(uuid.uuid4())
 
@@ -568,6 +594,35 @@ async def generate_chat_stream(
         logger.info(f"🔍 DEBUG: Final chunk - has_followups: {followups_to_send is not None}")
         logger.info(f"🔍 DEBUG: Final chunk ui_blocks: {len(final_done_payload['ui_blocks'])} blocks")
         yield _sse_event("done", final_done_payload)
+
+        # RFC §4.2 — emit structured QoS log line after stream completes
+        _qos_duration_ms = int((time.time() - stream_start_time) * 1000)
+        qos_log = {
+            "event": "request_completed",
+            "request_id": request_id,
+            "session_id": session_id,
+            "intent": result_state.get("intent", "unknown"),
+            "total_duration_ms": _qos_duration_ms,
+            "completeness": result_state.get("completeness", "full"),
+            "tool_durations": result_state.get("tool_durations", {}),
+            "provider_errors": result_state.get("provider_errors", []),
+        }
+        logger.info(f"[qos] {json.dumps(qos_log)}")
+
+        # RFC §4.2 — persist QoS metric to database (fire-and-forget)
+        _metric_task = asyncio.create_task(
+            _write_request_metric({
+                "request_id": request_id,
+                "session_id": session_id,
+                "intent": result_state.get("intent", "unknown"),
+                "total_duration_ms": _qos_duration_ms,
+                "completeness": result_state.get("completeness", "full"),
+                "tool_durations": result_state.get("tool_durations", {}),
+                "provider_errors": result_state.get("provider_errors", []),
+            })
+        )
+        _background_tasks.add(_metric_task)
+        _metric_task.add_done_callback(_background_tasks.discard)
 
         # Fire-and-forget: save turn after stream is already done
         user_message_text = original_user_message
