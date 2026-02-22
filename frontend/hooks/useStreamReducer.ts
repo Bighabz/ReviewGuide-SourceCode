@@ -75,7 +75,17 @@ export function streamReducer(state: StreamState, action: StreamAction): StreamS
       return state // artifact doesn't change FSM state
 
     case 'RECEIVE_DONE':
-      return 'finalized'
+      // Only accept RECEIVE_DONE from active streaming states.
+      // A late done event from a retried SSE connection must not overwrite
+      // an already-errored or interrupted state.
+      if (
+        state === 'placeholder' ||
+        state === 'receiving_status' ||
+        state === 'receiving_content'
+      ) {
+        return 'finalized'
+      }
+      return state
 
     case 'RECEIVE_ERROR':
       return 'errored'

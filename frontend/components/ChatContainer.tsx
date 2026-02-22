@@ -167,7 +167,7 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
   // Single unified effect to handle initial query from URL params (sticky chat bar)
   // This runs when we have BOTH an externalSessionId AND initialQuery (new session with query)
   useEffect(() => {
-    if (initialQuery && !isLoadingHistory && initialQueryProcessedRef.current !== initialQuery && externalSessionId) {
+    if (initialQuery && !isLoadingHistory && !isStreaming && initialQueryProcessedRef.current !== initialQuery && externalSessionId) {
       initialQueryProcessedRef.current = initialQuery
 
       // Add user message
@@ -186,7 +186,7 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
       // Pass session ID directly since state update is async
       handleStream(initialQuery, false, externalSessionId)
     }
-  }, [initialQuery, isLoadingHistory, externalSessionId])
+  }, [initialQuery, isLoadingHistory, isStreaming, externalSessionId])
 
   // Handle external session ID changes (from conversation sidebar - switching sessions WITHOUT a query)
   useEffect(() => {

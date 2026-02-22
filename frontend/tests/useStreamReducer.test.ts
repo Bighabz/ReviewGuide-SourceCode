@@ -90,6 +90,25 @@ describe('streamReducer — state transitions', () => {
     expect(next).toBe('receiving_content')
   })
 
+  // RECEIVE_DONE from terminal/non-streaming states must be a no-op (guards against late events)
+  it('keeps errored on RECEIVE_DONE (late event must not overwrite error state)', () => {
+    const next = streamReducer('errored', { type: 'RECEIVE_DONE', data: {} })
+    expect(next).toBe('errored')
+  })
+
+  it('keeps interrupted on RECEIVE_DONE (late event after timeout)', () => {
+    const next = streamReducer('interrupted', { type: 'RECEIVE_DONE', data: {} })
+    expect(next).toBe('interrupted')
+  })
+
+  // RECEIVE_STATUS from receiving_status stays in receiving_status (multiple status events)
+  it('keeps receiving_status on consecutive RECEIVE_STATUS events', () => {
+    let state = streamReducer('placeholder', { type: 'RECEIVE_STATUS', text: 'Searching...' })
+    expect(state).toBe('receiving_status')
+    state = streamReducer(state, { type: 'RECEIVE_STATUS', text: 'Fetching results...' })
+    expect(state).toBe('receiving_status')
+  })
+
   // RECEIVE_ARTIFACT is always a no-op
   it('keeps current state on RECEIVE_ARTIFACT', () => {
     const states: StreamState[] = [
