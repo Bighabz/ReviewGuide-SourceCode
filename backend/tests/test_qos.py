@@ -55,8 +55,14 @@ def _make_mock_db_with_row(
     p99_ms=None,
     completion_rate=0.0,
     degraded_rate=0.0,
+    rows_with_provider_errors=0,
 ):
-    """Build a mock DB session whose execute() returns a row with the given values."""
+    """
+    Build a mock DB session whose execute() handles two sequential calls:
+      1. The main latency/reliability aggregate query.
+      2. The provider-error count query (rows_with_provider_errors).
+    """
+    # Row returned by the main aggregate query
     row = MagicMock()
     row.total_requests = total_requests
     row.p50_ms = p50_ms
@@ -65,11 +71,19 @@ def _make_mock_db_with_row(
     row.completion_rate = completion_rate
     row.degraded_rate = degraded_rate
 
-    result = MagicMock()
-    result.fetchone = MagicMock(return_value=row)
+    main_result = MagicMock()
+    main_result.fetchone = MagicMock(return_value=row)
+
+    # Row returned by the provider-error count query
+    pe_row = MagicMock()
+    pe_row.rows_with_provider_errors = rows_with_provider_errors
+
+    pe_result = MagicMock()
+    pe_result.fetchone = MagicMock(return_value=pe_row)
 
     db_session = MagicMock()
-    db_session.execute = AsyncMock(return_value=result)
+    # Return main_result on first call, pe_result on second call
+    db_session.execute = AsyncMock(side_effect=[main_result, pe_result])
     return db_session
 
 
@@ -206,6 +220,12 @@ def test_qos_summary_returns_correct_structure_empty_table():
     assert rel["completion_rate"] == 0.0
     assert rel["degraded_rate"] == 0.0
 
+    # Provider errors section (Issue 1 — RFC §4.2 spec compliance)
+    assert "provider_errors" in body, "Response must include 'provider_errors' key"
+    pe = body["provider_errors"]
+    assert "rate" in pe, "provider_errors must include a 'rate' field"
+    assert pe["rate"] == 0.0
+
 
 # ---------------------------------------------------------------------------
 # 4. `hours` parameter defaults to 24 and is passed to the query
@@ -215,17 +235,22 @@ def test_qos_summary_hours_parameter_defaults_to_24():
     """
     GET /v1/admin/qos/summary with no hours param must use window_hours=24.
     GET /v1/admin/qos/summary?hours=48 must reflect window_hours=48.
-    """
-    mock_db = _make_mock_db_with_row()
-    client = TestClient(_make_test_app(mock_db), raise_server_exceptions=False)
 
-    # Default window
-    response = client.get("/v1/admin/qos/summary")
+    Each request exercises both internal DB queries (main aggregate + provider
+    error count), so a fresh mock_db is created per request to avoid exhausting
+    the side_effect list across multiple HTTP calls.
+    """
+    # Default window — fresh mock per request
+    mock_db_default = _make_mock_db_with_row()
+    client_default = TestClient(_make_test_app(mock_db_default), raise_server_exceptions=False)
+    response = client_default.get("/v1/admin/qos/summary")
     assert response.status_code == 200
     assert response.json()["window_hours"] == 24
 
-    # Explicit window
-    response = client.get("/v1/admin/qos/summary?hours=48")
+    # Explicit window — fresh mock
+    mock_db_explicit = _make_mock_db_with_row()
+    client_explicit = TestClient(_make_test_app(mock_db_explicit), raise_server_exceptions=False)
+    response = client_explicit.get("/v1/admin/qos/summary?hours=48")
     assert response.status_code == 200
     assert response.json()["window_hours"] == 48
 
@@ -358,3 +383,57 @@ def test_qos_summary_accessible_to_admin_with_explicit_hours():
     assert body["total_requests"] == 5
     assert body["latency"]["p50_ms"] == 3000
     assert body["reliability"]["completion_rate"] == 1.0
+
+
+# ---------------------------------------------------------------------------
+# 8. provider_errors.rate is present and numeric (RFC §4.2 spec compliance)
+# ---------------------------------------------------------------------------
+
+def test_qos_summary_includes_provider_error_rate():
+    """
+    GET /v1/admin/qos/summary must return a 'provider_errors' section whose
+    'rate' field is a float (0.0–1.0).
+
+    Also verifies that when rows_with_provider_errors > 0 the rate is
+    computed correctly as rows_with_provider_errors / total_requests.
+    """
+    # Case 1: zero errors → rate must be 0.0
+    mock_db_zero = _make_mock_db_with_row(
+        total_requests=100,
+        rows_with_provider_errors=0,
+    )
+    client = TestClient(_make_test_app(mock_db_zero), raise_server_exceptions=False)
+    response = client.get("/v1/admin/qos/summary")
+    assert response.status_code == 200
+    body = response.json()
+    assert "provider_errors" in body
+    pe = body["provider_errors"]
+    assert "rate" in pe
+    assert isinstance(pe["rate"], (int, float)), (
+        f"provider_errors.rate must be numeric, got {type(pe['rate'])}"
+    )
+    assert pe["rate"] == 0.0
+
+    # Case 2: some errors → rate == rows_with_errors / total
+    mock_db_some = _make_mock_db_with_row(
+        total_requests=200,
+        rows_with_provider_errors=4,
+    )
+    client2 = TestClient(_make_test_app(mock_db_some), raise_server_exceptions=False)
+    response2 = client2.get("/v1/admin/qos/summary")
+    assert response2.status_code == 200
+    body2 = response2.json()
+    pe2 = body2["provider_errors"]
+    assert isinstance(pe2["rate"], (int, float))
+    assert pe2["rate"] == round(4 / 200, 4)  # 0.02
+
+    # Case 3: empty table → rate must be 0.0 (no division by zero)
+    mock_db_empty = _make_mock_db_with_row(
+        total_requests=0,
+        rows_with_provider_errors=0,
+    )
+    client3 = TestClient(_make_test_app(mock_db_empty), raise_server_exceptions=False)
+    response3 = client3.get("/v1/admin/qos/summary")
+    assert response3.status_code == 200
+    body3 = response3.json()
+    assert body3["provider_errors"]["rate"] == 0.0
