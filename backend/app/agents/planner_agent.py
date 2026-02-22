@@ -585,7 +585,6 @@ Example: {{"tools": ["product_search"]}} - this will auto-add normalize, affilia
                 {"id": "step_1", "tools": ["product_extractor"], "parallel": False},
                 {"id": "step_2", "tools": ["product_general_information"], "parallel": False},
                 {"id": "step_3", "tools": ["product_compose"], "parallel": False},
-                {"id": "step_4", "tools": ["next_step_suggestion"], "parallel": False},
             ]
         }
 
@@ -602,7 +601,6 @@ Example: {{"tools": ["product_search"]}} - this will auto-add normalize, affilia
                 {"id": "step_3", "tools": ["product_normalize"], "parallel": False},
                 {"id": "step_4", "tools": ["product_affiliate"], "parallel": False},
                 {"id": "step_5", "tools": ["product_compose"], "parallel": False},
-                {"id": "step_6", "tools": ["next_step_suggestion"], "parallel": False},
             ]
         }
 
@@ -619,7 +617,7 @@ Example: {{"tools": ["product_search"]}} - this will auto-add normalize, affilia
           Step 5: product_affiliate (needs normalized products)
           Step 6: product_ranking (needs affiliate data)
           Step 7: product_compose (final assembly, tool_order 800)
-          Step 8: next_step_suggestion (follow-ups, tool_order 900)
+          next_step_suggestion appended by _get_product_plan_for_complexity
 
         Returns:
             Execution plan dict with parallel step 2
@@ -659,11 +657,6 @@ Example: {{"tools": ["product_search"]}} - this will auto-add normalize, affilia
                 {
                     "id": "step_7",
                     "tools": ["product_compose"],
-                    "parallel": False
-                },
-                {
-                    "id": "step_8",
-                    "tools": ["next_step_suggestion"],
                     "parallel": False
                 },
             ]
