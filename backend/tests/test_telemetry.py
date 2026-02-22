@@ -27,6 +27,7 @@ from jose import jwt
 
 from app.api.v1.telemetry import router as telemetry_router
 from app.core.config import settings
+from app.core.dependencies import check_rate_limit
 
 
 # ---------------------------------------------------------------------------
@@ -39,10 +40,17 @@ def _make_admin_token() -> str:
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
+async def _noop_rate_limit() -> None:
+    """No-op override for check_rate_limit — avoids Redis dependency in unit tests."""
+    return
+
+
 def _make_test_app() -> FastAPI:
     """Minimal FastAPI app that only mounts the telemetry router."""
     app = FastAPI()
     app.include_router(telemetry_router, prefix="/v1")
+    # Override rate limiting so tests don't require a live Redis connection
+    app.dependency_overrides[check_rate_limit] = _noop_rate_limit
     return app
 
 
@@ -55,7 +63,7 @@ def test_render_milestones_endpoint_accepts_valid_payload():
     client = TestClient(_make_test_app(), raise_server_exceptions=False)
 
     payload = {
-        "interaction_id": "abc-123",
+        "interaction_id": "550e8400-e29b-41d4-a716-446655440000",
         "request_sent_ts": 1_700_000_000_000,
         "first_status_ts": 1_700_000_000_500,
         "first_content_ts": 1_700_000_001_000,
@@ -78,7 +86,7 @@ def test_render_milestones_with_all_nulls_accepted():
     client = TestClient(_make_test_app(), raise_server_exceptions=False)
 
     payload = {
-        "interaction_id": "xyz-456",
+        "interaction_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
         "request_sent_ts": 1_700_000_000_000,
         "first_status_ts": None,
         "first_content_ts": None,
@@ -107,7 +115,7 @@ def test_render_milestones_logs_ttfc_when_first_content_present():
     first_content = 1_700_000_001_500  # 1500 ms later
 
     payload = {
-        "interaction_id": "ttfc-test-id",
+        "interaction_id": "6ba7b811-9dad-11d1-80b4-00c04fd430c8",
         "request_sent_ts": request_sent,
         "first_status_ts": request_sent + 200,
         "first_content_ts": first_content,
@@ -177,7 +185,7 @@ def test_admin_trace_endpoint_accessible_with_admin_token():
     client = TestClient(_make_test_app(), raise_server_exceptions=False)
     token = _make_admin_token()
 
-    interaction_id = "test-trace-correlation-id"
+    interaction_id = "550e8400-e29b-41d4-a716-446655440000"
 
     response = client.get(
         f"/v1/admin/trace/{interaction_id}",
@@ -189,3 +197,23 @@ def test_admin_trace_endpoint_accessible_with_admin_token():
     assert body["interaction_id"] == interaction_id
     # Must reference the Langfuse tag lookup in the message
     assert "request_id:" + interaction_id in body["message"]
+
+
+# ---------------------------------------------------------------------------
+# 5. test_render_milestones_rejects_malformed_interaction_id
+# ---------------------------------------------------------------------------
+
+def test_render_milestones_rejects_malformed_interaction_id():
+    """POST /v1/telemetry/render with a non-UUID interaction_id must return 422."""
+    client = TestClient(_make_test_app(), raise_server_exceptions=False)
+
+    payload = {
+        "interaction_id": "not-a-uuid",
+        "request_sent_ts": 1_700_000_000_000,
+    }
+
+    response = client.post("/v1/telemetry/render", json=payload)
+
+    assert response.status_code == 422, (
+        f"Expected 422 for malformed interaction_id, got {response.status_code}"
+    )

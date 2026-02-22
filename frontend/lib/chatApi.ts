@@ -75,6 +75,20 @@ interface RenderMilestones {
 }
 
 /**
+ * Fire-and-forget helper: POST render milestones to the telemetry endpoint.
+ * Errors are intentionally swallowed — telemetry is best-effort.
+ */
+function sendTelemetry(milestones: RenderMilestones): void {
+  fetch(`${API_URL}/v1/telemetry/render`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(milestones),
+  }).catch(() => {
+    // Telemetry is best-effort — swallow errors silently
+  })
+}
+
+/**
  * Parsed SSE message with named event type and data payload.
  * RFC §1.8 wire format:
  *   event: <type>\n
@@ -125,7 +139,10 @@ export async function streamChat({
   // RFC §4.1 — Generate a unique interaction ID for this request for end-to-end trace correlation
   const interactionId = crypto.randomUUID()
 
-  // RFC §4.1 — Track render milestones for p95 time-to-first-content calculation
+  // RFC §4.1 — Track render milestones for p95 time-to-first-content calculation.
+  // NOTE: request_sent_ts is captured here, before the retry loop.  On retried
+  // requests this baseline therefore includes the duration of any prior failed
+  // attempts, so TTFC values may appear inflated for retried connections.
   const milestones: RenderMilestones = {
     interaction_id: interactionId,
     request_sent_ts: Date.now(),
@@ -289,14 +306,7 @@ export async function streamChat({
               if (currentEventType === 'done') {
                 // RFC §4.1 — record done milestone and fire-and-forget telemetry POST
                 milestones.done_ts = Date.now()
-                // Fire-and-forget: do not await, do not block the stream
-                fetch(`${API_URL}/v1/telemetry/render`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify(milestones),
-                }).catch(() => {
-                  // Telemetry is best-effort — swallow errors silently
-                })
+                sendTelemetry(milestones)
                 // done event: terminal — workflow completed
                 onComplete({
                   session_id: chunk.session_id,
@@ -355,15 +365,10 @@ export async function streamChat({
               }
 
               if (chunk.done) {
-                // RFC §4.1 — record done milestone and fire-and-forget telemetry POST (legacy path)
+                // RFC §4.1 — record done milestone and fire-and-forget telemetry POST (legacy path).
+                // TODO: remove this branch once legacy unnamed events are no longer emitted.
                 milestones.done_ts = Date.now()
-                fetch(`${API_URL}/v1/telemetry/render`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify(milestones),
-                }).catch(() => {
-                  // Telemetry is best-effort — swallow errors silently
-                })
+                sendTelemetry(milestones)
                 onComplete({
                   session_id: chunk.session_id,
                   user_id: chunk.user_id,  // Pass user_id to callback for persistence

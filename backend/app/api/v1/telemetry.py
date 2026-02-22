@@ -4,15 +4,22 @@ Telemetry Endpoints — RFC §4.1 Unified Trace Model
 POST /v1/telemetry/render  — accept frontend render milestones for p95 TTFC calculation
 GET  /v1/admin/trace/:id   — admin stub to look up a correlated trace by interaction ID
 """
-from fastapi import APIRouter, Depends
-from pydantic import BaseModel
+import re
+
+from fastapi import APIRouter, Depends, Path
+from pydantic import BaseModel, field_validator
 from typing import Optional
 
 from app.core.centralized_logger import get_logger
-from app.core.dependencies import require_admin
+from app.core.dependencies import require_admin, check_rate_limit
 
 logger = get_logger(__name__)
 router = APIRouter()
+
+_UUID_RE = re.compile(
+    r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+    re.IGNORECASE,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -28,13 +35,23 @@ class RenderMilestones(BaseModel):
     first_artifact_ts: Optional[int] = None
     done_ts: Optional[int] = None
 
+    @field_validator("interaction_id")
+    @classmethod
+    def must_be_uuid(cls, v: str) -> str:
+        if not _UUID_RE.match(v):
+            raise ValueError("interaction_id must be a UUID")
+        return v
+
 
 # ---------------------------------------------------------------------------
 # POST /v1/telemetry/render
 # ---------------------------------------------------------------------------
 
 @router.post("/telemetry/render")
-async def record_render_milestones(milestones: RenderMilestones):
+async def record_render_milestones(
+    milestones: RenderMilestones,
+    _rate_limit: None = Depends(check_rate_limit),
+):
     """
     Record frontend render milestones for p95 time-to-first-content calculation.
 
@@ -77,7 +94,9 @@ async def record_render_milestones(milestones: RenderMilestones):
 
 @router.get("/admin/trace/{interaction_id}")
 async def get_trace(
-    interaction_id: str,
+    interaction_id: str = Path(
+        pattern=r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+    ),
     admin: dict = Depends(require_admin),
 ):
     """
