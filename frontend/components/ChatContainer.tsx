@@ -8,6 +8,7 @@ import { streamChat, fetchConversationHistory } from '@/lib/chatApi'
 import { SUGGESTION_CLICK_PREFIX } from '@/lib/utils'
 import { TRENDING_SEARCHES, UI_TEXT, CHAT_CONFIG } from '@/lib/constants'
 import { saveRecentSearch } from '@/lib/recentSearches'
+import { useStreamReducer } from '@/hooks/useStreamReducer'
 
 export interface FollowupQuestion {
   slot: string
@@ -49,7 +50,7 @@ interface ChatContainerProps {
 export default function ChatContainer({ clearHistoryTrigger, externalSessionId, onSessionChange, initialQuery }: ChatContainerProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
-  const [isStreaming, setIsStreaming] = useState(false)
+  const { streamState, dispatch: dispatchStream, isStreaming } = useStreamReducer()
   const [sessionId, setSessionId] = useState<string>('')
   const [userId, setUserId] = useState<number | null>(null)  // Track user_id for persistence
   const [error, setError] = useState<string>('')
@@ -272,7 +273,8 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
   // Shared function to handle streaming with error management
   // overrideSessionId allows passing session ID directly when state hasn't updated yet
   const handleStream = async (messageToSend: string, isSuggestion: boolean = false, overrideSessionId?: string) => {
-    setIsStreaming(true)
+    dispatchStream({ type: 'RESET' })
+    dispatchStream({ type: 'SEND_MESSAGE' })
     setError('')
     setShowErrorBanner(false)
     setPendingUserMessage(messageToSend)
@@ -315,6 +317,11 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
       sessionId: currentSessionId,
       userId: userId || undefined,
       onToken: (token, isPlaceholder) => {
+        if (isPlaceholder) {
+          dispatchStream({ type: 'RECEIVE_STATUS', text: token })
+        } else {
+          dispatchStream({ type: 'RECEIVE_CONTENT', token })
+        }
         setMessages((prev) =>
           prev.map((msg) =>
             msg.id === currentMessageIdRef.current
@@ -376,7 +383,7 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
             )
           )
         }
-        setIsStreaming(false)
+        dispatchStream({ type: 'RECEIVE_DONE', data: data as any })
 
         // Save to recent searches if product results were shown
         if (data.ui_blocks && pendingUserMessage) {
@@ -408,7 +415,7 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
         setShowErrorBanner(true)
         setErrorMessage(`${UI_TEXT.ERROR_MESSAGE}\n\nDetails: ${errorMsg}`)
         setError(errorMsg)
-        setIsStreaming(false)
+        dispatchStream({ type: 'RECEIVE_ERROR', error: { message: errorMsg } })
         setIsRetrying(false)
         setIsReconnecting(false)
       },
@@ -594,6 +601,38 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
               message={errorMessage}
               onRetry={handleRetry}
             />
+          )}
+
+          {/* Interrupted Banner - stream closed without terminal event (distinct from errored) */}
+          {streamState === 'interrupted' && !showErrorBanner && (
+            <div
+              className="flex items-center gap-3 py-3 px-4 mx-4 mb-2 rounded-lg"
+              style={{
+                background: 'var(--surface)',
+                border: '1px solid var(--border)',
+                color: 'var(--text-secondary)',
+              }}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ flexShrink: 0, color: '#E85D3A' }}
+                aria-hidden="true"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              <span className="text-sm">
+                Response may be incomplete — the stream was interrupted.
+              </span>
+            </div>
           )}
 
           <div
