@@ -30,6 +30,7 @@ from tool_contracts import (  # noqa: E402
 )
 
 from app.agents.base_agent import BaseAgent
+from app.agents.query_complexity import classify_query_complexity
 from app.core.error_manager import AgentError
 from app.services.model_service import model_service
 
@@ -72,6 +73,8 @@ class PlannerAgent(BaseAgent):
     Uses GPT-4o-mini to analyze user requests and generate execution plans
     that specify which MCP tools to call, in what order, with what arguments.
     """
+
+    COMPLEXITY_CONFIDENCE_THRESHOLD = 0.7
 
     def __init__(self):
         super().__init__(
@@ -116,8 +119,27 @@ class PlannerAgent(BaseAgent):
                 plan = self._create_manual_plan_for_intro()
                 self.colored_logger.info("📋 Using manual plan for intro intent")
             elif intent == "product":
-                plan = self._create_fast_path_product_plan()
-                self.colored_logger.info("🚀 FAST PATH: product intent → Bypassing LLM Planner (hardcoded parallel DAG)")
+                user_message = state.get("user_message", "")
+                slots = state.get("slots", {})
+                complexity, confidence = classify_query_complexity(user_message, slots, intent)
+                logger.info(f"[planner] Query complexity: {complexity} (confidence={confidence:.2f})")
+
+                if confidence < self.COMPLEXITY_CONFIDENCE_THRESHOLD:
+                    # Fall back to LLM planner for uncertain cases
+                    logger.info(
+                        f"[planner] Confidence {confidence:.2f} < threshold "
+                        f"{self.COMPLEXITY_CONFIDENCE_THRESHOLD}, using LLM planner"
+                    )
+                    available_tools = list(get_tool_contracts_dict().values())
+                    context = await self._build_planning_context(state, available_tools)
+                    plan = await self._generate_plan(context, state)
+                    self._validate_plan(plan, available_tools)
+                else:
+                    plan = self._get_product_plan_for_complexity(complexity)
+                    self.colored_logger.info(
+                        f"🚀 FAST PATH: product intent → {complexity} template "
+                        f"(confidence={confidence:.2f})"
+                    )
             else:
                 # Get tool contracts directly (no MCP subprocess needed)
                 available_tools = list(get_tool_contracts_dict().values())
@@ -536,6 +558,47 @@ Example: {{"tools": ["product_search"]}} - this will auto-add normalize, affilia
                     "tools": ["unclear_compose"],
                     "parallel": False
                 }
+            ]
+        }
+
+    def _get_product_plan_for_complexity(self, complexity: str) -> Dict[str, Any]:
+        """Return execution plan template based on query complexity class."""
+        if complexity == "factoid":
+            return self._create_minimal_product_plan()
+        elif complexity in ("comparison", "recommendation"):
+            return self._create_standard_product_plan()
+        else:  # deep_research
+            return self._create_fast_path_product_plan()
+
+    def _create_minimal_product_plan(self) -> Dict[str, Any]:
+        """
+        Minimal plan for factoid queries (e.g., 'what year was Sony XM5 released?').
+        Pipeline: extractor → product_general_information → compose
+        Skips search, reviews, affiliate, ranking.
+        """
+        return {
+            "steps": [
+                {"id": "step_1", "tools": ["product_extractor"], "parallel": False},
+                {"id": "step_2", "tools": ["product_general_information"], "parallel": False},
+                {"id": "step_3", "tools": ["product_compose"], "parallel": False},
+                {"id": "step_4", "tools": ["next_step_suggestion"], "parallel": False},
+            ]
+        }
+
+    def _create_standard_product_plan(self) -> Dict[str, Any]:
+        """
+        Standard plan for comparison and recommendation queries.
+        Pipeline: extractor → [product_search ∥ evidence] → normalize → affiliate → compose → suggestions
+        Skips review_search and ranking (faster).
+        """
+        return {
+            "steps": [
+                {"id": "step_1", "tools": ["product_extractor"], "parallel": False},
+                {"id": "step_2", "tools": ["product_search", "product_evidence"], "parallel": True},
+                {"id": "step_3", "tools": ["product_normalize"], "parallel": False},
+                {"id": "step_4", "tools": ["product_affiliate"], "parallel": False},
+                {"id": "step_5", "tools": ["product_compose"], "parallel": False},
+                {"id": "step_6", "tools": ["next_step_suggestion"], "parallel": False},
             ]
         }
 
