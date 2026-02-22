@@ -202,3 +202,26 @@ def test_build_manifest_returns_correct_fields():
     # The module-level get/set round-trip works
     set_manifest(manifest)
     assert get_manifest() is manifest
+
+
+# ---------------------------------------------------------------------------
+# 6. test_import_error_when_module_cannot_be_loaded
+# ---------------------------------------------------------------------------
+
+def test_import_error_when_module_cannot_be_loaded():
+    """When a provider module raises ImportError, status must be 'import_error'."""
+    # Patch the module-level _importlib alias so we don't disturb mock's own resolver
+    with patch("app.services.startup_manifest._importlib") as mock_importlib:
+        mock_importlib.import_module.side_effect = ImportError("No module named 'fake_provider'")
+        with patch("app.services.startup_manifest._get_str", return_value="some-key"):
+            report = _check_provider(
+                name="fake",
+                required_vars=["SOME_API_KEY"],
+                enabled=True,
+                module_path="fake_provider.module",
+            )
+
+    assert report.status == "import_error"
+    assert report.provider == "fake"
+    assert report.enabled is True
+    assert "fake_provider" in (report.error_message or "")

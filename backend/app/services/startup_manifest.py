@@ -7,6 +7,7 @@ Provides a get/set interface so the manifest can be served via the health endpoi
 from __future__ import annotations
 
 import dataclasses
+import importlib as _importlib
 from datetime import datetime
 from typing import Literal
 
@@ -83,6 +84,7 @@ def _check_provider(
     name: str,
     required_vars: list[str],
     enabled: bool = True,
+    module_path: str | None = None,
 ) -> ProviderCapabilityReport:
     """
     Check a provider by inspecting env-var presence on the settings object.
@@ -98,6 +100,10 @@ def _check_provider(
         Whether this provider is switched on via its feature flag.  When
         False the report is ``status="ok"`` with ``enabled=False`` (the
         provider is simply not in use — not an error).
+    module_path:
+        Optional dotted module path to attempt importing.  When provided,
+        an ``ImportError`` produces ``status="import_error"`` rather than
+        ``"init_error"``, allowing callers to detect missing optional deps.
     """
     missing: list[str] = []
 
@@ -110,6 +116,19 @@ def _check_provider(
                 missing_vars=[],
                 error_message=None,
             )
+
+        # Attempt to import the provider module (catches missing optional deps).
+        if module_path:
+            try:
+                _importlib.import_module(module_path)
+            except ImportError as exc:
+                return ProviderCapabilityReport(
+                    provider=name,
+                    enabled=True,
+                    status="import_error",
+                    missing_vars=[],
+                    error_message=str(exc),
+                )
 
         for var in required_vars:
             value = _get_str(var)
