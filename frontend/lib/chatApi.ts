@@ -51,6 +51,29 @@ export interface StreamChunk {
   status_update?: string  // Agent status messages (e.g., "writing itinerary...")
   agent?: string  // Which agent sent the status
   create_new_message?: boolean  // Flag to tell frontend to create new message for subsequent data
+  // RFC §1.8 named event channel fields
+  text?: string          // status event: human-readable status text
+  step?: number          // status event: step number
+  type?: string          // artifact event: block type identifier
+  blocks?: any[]         // artifact event: block data payload
+  code?: string          // error event: error code
+  message?: string       // error event: error message
+  recoverable?: boolean  // error event: whether error is recoverable
+  completeness?: string  // done event: "full" | "degraded"
+}
+
+/**
+ * Parsed SSE message with named event type and data payload.
+ * RFC §1.8 wire format:
+ *   event: <type>\n
+ *   data: <json>\n
+ *   \n
+ */
+export interface SSEMessage {
+  /** Named SSE event type (status | content | artifact | done | error).
+   *  Falls back to "data" for legacy unnamed events. */
+  eventType: string
+  data: StreamChunk
 }
 
 export interface ChatStreamOptions {
@@ -64,6 +87,10 @@ export interface ChatStreamOptions {
   onError: (error: string) => void
   onReconnecting?: (attempt: number, maxRetries: number) => void  // Called when retrying connection
   onReconnected?: () => void  // Called when connection is restored
+  /** RFC §1.8: optional callback invoked for every named SSE message before
+   *  the legacy handlers run.  Useful for routing by event type without
+   *  rewriting all existing call-sites. */
+  onEvent?: (msg: SSEMessage) => void
 }
 
 /**
@@ -81,6 +108,7 @@ export async function streamChat({
   onError,
   onReconnecting,
   onReconnected,
+  onEvent,
 }: ChatStreamOptions): Promise<void> {
   let attempt = 0
 
@@ -141,6 +169,10 @@ export async function streamChat({
       const decoder = new TextDecoder()
       let buffer = ''
 
+      // RFC §1.8: track the current named event type across multi-line SSE messages.
+      // Resets to 'data' (legacy unnamed) at each blank-line boundary.
+      let currentEventType = 'data'
+
       while (true) {
         const { done, value } = await reader.read()
 
@@ -151,15 +183,92 @@ export async function streamChat({
         // Decode and add to buffer
         buffer += decoder.decode(value, { stream: true })
 
-        // Process complete SSE messages
+        // Process complete SSE messages (split on newlines, keep partial last line)
         const lines = buffer.split('\n')
         buffer = lines.pop() || '' // Keep incomplete line in buffer
 
         for (const line of lines) {
+          // RFC §1.8: parse the `event:` field to capture the named channel
+          if (line.startsWith('event: ')) {
+            currentEventType = line.slice(7).trim()
+            continue
+          }
+
+          // Blank line = end of SSE message; reset event type for next message
+          if (line === '') {
+            currentEventType = 'data'
+            continue
+          }
+
           if (line.startsWith('data: ')) {
             const jsonStr = line.slice(6) // Remove 'data: ' prefix
             try {
               const chunk: StreamChunk = JSON.parse(jsonStr)
+
+              // RFC §1.8: Fire the generic onEvent callback first (if provided)
+              if (onEvent) {
+                onEvent({ eventType: currentEventType, data: chunk })
+              }
+
+              // ── Route by named SSE event type ─────────────────────────────
+              if (currentEventType === 'status') {
+                // status event: human-readable progress text
+                const statusText = chunk.text || chunk.status_update || ''
+                if (statusText) {
+                  onToken(statusText, true) // isPlaceholder=true → shown as statusText
+                }
+                continue
+              }
+
+              if (currentEventType === 'content') {
+                // content event: single streaming token
+                if (chunk.token) {
+                  onToken(chunk.token, false)
+                }
+                continue
+              }
+
+              if (currentEventType === 'artifact') {
+                // artifact event: rich UI blocks or clear signal
+                if (chunk.clear && onClear) {
+                  onClear()
+                }
+                if (chunk.blocks || chunk.ui_blocks || chunk.itinerary) {
+                  const blocks = chunk.blocks ?? chunk.ui_blocks
+                  onComplete({
+                    ui_blocks: Array.isArray(blocks) ? blocks : undefined,
+                    itinerary: chunk.itinerary,
+                    create_new_message: chunk.create_new_message,
+                  })
+                }
+                continue
+              }
+
+              if (currentEventType === 'done') {
+                // done event: terminal — workflow completed
+                onComplete({
+                  session_id: chunk.session_id,
+                  user_id: chunk.user_id,
+                  status: chunk.status,
+                  intent: chunk.intent,
+                  ui_blocks: chunk.ui_blocks,
+                  citations: chunk.citations,
+                  followups: chunk.followups,
+                  next_suggestions: chunk.next_suggestions,
+                  completeness: chunk.completeness,
+                })
+                return
+              }
+
+              if (currentEventType === 'error') {
+                // error event: terminal — backend signalled a failure
+                const errMsg = chunk.message || chunk.error || 'An error occurred'
+                onError(errMsg)
+                return
+              }
+
+              // ── Legacy / unnamed events (eventType === 'data') ───────────
+              // Kept for backward-compatibility during the transition period.
 
               if (chunk.error) {
                 onError(chunk.error)
@@ -170,7 +279,7 @@ export async function streamChat({
                 onClear()
               }
 
-              // Forward status updates to UI as live typing indicators
+              // Forward legacy status updates to UI as live typing indicators
               // (e.g., "Searching reviews...", "Comparing prices...")
               if (chunk.status_update) {
                 onToken(chunk.status_update, true) // true = isPlaceholder (shows as statusText)

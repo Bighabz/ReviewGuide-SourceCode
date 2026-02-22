@@ -31,6 +31,28 @@ class DateTimeEncoder(json.JSONEncoder):
             return obj.isoformat()
         return super().default(obj)
 
+
+def _sse_event(event_type: str, data: dict, encoder_cls=DateTimeEncoder) -> str:
+    """
+    Format a Server-Sent Event with a named event type.
+
+    Produces the wire format:
+        event: <event_type>\\n
+        data: <json>\\n
+        \\n
+
+    Args:
+        event_type: SSE event name (status, content, artifact, done, error)
+        data: Dict to JSON-encode as the event data payload
+        encoder_cls: Optional custom JSON encoder class
+
+    Returns:
+        Fully-formed SSE string ready to yield to the client
+    """
+    json_payload = json.dumps(data, cls=encoder_cls)
+    return f"event: {event_type}\ndata: {json_payload}\n\n"
+
+
 logger = get_logger(__name__)
 colored_logger = get_colored_logger(__name__)
 
@@ -133,12 +155,12 @@ async def generate_chat_stream(
 
     try:
         # Send initial placeholder message IMMEDIATELY
-        placeholder_chunk = {
-            "token": "Thinking...",
-            "done": False,
+        yield _sse_event("status", {
+            "text": "Thinking...",
+            "agent": "init",
+            "step": 0,
             "placeholder": True,
-        }
-        yield f"data: {json.dumps(placeholder_chunk)}\n\n"
+        })
 
         # Check if we're resuming from a halt state first (before loading history)
         # to avoid unnecessary database/Redis queries for new queries
@@ -368,24 +390,20 @@ async def generate_chat_stream(
                     if isinstance(output_data, dict):
                         stream_data = output_data.get("stream_chunk_data")
                         if stream_data:
-                            # Clear placeholder first
-                            clear_chunk = {"clear": True, "done": False}
-                            yield f"data: {json.dumps(clear_chunk)}\n\n"
-
-                            # Stream the data with its type
+                            # Clear placeholder first via artifact event with clear flag
                             data_type = stream_data.get("type")
                             data_content = stream_data.get("data")
 
                             if data_type and data_content:
-                                # Send as full object
-                                chunk = {
-                                    data_type: data_content,
-                                    "done": False,
+                                artifact_payload = {
+                                    "type": data_type,
+                                    "blocks": data_content,
+                                    "clear": True,
                                 }
                                 # Check if stream_data has create_new_message flag
                                 if stream_data.get("create_new_message"):
-                                    chunk["create_new_message"] = True
-                                yield f"data: {json.dumps(chunk, cls=DateTimeEncoder)}\n\n"
+                                    artifact_payload["create_new_message"] = True
+                                yield _sse_event("artifact", artifact_payload)
 
                                 # Mark that we've streamed data
                                 data_already_streamed = True
@@ -467,23 +485,18 @@ async def generate_chat_stream(
         ui_blocks_sent_early = False
         if ui_blocks and result_state.get("intent") == "product" and not data_already_streamed:
             logger.info(f"🔍 DEBUG: Sending UI blocks WITH clear for product intent ({len(ui_blocks)} blocks)")
-            # Send ui_blocks AND clear in the same chunk
-            combined_chunk = {
-                "ui_blocks": ui_blocks,
+            # Send ui_blocks AND clear in the same artifact event
+            yield _sse_event("artifact", {
+                "type": "ui_blocks",
+                "blocks": ui_blocks,
                 "clear": True,
-                "done": False,
-            }
-            yield f"data: {json.dumps(combined_chunk, cls=DateTimeEncoder)}\n\n"
+            })
             ui_blocks_sent_early = True
             logger.info(f"📤 Sent {len(ui_blocks)} UI blocks with clear signal")
         elif not data_already_streamed:
             # Clear placeholder ONLY if we haven't already streamed data
             # (If data was streamed, we want to keep it and append followups below it)
-            clear_chunk = {
-                "clear": True,
-                "done": False,
-            }
-            yield f"data: {json.dumps(clear_chunk)}\n\n"
+            yield _sse_event("artifact", {"clear": True})
         else:
             logger.info("🔍 Skipping clear chunk - data already streamed, will append followups")
 
@@ -493,11 +506,7 @@ async def generate_chat_stream(
         if should_stream_text:
             logger.info(f"🔍 DEBUG: Streaming response text ({len(response_text)} chars)")
             for char in response_text:
-                chunk = {
-                    "token": char,
-                    "done": False,
-                }
-                yield f"data: {json.dumps(chunk)}\n\n"
+                yield _sse_event("content", {"token": char})
                 # Small delay for smoother streaming
                 await asyncio.sleep(settings.CHAT_STREAM_SLEEP_DELAY)
         else:
@@ -518,20 +527,21 @@ async def generate_chat_stream(
         if next_suggestions:
             logger.info(f"🔍 Found {len(next_suggestions)} next step suggestions to send")
 
-        final_chunk = {
-            "done": True,
-            "status": result_state.get("status"),
+        final_done_payload = {
+            "session_id": session_id,
+            "status": result_state.get("status", "completed"),
             "intent": result_state.get("intent"),
             "ui_blocks": [] if ui_blocks_sent_early else ui_blocks,
             "citations": result_state.get("citations", []),
             "followups": followups_to_send,  # Pass through structured data from clarifier agent
             "next_suggestions": next_suggestions,  # Follow-up questions from next_step_suggestion tool
             "user_id": user_id,
+            "completeness": "full",  # RFC §1.8: degraded logic deferred to a later phase
         }
 
         logger.info(f"🔍 DEBUG: Final chunk - has_followups: {followups_to_send is not None}")
-        logger.info(f"🔍 DEBUG: Final chunk ui_blocks: {len(final_chunk['ui_blocks'])} blocks")
-        yield f"data: {json.dumps(final_chunk, cls=DateTimeEncoder)}\n\n"
+        logger.info(f"🔍 DEBUG: Final chunk ui_blocks: {len(final_done_payload['ui_blocks'])} blocks")
+        yield _sse_event("done", final_done_payload)
 
         # Fire-and-forget: save turn after stream is already done
         user_message_text = original_user_message
@@ -590,12 +600,12 @@ async def generate_chat_stream(
             }
         )
 
-        # Return simple error message
-        error_chunk = {
-            "error": "Something went wrong. If this issue persists please try again.",
-            "done": True,
-        }
-        yield f"data: {json.dumps(error_chunk)}\n\n"
+        # Emit a named error event so the stream always ends with a terminal event
+        yield _sse_event("error", {
+            "code": "internal_error",
+            "message": "Something went wrong. If this issue persists please try again.",
+            "recoverable": True,
+        })
 
 
 @router.get("/conversations")

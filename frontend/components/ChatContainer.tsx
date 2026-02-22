@@ -316,6 +316,25 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
       message: messageToSend,
       sessionId: currentSessionId,
       userId: userId || undefined,
+      // RFC §1.8: dispatch stream-reducer actions by named SSE event type.
+      // The legacy onToken/onClear/onComplete/onError callbacks still run for
+      // the actual UI updates — this layer only drives the FSM state machine.
+      onEvent: ({ eventType }) => {
+        switch (eventType) {
+          case 'status':
+            dispatchStream({ type: 'RECEIVE_STATUS', text: '' })
+            break
+          case 'content':
+            dispatchStream({ type: 'RECEIVE_CONTENT', token: '' })
+            break
+          case 'artifact':
+            dispatchStream({ type: 'RECEIVE_ARTIFACT', blocks: [] })
+            break
+          // 'done' and 'error' are dispatched inside onComplete / onError below
+          default:
+            break
+        }
+      },
       onToken: (token, isPlaceholder) => {
         if (isPlaceholder) {
           dispatchStream({ type: 'RECEIVE_STATUS', text: token })
