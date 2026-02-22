@@ -201,20 +201,12 @@ class ChatHistoryManager:
 
             try:
                 conversation_repo = ConversationRepository(db=db, redis=redis)
-                # Save user message
-                await conversation_repo.save_message(
-                    session_id=session_id,
-                    role="user",
-                    content=user_content,
-                    message_metadata=user_metadata
-                )
-                # Save assistant message
-                await conversation_repo.save_message(
-                    session_id=session_id,
-                    role="assistant",
-                    content=assistant_content,
-                    message_metadata=assistant_metadata
-                )
+                # Save both messages in a single batch call (atomic DB write)
+                messages = [
+                    {"role": "user", "content": user_content, "message_metadata": user_metadata},
+                    {"role": "assistant", "content": assistant_content, "message_metadata": assistant_metadata},
+                ]
+                await conversation_repo.save_messages_batch(session_id=session_id, messages=messages)
                 # Invalidate cache once after both saves
                 await ChatHistoryManager.invalidate_cache(session_id)
 

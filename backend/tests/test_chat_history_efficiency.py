@@ -1,6 +1,6 @@
 """Tests for RFC §1.7 — Redis and DB Access Efficiency"""
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch, call
+from unittest.mock import AsyncMock, patch
 from app.services.chat_history_manager import ChatHistoryManager
 
 
@@ -24,40 +24,14 @@ class TestNewSessionFastPath:
 
     @pytest.mark.asyncio
     async def test_existing_session_hits_db_when_marker_present(self):
-        """When has_history key is present, proceed to cache/DB load."""
+        """When has_history key is present, fast-path is bypassed and DB is queried."""
         mock_redis = AsyncMock()
-        mock_redis.exists.return_value = 1  # Key exists
-        mock_redis.get.return_value = None  # No cache hit
+        mock_redis.exists.return_value = 1  # Marker present — fast-path must NOT fire
+        mock_redis.get.return_value = None  # No Redis cache hit
 
         mock_history = [{"role": "user", "content": "hello"}, {"role": "assistant", "content": "hi"}]
-
-        async def mock_db_gen():
-            mock_db = AsyncMock()
-            yield mock_db
-
-        with patch('app.services.chat_history_manager.redis_client', mock_redis):
-            with patch('app.core.database.get_db', return_value=mock_db_gen()):
-                with patch('app.core.redis_client.get_redis', return_value=AsyncMock()):
-                    with patch('app.repositories.conversation_repository.ConversationRepository') as MockRepo:
-                        mock_repo = AsyncMock()
-                        mock_repo.get_history.return_value = mock_history
-                        MockRepo.return_value = mock_repo
-
-                        # The test verifies that when has_history=1, we do NOT return []
-                        # and instead proceed toward a DB/cache load path.
-                        # We don't fully run through the DB here — just confirm fast-path is bypassed.
-                        pass  # Fast-path bypass verified by exists returning 1
-
-
-class TestSaveTurnMethod:
-    """save_turn() should save both messages and set the has_history marker."""
-
-    @pytest.mark.asyncio
-    async def test_save_turn_sets_has_history_marker(self):
-        """After saving a turn, the has_history marker should be set."""
-        mock_redis = AsyncMock()
         mock_repo = AsyncMock()
-        mock_repo.save_message.return_value = True
+        mock_repo.get_history.return_value = mock_history
 
         async def mock_db_gen():
             yield AsyncMock()
@@ -65,10 +39,31 @@ class TestSaveTurnMethod:
         with patch('app.services.chat_history_manager.redis_client', mock_redis):
             with patch('app.core.database.get_db', return_value=mock_db_gen()):
                 with patch('app.core.redis_client.get_redis', return_value=AsyncMock()):
-                    with patch(
-                        'app.repositories.conversation_repository.ConversationRepository',
-                        return_value=mock_repo
-                    ):
+                    with patch('app.repositories.conversation_repository.ConversationRepository', return_value=mock_repo):
+                        result = await ChatHistoryManager.get_history("existing-session")
+
+        # Repository must have been called to load history
+        mock_repo.get_history.assert_called_once()
+        assert result == mock_history
+
+
+class TestSaveTurnMethod:
+    """save_turn() should save both messages atomically and set the has_history marker."""
+
+    @pytest.mark.asyncio
+    async def test_save_turn_sets_has_history_marker(self):
+        """After saving a turn, the has_history marker should be set with 24h TTL."""
+        mock_redis = AsyncMock()
+        mock_repo = AsyncMock()
+        mock_repo.save_messages_batch.return_value = True
+
+        async def mock_db_gen():
+            yield AsyncMock()
+
+        with patch('app.services.chat_history_manager.redis_client', mock_redis):
+            with patch('app.core.database.get_db', return_value=mock_db_gen()):
+                with patch('app.core.redis_client.get_redis', return_value=AsyncMock()):
+                    with patch('app.repositories.conversation_repository.ConversationRepository', return_value=mock_repo):
                         result = await ChatHistoryManager.save_turn(
                             session_id="test-session",
                             user_content="hello",
@@ -80,11 +75,11 @@ class TestSaveTurnMethod:
         mock_redis.set.assert_called_with("session:test-session:has_history", "1", ex=86400)
 
     @pytest.mark.asyncio
-    async def test_save_turn_calls_save_message_twice(self):
-        """save_turn() should call save_message for both user and assistant."""
+    async def test_save_turn_uses_batch_with_both_roles(self):
+        """save_turn() should call save_messages_batch with user+assistant (atomic DB write)."""
         mock_redis = AsyncMock()
         mock_repo = AsyncMock()
-        mock_repo.save_message.return_value = True
+        mock_repo.save_messages_batch.return_value = True
 
         async def mock_db_gen():
             yield AsyncMock()
@@ -92,17 +87,18 @@ class TestSaveTurnMethod:
         with patch('app.services.chat_history_manager.redis_client', mock_redis):
             with patch('app.core.database.get_db', return_value=mock_db_gen()):
                 with patch('app.core.redis_client.get_redis', return_value=AsyncMock()):
-                    with patch(
-                        'app.repositories.conversation_repository.ConversationRepository',
-                        return_value=mock_repo
-                    ):
+                    with patch('app.repositories.conversation_repository.ConversationRepository', return_value=mock_repo):
                         await ChatHistoryManager.save_turn(
                             session_id="test-session",
                             user_content="hello",
                             assistant_content="hi there",
                         )
 
-        assert mock_repo.save_message.call_count == 2
-        calls = mock_repo.save_message.call_args_list
-        assert calls[0].kwargs['role'] == 'user'
-        assert calls[1].kwargs['role'] == 'assistant'
+        # Must use batch (one atomic call) not individual save_message calls
+        mock_repo.save_messages_batch.assert_called_once()
+        batch_args = mock_repo.save_messages_batch.call_args
+        messages = batch_args.kwargs.get("messages") or batch_args.args[1]
+        assert messages[0]["role"] == "user"
+        assert messages[0]["content"] == "hello"
+        assert messages[1]["role"] == "assistant"
+        assert messages[1]["content"] == "hi there"

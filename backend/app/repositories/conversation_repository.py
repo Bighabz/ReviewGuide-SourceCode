@@ -347,6 +347,7 @@ class ConversationRepository:
                         session_id=session_id,
                         role=msg["role"],
                         content=msg["content"],
+                        message_metadata=msg.get("message_metadata"),
                         sequence_number=idx + 1
                     )
                 )
