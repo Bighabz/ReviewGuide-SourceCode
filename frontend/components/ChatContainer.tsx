@@ -281,6 +281,7 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
   const handleStream = async (messageToSend: string, isSuggestion: boolean = false, overrideSessionId?: string) => {
     dispatchStream({ type: 'RESET' })
     dispatchStream({ type: 'SEND_MESSAGE' })
+    setPendingSkeleton(null)
     setError('')
     setShowErrorBanner(false)
     setPendingUserMessage(messageToSend)
@@ -638,7 +639,6 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
               <BlockSkeleton
                 blockType={pendingSkeleton}
                 count={BLOCK_SKELETON_CONFIG[pendingSkeleton].count}
-                layout={BLOCK_SKELETON_CONFIG[pendingSkeleton].layout}
               />
             </div>
           )}

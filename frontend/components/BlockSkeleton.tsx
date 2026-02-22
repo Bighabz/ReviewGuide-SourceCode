@@ -10,7 +10,6 @@ export type SkeletonBlockType =
 export interface BlockSkeletonProps {
   blockType: SkeletonBlockType
   count: number
-  layout: 'grid' | 'list' | 'horizontal-scroll'
 }
 
 // --- Individual skeleton shape primitives ---
@@ -38,17 +37,23 @@ function ProductCardSkeleton() {
 
 function HotelRowSkeleton() {
   return (
-    <div className="rounded-xl border border-stone-200 dark:border-stone-700 bg-[var(--surface)] overflow-hidden flex flex-row h-24">
+    <div className="rounded-xl border border-stone-200 dark:border-stone-700 bg-[var(--surface)] overflow-hidden flex flex-row h-40">
       {/* Image left */}
-      <SkeletonBar className="w-32 h-24 rounded-none shrink-0" />
+      <SkeletonBar className="w-40 h-32 rounded-none shrink-0 self-stretch h-full" />
       {/* Content right */}
       <div className="flex-1 flex flex-col justify-center gap-2 p-4">
         {/* Hotel name */}
         <SkeletonBar className="h-4 w-3/5" />
-        {/* Rating */}
+        {/* Location */}
         <SkeletonBar className="h-3 w-2/5" />
+        {/* Amenity tags */}
+        <div className="flex gap-2 mt-1">
+          <SkeletonBar className="h-5 w-16" />
+          <SkeletonBar className="h-5 w-16" />
+          <SkeletonBar className="h-5 w-12" />
+        </div>
         {/* Price */}
-        <SkeletonBar className="h-4 w-1/4" />
+        <SkeletonBar className="h-5 w-1/4 mt-1" />
       </div>
     </div>
   )
@@ -108,16 +113,18 @@ function ComparisonTableSkeleton() {
 
 function ItineraryDaySkeleton() {
   return (
-    <div className="flex gap-4 py-4 border-b last:border-b-0 border-stone-200 dark:border-stone-700">
+    <div className="relative flex gap-4 py-4 border-b last:border-b-0 border-stone-200 dark:border-stone-700">
       {/* Day number circle */}
       <SkeletonBar className="w-10 h-10 rounded-full shrink-0" />
-      {/* Activity content */}
-      <div className="flex-1 flex flex-col gap-2 pt-1">
-        {/* Activity title */}
+      {/* Card container approximating real itinerary day card */}
+      <div className="flex-1 border border-stone-200 dark:border-stone-700 rounded-xl p-4 flex flex-col gap-2 min-h-[7rem]">
+        {/* Day title */}
         <SkeletonBar className="h-4 w-3/5" />
-        {/* Description line 1 */}
-        <SkeletonBar className="h-3 w-full" />
-        {/* Description line 2 */}
+        {/* Date line */}
+        <SkeletonBar className="h-3 w-2/5" />
+        {/* Activity content bar 1 */}
+        <SkeletonBar className="h-3 w-full mt-2" />
+        {/* Activity content bar 2 */}
         <SkeletonBar className="h-3 w-4/5" />
       </div>
     </div>
@@ -126,7 +133,7 @@ function ItineraryDaySkeleton() {
 
 // --- Main export ---
 
-export default function BlockSkeleton({ blockType, count, layout }: BlockSkeletonProps) {
+export default function BlockSkeleton({ blockType, count }: BlockSkeletonProps) {
   const items = Array.from({ length: count })
 
   if (blockType === 'product_cards') {

@@ -9,6 +9,7 @@ import type { SkeletonBlockType } from '@/components/BlockSkeleton'
 export const TOOL_BLOCK_MAP: Record<string, SkeletonBlockType> = {
   'product_search':        'product_cards',
   'product_compose':       'product_cards',
+  'product_comparison':    'comparison_table',
   'travel_search_hotels':  'hotel_results',
   'travel_search_flights': 'flight_results',
   'travel_itinerary':      'itinerary',
@@ -16,11 +17,11 @@ export const TOOL_BLOCK_MAP: Record<string, SkeletonBlockType> = {
 
 export const BLOCK_SKELETON_CONFIG: Record<
   SkeletonBlockType,
-  { count: number; layout: 'grid' | 'list' | 'horizontal-scroll' }
+  { count: number }
 > = {
-  product_cards:    { count: 4, layout: 'grid' as const },
-  hotel_results:    { count: 3, layout: 'list' as const },
-  flight_results:   { count: 3, layout: 'list' as const },
-  comparison_table: { count: 1, layout: 'list' as const },
-  itinerary:        { count: 5, layout: 'list' as const },
+  product_cards:    { count: 4 },
+  hotel_results:    { count: 3 },
+  flight_results:   { count: 3 },
+  comparison_table: { count: 1 },
+  itinerary:        { count: 5 },
 }
