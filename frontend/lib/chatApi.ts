@@ -308,18 +308,22 @@ export async function streamChat({
                 milestones.done_ts = Date.now()
                 sendTelemetry(milestones)
                 // done event: terminal — workflow completed
-                onComplete({
-                  session_id: chunk.session_id,
-                  user_id: chunk.user_id,
-                  status: chunk.status,
-                  intent: chunk.intent,
-                  ui_blocks: chunk.ui_blocks,
-                  citations: chunk.citations,
-                  followups: chunk.followups,
-                  next_suggestions: chunk.next_suggestions,
-                  completeness: chunk.completeness,
-                  request_id: chunk.request_id,
-                })
+                // Guard: only dispatch RECEIVE_DONE when chunk carries a real session_id,
+                // preventing artifact onComplete callbacks from triggering the FSM transition.
+                if (chunk.session_id) {
+                  onComplete({
+                    session_id: chunk.session_id,
+                    user_id: chunk.user_id,
+                    status: chunk.status,
+                    intent: chunk.intent,
+                    ui_blocks: chunk.ui_blocks,
+                    citations: chunk.citations,
+                    followups: chunk.followups,
+                    next_suggestions: chunk.next_suggestions,
+                    completeness: chunk.completeness,
+                    request_id: chunk.request_id,
+                  })
+                }
                 return
               }
 

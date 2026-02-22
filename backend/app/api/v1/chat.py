@@ -150,24 +150,16 @@ def _build_qos_log(
 
 
 async def _write_request_metric(metric_data: dict) -> None:
-    """
-    RFC §4.2 — Fire-and-forget helper to persist QoS metrics to the database.
-
-    Opens its own DB session (following the chat_history_manager pattern) so it
-    can run as an asyncio.create_task() without holding a reference to the
-    request-scoped session which may already be closed.
-    """
-    db_gen = get_db()
-    db = await anext(db_gen)
+    """Fire-and-forget: persist QoS metric row to request_metrics table."""
     try:
+        from app.core.database import AsyncSessionLocal
         from app.models.request_metric import RequestMetric
-        metric = RequestMetric(**metric_data)
-        db.add(metric)
-        # commit handled by get_db generator on aclose()
+        async with AsyncSessionLocal() as db:
+            metric = RequestMetric(**metric_data)
+            db.add(metric)
+            await db.commit()
     except Exception as e:
         logger.warning(f"[qos] Failed to write request metric: {e}")
-    finally:
-        await db_gen.aclose()
 
 
 async def generate_chat_stream(
@@ -673,7 +665,7 @@ async def generate_chat_stream(
         # Flush Langfuse traces immediately after request completes
         if langfuse_handler:
             try:
-                get_langfuse_client().flush()
+                langfuse_client.flush()
                 logger.debug("Langfuse traces flushed")
             except Exception as flush_error:
                 logger.debug(f"Langfuse flush warning: {flush_error}")
