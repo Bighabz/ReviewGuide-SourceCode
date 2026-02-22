@@ -27,7 +27,7 @@ from app.services.tool_validator import (
 
 def _empty_valid(schema):
     """Return the empty-but-valid dict for a given schema class."""
-    return schema.model_construct().model_dump()
+    return schema().model_dump()
 
 
 # ---------------------------------------------------------------------------
@@ -61,14 +61,13 @@ class TestProductSearchValidator:
         mock_logger.error.assert_called_once()
         assert isinstance(result["product_names"], list)
 
-    def test_malformed_success_type_returns_empty_valid(self):
-        """success must be bool-coercible; an invalid type triggers quarantine."""
-        output = {"product_names": [1, 2, 3], "success": {"nested": "dict"}}
+    def test_malformed_query_int_returns_empty_valid(self):
+        """An int where a list is expected triggers a Pydantic ValidationError."""
+        output = {"product_names": 99, "success": True}
         with patch("app.services.tool_validator.logger") as mock_logger:
             result = ToolOutputValidator.validate(self.TOOL, output)
-        # Pydantic will coerce dicts to bool (truthy) but let's confirm no crash
-        # In either case (coercion or quarantine) we must not raise.
-        assert "product_names" in result
+        mock_logger.error.assert_called_once()
+        assert isinstance(result.get("product_names", []), list)
 
     def test_empty_dict_returns_empty_valid(self):
         with patch("app.services.tool_validator.logger"):
@@ -314,13 +313,11 @@ class TestEdgeCases:
 
     def test_validate_does_not_raise_on_completely_wrong_type(self):
         """Even if the whole output is a string (not a dict), must not raise."""
-        # This tests the except Exception branch in validate()
-        # We pass a non-dict by coercing through the schema constructor;
-        # product_search(**"hello") will raise TypeError, caught by except Exception.
+        # This tests the except (TypeError, AttributeError) branch in validate().
+        # product_search(**"not a dict") raises TypeError, which is caught and
+        # quarantined.  pytest itself will report any unexpected exception as a
+        # test failure — no explicit try/except wrapper needed.
         with patch("app.services.tool_validator.logger") as mock_logger:
-            try:
-                result = ToolOutputValidator.validate("product_search", "not a dict")  # type: ignore[arg-type]
-                # If Pydantic expanded the string (e.g. str unpacking), it quarantines
-                assert isinstance(result.get("product_names", []), list)
-            except Exception:
-                pytest.fail("ToolOutputValidator.validate raised an exception — it must never raise")
+            result = ToolOutputValidator.validate("product_search", "not a dict")  # type: ignore[arg-type]
+        mock_logger.error.assert_called_once()
+        assert isinstance(result.get("product_names", []), list)

@@ -35,13 +35,15 @@ class ProductSearchOutput(BaseModel):
     """Schema for product_search tool output.
 
     The tool returns:
-        product_names: List[str]   — list of product name strings
+        product_names: List[Any]   — list of product name strings
         success:       bool
         error:         Optional[str]   — present only on failure path
+        timed_out:     Optional[bool]  — set True by _call_tool_direct on timeout
     """
     product_names: Optional[List[Any]] = []
     success: Optional[bool] = False
     error: Optional[str] = None
+    timed_out: Optional[bool] = None
 
 
 class ProductComposeOutput(BaseModel):
@@ -49,10 +51,10 @@ class ProductComposeOutput(BaseModel):
 
     The tool returns:
         assistant_text:      str
-        ui_blocks:           list  — list of UI block dicts
-        citations:           list  — list of citation URL strings
-        last_search_context: dict  — optional context dict for follow-ups
-        search_history:      list  — optional search history list
+        ui_blocks:           List[Any]  — list of UI block dicts
+        citations:           List[Any]  — list of citation URL strings
+        last_search_context: dict       — optional context dict for follow-ups
+        search_history:      List[Any]  — optional search history list
         success:             bool
         error:               Optional[str]
     """
@@ -69,37 +71,41 @@ class TravelSearchHotelsOutput(BaseModel):
     """Schema for travel_search_hotels tool output.
 
     The tool returns:
-        hotels:   list  — list of hotel result dicts (may be PLP link objects)
-        citations: list — list of search URL strings
-        success:  bool
-        error:    Optional[str]
+        hotels:    List[Any]       — list of hotel result dicts (may be PLP link objects)
+        citations: List[Any]       — list of search URL strings
+        success:   bool
+        error:     Optional[str]
+        timed_out: Optional[bool]  — set True by _call_tool_direct on timeout
     """
     hotels: Optional[List[Any]] = []
     citations: Optional[List[Any]] = []
     success: Optional[bool] = False
     error: Optional[str] = None
+    timed_out: Optional[bool] = None
 
 
 class TravelSearchFlightsOutput(BaseModel):
     """Schema for travel_search_flights tool output.
 
     The tool returns:
-        flights:   list  — list of flight result dicts (may be PLP link objects)
-        citations: list  — list of search URL strings
+        flights:   List[Any]       — list of flight result dicts (may be PLP link objects)
+        citations: List[Any]       — list of search URL strings
         success:   bool
         error:     Optional[str]
+        timed_out: Optional[bool]  — set True by _call_tool_direct on timeout
     """
     flights: Optional[List[Any]] = []
     citations: Optional[List[Any]] = []
     success: Optional[bool] = False
     error: Optional[str] = None
+    timed_out: Optional[bool] = None
 
 
 class ProductNormalizeOutput(BaseModel):
     """Schema for product_normalize tool output.
 
     The tool returns:
-        normalized_products: list  — list of normalized product dicts
+        normalized_products: List[Any]  — list of normalized product dicts
         success:             bool
         error:               Optional[str]
     """
@@ -120,7 +126,8 @@ class ToolOutputValidator:
 
     Behaviour on schema violation:
     - logs ERROR with full Pydantic error detail
-    - returns an empty-but-valid dict constructed via model_construct()
+    - returns an empty-but-valid dict constructed via schema() (normal constructor,
+      applies all field defaults correctly)
     - does NOT raise — the pipeline must always continue
     """
 
@@ -163,12 +170,14 @@ class ToolOutputValidator:
             )
             # Quarantine: return empty-but-valid output so downstream tools
             # always receive a dict of the correct shape (never a corrupt value).
-            return schema.model_construct().model_dump()
-        except Exception as exc:
-            # Unexpected error (e.g. output is not a dict at all)
+            # Use schema() (normal constructor) so Optional[List] = [] defaults
+            # are populated correctly; model_construct() bypasses defaults.
+            return schema().model_dump()
+        except (TypeError, AttributeError) as exc:
+            # output is not a dict (e.g. a bare string), so schema(**output) raised
             logger.error(
-                "[tool_validator] %s unexpected validation error — quarantining output: %s",
+                "[tool_validator] %s validate() received non-dict output — quarantining. Error: %s",
                 tool_name,
                 exc,
             )
-            return schema.model_construct().model_dump()
+            return schema().model_dump()
