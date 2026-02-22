@@ -529,59 +529,40 @@ async def generate_chat_stream(
         logger.info(f"🔍 DEBUG: Final chunk ui_blocks: {len(final_chunk['ui_blocks'])} blocks")
         yield f"data: {json.dumps(final_chunk, cls=DateTimeEncoder)}\n\n"
 
-        # Save BOTH user and assistant messages to database at the end of stream
-        # This includes ALL data that was sent to frontend in message_metadata
-        try:
-            # 1. Save user message first (use original message, not the one overwritten by status updates)
-            user_message_text = original_user_message
-            is_suggestion_click = original_user_message.startswith("[SUGGESTION_CLICK]")
+        # Fire-and-forget: save turn after stream is already done
+        user_message_text = original_user_message
+        is_suggestion_click = original_user_message.startswith("[SUGGESTION_CLICK]")
+        user_metadata = {"is_suggestion_click": True} if is_suggestion_click else None
 
-            # Build user message metadata
-            user_metadata = {}
-            if is_suggestion_click:
-                user_metadata["is_suggestion_click"] = True
+        if is_halted and followups_to_send and isinstance(followups_to_send, dict):
+            assistant_content = followups_to_send.get("intro", "")
+        else:
+            assistant_content = response_text
 
-            await chat_history_manager.save_user_message(
+        assistant_metadata = {}
+        if followups_to_send:
+            assistant_metadata["followups"] = followups_to_send
+        if ui_blocks:
+            assistant_metadata["ui_blocks"] = ui_blocks
+        if next_suggestions:
+            assistant_metadata["next_suggestions"] = next_suggestions
+        if result_state.get("citations"):
+            assistant_metadata["citations"] = result_state.get("citations")
+        if result_state.get("intent"):
+            assistant_metadata["intent"] = result_state.get("intent")
+        if result_state.get("status"):
+            assistant_metadata["status"] = result_state.get("status")
+
+        asyncio.create_task(
+            chat_history_manager.save_turn(
                 session_id=session_id,
-                content=user_message_text,
-                message_metadata=user_metadata if user_metadata else None
+                user_content=user_message_text,
+                assistant_content=assistant_content,
+                user_metadata=user_metadata,
+                assistant_metadata=assistant_metadata if assistant_metadata else None,
             )
-            logger.info(f"✅ Saved user message to database (session: {session_id})")
-
-            # 2. Save assistant message with ALL data sent to frontend
-            # Determine content based on whether halted or normal response
-            if is_halted and followups_to_send and isinstance(followups_to_send, dict):
-                assistant_content = followups_to_send.get("intro", "")
-            else:
-                assistant_content = response_text
-
-            # Build assistant message metadata with ALL fields sent to frontend
-            assistant_metadata = {}
-
-            # Add all optional fields that were sent to frontend
-            if followups_to_send:
-                assistant_metadata["followups"] = followups_to_send
-            if ui_blocks:
-                assistant_metadata["ui_blocks"] = ui_blocks
-            if next_suggestions:
-                assistant_metadata["next_suggestions"] = next_suggestions
-            if result_state.get("citations"):
-                assistant_metadata["citations"] = result_state.get("citations")
-            if result_state.get("intent"):
-                assistant_metadata["intent"] = result_state.get("intent")
-            if result_state.get("status"):
-                assistant_metadata["status"] = result_state.get("status")
-
-            # Save assistant message with complete metadata
-            await chat_history_manager.save_assistant_message(
-                session_id=session_id,
-                content=assistant_content,
-                message_metadata=assistant_metadata if assistant_metadata else None
-            )
-            logger.info(f"✅ Saved assistant message with metadata to database (session: {session_id})")
-
-        except Exception as save_error:
-            logger.error(f"❌ Failed to save messages to database: {save_error}", exc_info=True)
+        )
+        logger.info(f"[ChatEndpoint] Scheduled turn persistence for session {session_id}")
 
         # Flush Langfuse traces immediately after request completes
         if langfuse_handler:
