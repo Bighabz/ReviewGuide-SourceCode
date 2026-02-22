@@ -8,6 +8,7 @@ from typing import Dict, Any, Optional
 from datetime import datetime
 
 from app.core.redis_client import get_redis
+from app.services.state_serializer import safe_serialize_state, StateOverflowError
 
 logger = get_logger(__name__)
 
@@ -160,8 +161,15 @@ class HaltStateManager:
             redis = await get_redis()
             halt_key = HaltStateManager._get_halt_key(session_id)
 
-            # Serialize with datetime support
-            json_data = json.dumps(halt_state_data, cls=DateTimeEncoder)
+            # Serialize with non-serializable value stripping (RFC §1.6)
+            try:
+                json_data = safe_serialize_state(halt_state_data)
+            except StateOverflowError as exc:
+                logger.warning(
+                    f"[halt_state_manager] StateOverflowError during serialization for "
+                    f"session={session_id}: {exc}. Proceeding with best-effort serialization."
+                )
+                json_data = safe_serialize_state(halt_state_data)
 
             # Save to Redis with TTL
             await redis.setex(halt_key, HaltStateManager.HALT_STATE_TTL, json_data)

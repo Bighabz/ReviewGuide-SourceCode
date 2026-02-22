@@ -2,6 +2,11 @@
 MCP Server for ReviewGuide.ai
 
 Single MCP server exposing all tools as individual functions.
+
+# Tool output convention (RFC §1.6):
+# New tools MUST write results under:
+#   return {"tool_outputs": {"<tool_name>": {"key": value, ...}}}
+# NOT flat keys. Existing tools keep flat keys during transition.
 """
 
 import asyncio
