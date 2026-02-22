@@ -402,7 +402,14 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
             )
           )
         }
-        dispatchStream({ type: 'RECEIVE_DONE', data: data as any })
+        // Only dispatch RECEIVE_DONE for the actual terminal 'done' event.
+        // Intermediate artifact events also call onComplete (to attach ui_blocks /
+        // itinerary to the message) but must NOT move the FSM to finalized, because
+        // the backend stream is still open.  session_id is present only on the real
+        // done payload, so it's a reliable sentinel.
+        if (data.session_id) {
+          dispatchStream({ type: 'RECEIVE_DONE', data: data as any })
+        }
 
         // Save to recent searches if product results were shown
         if (data.ui_blocks && pendingUserMessage) {

@@ -49,8 +49,10 @@ def _sse_event(event_type: str, data: dict, encoder_cls=DateTimeEncoder) -> str:
     Returns:
         Fully-formed SSE string ready to yield to the client
     """
+    # Sanitize to prevent header injection via newlines
+    safe_type = event_type.replace('\r', '').replace('\n', '')
     json_payload = json.dumps(data, cls=encoder_cls)
-    return f"event: {event_type}\ndata: {json_payload}\n\n"
+    return f"event: {safe_type}\ndata: {json_payload}\n\n"
 
 
 logger = get_logger(__name__)

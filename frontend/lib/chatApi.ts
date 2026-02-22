@@ -171,6 +171,10 @@ export async function streamChat({
 
       // RFC §1.8: track the current named event type across multi-line SSE messages.
       // Resets to 'data' (legacy unnamed) at each blank-line boundary.
+      // NOTE: this declaration is intentionally inside the try block so that it is
+      // re-initialised to 'data' on every connection attempt (including retries).
+      // A stale event type from a previous failed connection can never bleed into
+      // the next attempt.
       let currentEventType = 'data'
 
       while (true) {
