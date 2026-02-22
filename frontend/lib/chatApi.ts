@@ -117,7 +117,15 @@ export async function streamChat({
       }
 
       if (!response.ok) {
-        // Don't retry on 4xx errors (client errors)
+        // Handle rate limiting with user-friendly message
+        if (response.status === 429) {
+          const retryAfter = response.headers.get('Retry-After')
+          const seconds = retryAfter ? parseInt(retryAfter, 10) : 900
+          const minutes = Math.ceil(seconds / 60)
+          onError(`Rate limit reached. Please wait ${minutes} minute${minutes > 1 ? 's' : ''} before sending another message.`)
+          return
+        }
+        // Don't retry on other 4xx errors (client errors)
         if (response.status >= 400 && response.status < 500) {
           onError(`Request failed: ${response.status}`)
           return

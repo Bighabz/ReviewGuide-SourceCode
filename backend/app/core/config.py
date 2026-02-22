@@ -282,6 +282,7 @@ class Settings(BaseSettings):
     SKYSCANNER_API_KEY: str = Field(default="", description="Skyscanner API key")
     AMADEUS_API_KEY: str = Field(default="", description="Amadeus API key")
     AMADEUS_API_SECRET: str = Field(default="", description="Amadeus API secret")
+    VIATOR_AFFILIATE_ID: str = Field(default="", description="Viator affiliate ID for activity search links")
 
     # Travel Cache Configuration
     ENABLE_TRAVEL_CACHE: bool = Field(default=True, description="Enable Redis caching for travel searches")

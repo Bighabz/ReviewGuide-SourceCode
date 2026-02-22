@@ -13,7 +13,7 @@ from app.core.database import init_db, close_db
 from app.core.redis_client import init_redis, close_redis
 from app.core.logging_config import setup_logging
 from app.middleware.logging_middleware import LoggingMiddleware
-from app.api.v1 import chat, health, admin, admin_auth, admin_users
+from app.api.v1 import chat, health, admin, admin_auth, admin_users, affiliate
 from app.services.search.config import setup_search_provider
 from app.services.travel.config import setup_travel_providers
 from app.services.scheduler import start_scheduler, stop_scheduler
@@ -108,6 +108,7 @@ app.include_router(chat.router, prefix="/v1/chat", tags=["Chat"])
 app.include_router(admin.router, prefix="/v1/admin", tags=["Admin"])
 app.include_router(admin_auth.router, prefix="/v1/admin/auth", tags=["Admin Auth"])
 app.include_router(admin_users.router, prefix="/v1/admin/users", tags=["Admin Users"])
+app.include_router(affiliate.router, prefix="/v1/affiliate", tags=["Affiliate"])
 
 
 @app.exception_handler(Exception)
