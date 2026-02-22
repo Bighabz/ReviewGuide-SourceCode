@@ -7,6 +7,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from typing import AsyncGenerator, Optional
 import json
+import time
 from app.core.centralized_logger import get_logger
 import uuid
 import asyncio
@@ -30,6 +31,30 @@ class DateTimeEncoder(json.JSONEncoder):
         if isinstance(obj, (datetime, date)):
             return obj.isoformat()
         return super().default(obj)
+
+
+def _sse_event(event_type: str, data: dict, encoder_cls=DateTimeEncoder) -> str:
+    """
+    Format a Server-Sent Event with a named event type.
+
+    Produces the wire format:
+        event: <event_type>\\n
+        data: <json>\\n
+        \\n
+
+    Args:
+        event_type: SSE event name (status, content, artifact, done, error)
+        data: Dict to JSON-encode as the event data payload
+        encoder_cls: Optional custom JSON encoder class
+
+    Returns:
+        Fully-formed SSE string ready to yield to the client
+    """
+    # Sanitize to prevent header injection via newlines
+    safe_type = event_type.replace('\r', '').replace('\n', '')
+    json_payload = json.dumps(data, cls=encoder_cls)
+    return f"event: {safe_type}\ndata: {json_payload}\n\n"
+
 
 logger = get_logger(__name__)
 colored_logger = get_colored_logger(__name__)
@@ -105,12 +130,45 @@ def is_consent_confirmation(request) -> bool:
 
 
 
+def _build_qos_log(
+    request_id: str,
+    session_id: str,
+    result_state: dict,
+    duration_ms: int,
+) -> dict:
+    """Build the RFC §4.2 QoS structured log payload."""
+    return {
+        "event": "request_completed",
+        "request_id": request_id,
+        "session_id": session_id,
+        "intent": result_state.get("intent", "unknown"),
+        "total_duration_ms": duration_ms,
+        "completeness": result_state.get("completeness", "full"),
+        "tool_durations": result_state.get("tool_durations", {}),
+        "provider_errors": result_state.get("provider_errors", []),
+    }
+
+
+async def _write_request_metric(metric_data: dict) -> None:
+    """Fire-and-forget: persist QoS metric row to request_metrics table."""
+    try:
+        from app.core.database import AsyncSessionLocal
+        from app.models.request_metric import RequestMetric
+        async with AsyncSessionLocal() as db:
+            metric = RequestMetric(**metric_data)
+            db.add(metric)
+            await db.commit()
+    except Exception as e:
+        logger.warning(f"[qos] Failed to write request metric: {e}")
+
+
 async def generate_chat_stream(
     message: str,
     session_id: str,
     user_id: int,
     country_code: Optional[str] = None,
-    user_preferences: Optional[dict] = None
+    user_preferences: Optional[dict] = None,
+    request_id: Optional[str] = None,
 ) -> AsyncGenerator[str, None]:
     """
     Generate SSE stream for chat responses with Langfuse tracking
@@ -121,9 +179,17 @@ async def generate_chat_stream(
         session_id: Session UUID (string)
         user_id: User ID (integer) to return to frontend for persistence
         country_code: User's country code for regional affiliate links
+        request_id: RFC §4.1 correlation ID propagated from X-Interaction-ID header
     """
+    # RFC §4.2 — capture stream start time for total_duration_ms calculation
+    stream_start_time = time.time()
+
     # Generate conversation_id for this query
     conversation_id = str(uuid.uuid4())
+
+    # RFC §4.1 — fall back to a fresh UUID if the caller didn't supply one
+    if not request_id:
+        request_id = str(uuid.uuid4())
 
     # Save original user message BEFORE it gets overwritten by status updates
     original_user_message = message
@@ -132,13 +198,19 @@ async def generate_chat_stream(
     # Token usage and cost are sent once per search via langfuse_handler
 
     try:
+        # RFC §4.1 — log request start with correlation ID
+        logger.info(
+            "[chat] stream_start",
+            extra={"request_id": request_id, "session_id": session_id, "user_id": user_id},
+        )
+
         # Send initial placeholder message IMMEDIATELY
-        placeholder_chunk = {
-            "token": "Thinking...",
-            "done": False,
+        yield _sse_event("status", {
+            "text": "Thinking...",
+            "agent": "init",
+            "step": 0,
             "placeholder": True,
-        }
-        yield f"data: {json.dumps(placeholder_chunk)}\n\n"
+        })
 
         # Check if we're resuming from a halt state first (before loading history)
         # to avoid unnecessary database/Redis queries for new queries
@@ -368,24 +440,20 @@ async def generate_chat_stream(
                     if isinstance(output_data, dict):
                         stream_data = output_data.get("stream_chunk_data")
                         if stream_data:
-                            # Clear placeholder first
-                            clear_chunk = {"clear": True, "done": False}
-                            yield f"data: {json.dumps(clear_chunk)}\n\n"
-
-                            # Stream the data with its type
+                            # Clear placeholder first via artifact event with clear flag
                             data_type = stream_data.get("type")
                             data_content = stream_data.get("data")
 
                             if data_type and data_content:
-                                # Send as full object
-                                chunk = {
-                                    data_type: data_content,
-                                    "done": False,
+                                artifact_payload = {
+                                    "type": data_type,
+                                    "blocks": data_content,
+                                    "clear": True,
                                 }
                                 # Check if stream_data has create_new_message flag
                                 if stream_data.get("create_new_message"):
-                                    chunk["create_new_message"] = True
-                                yield f"data: {json.dumps(chunk, cls=DateTimeEncoder)}\n\n"
+                                    artifact_payload["create_new_message"] = True
+                                yield _sse_event("artifact", artifact_payload)
 
                                 # Mark that we've streamed data
                                 data_already_streamed = True
@@ -428,6 +496,16 @@ async def generate_chat_stream(
                 trace = langfuse_handler.trace
                 if trace:
                     langfuse_trace_url = f"https://cloud.langfuse.com/trace/{trace.id}"
+                    # RFC §4.1 — tag the Langfuse trace with the correlation request_id
+                    # so it can be looked up via GET /v1/admin/trace/:interaction_id
+                    if langfuse_client:
+                        try:
+                            langfuse_client.trace(
+                                id=trace.id,
+                                tags=["request_id:" + request_id],
+                            )
+                        except Exception as tag_err:
+                            logger.debug(f"Could not tag Langfuse trace: {tag_err}")
             except Exception as e:
                 logger.debug(f"Could not get langfuse trace URL: {e}")
 
@@ -435,6 +513,7 @@ async def generate_chat_stream(
         # Cost/token metrics are tracked by Langfuse CallbackHandler and visible in trace URL
         consolidated_log = {
             "event": "query_completed",
+            "request_id": request_id,  # RFC §4.1 correlation ID
             "session_id": session_id,
             "conversation_id": conversation_id,
             "query": message[:200],
@@ -467,23 +546,18 @@ async def generate_chat_stream(
         ui_blocks_sent_early = False
         if ui_blocks and result_state.get("intent") == "product" and not data_already_streamed:
             logger.info(f"🔍 DEBUG: Sending UI blocks WITH clear for product intent ({len(ui_blocks)} blocks)")
-            # Send ui_blocks AND clear in the same chunk
-            combined_chunk = {
-                "ui_blocks": ui_blocks,
+            # Send ui_blocks AND clear in the same artifact event
+            yield _sse_event("artifact", {
+                "type": "ui_blocks",
+                "blocks": ui_blocks,
                 "clear": True,
-                "done": False,
-            }
-            yield f"data: {json.dumps(combined_chunk, cls=DateTimeEncoder)}\n\n"
+            })
             ui_blocks_sent_early = True
             logger.info(f"📤 Sent {len(ui_blocks)} UI blocks with clear signal")
         elif not data_already_streamed:
             # Clear placeholder ONLY if we haven't already streamed data
             # (If data was streamed, we want to keep it and append followups below it)
-            clear_chunk = {
-                "clear": True,
-                "done": False,
-            }
-            yield f"data: {json.dumps(clear_chunk)}\n\n"
+            yield _sse_event("artifact", {"clear": True})
         else:
             logger.info("🔍 Skipping clear chunk - data already streamed, will append followups")
 
@@ -493,11 +567,7 @@ async def generate_chat_stream(
         if should_stream_text:
             logger.info(f"🔍 DEBUG: Streaming response text ({len(response_text)} chars)")
             for char in response_text:
-                chunk = {
-                    "token": char,
-                    "done": False,
-                }
-                yield f"data: {json.dumps(chunk)}\n\n"
+                yield _sse_event("content", {"token": char})
                 # Small delay for smoother streaming
                 await asyncio.sleep(settings.CHAT_STREAM_SLEEP_DELAY)
         else:
@@ -518,20 +588,42 @@ async def generate_chat_stream(
         if next_suggestions:
             logger.info(f"🔍 Found {len(next_suggestions)} next step suggestions to send")
 
-        final_chunk = {
-            "done": True,
-            "status": result_state.get("status"),
+        final_done_payload = {
+            "session_id": session_id,
+            "request_id": request_id,  # RFC §4.1 correlation ID for frontend trace lookup
+            "status": result_state.get("status", "completed"),
             "intent": result_state.get("intent"),
             "ui_blocks": [] if ui_blocks_sent_early else ui_blocks,
             "citations": result_state.get("citations", []),
             "followups": followups_to_send,  # Pass through structured data from clarifier agent
             "next_suggestions": next_suggestions,  # Follow-up questions from next_step_suggestion tool
             "user_id": user_id,
+            "completeness": "full",  # RFC §1.8: degraded logic deferred to a later phase
         }
 
         logger.info(f"🔍 DEBUG: Final chunk - has_followups: {followups_to_send is not None}")
-        logger.info(f"🔍 DEBUG: Final chunk ui_blocks: {len(final_chunk['ui_blocks'])} blocks")
-        yield f"data: {json.dumps(final_chunk, cls=DateTimeEncoder)}\n\n"
+        logger.info(f"🔍 DEBUG: Final chunk ui_blocks: {len(final_done_payload['ui_blocks'])} blocks")
+        yield _sse_event("done", final_done_payload)
+
+        # RFC §4.2 — emit structured QoS log line after stream completes
+        _qos_duration_ms = int((time.time() - stream_start_time) * 1000)
+        qos_log = _build_qos_log(request_id, session_id, result_state, _qos_duration_ms)
+        logger.info(f"[qos] {json.dumps(qos_log)}")
+
+        # RFC §4.2 — persist QoS metric to database (fire-and-forget)
+        _metric_task = asyncio.create_task(
+            _write_request_metric({
+                "request_id": request_id,
+                "session_id": session_id,
+                "intent": result_state.get("intent", "unknown"),
+                "total_duration_ms": _qos_duration_ms,
+                "completeness": result_state.get("completeness", "full"),
+                "tool_durations": result_state.get("tool_durations", {}),
+                "provider_errors": result_state.get("provider_errors", []),
+            })
+        )
+        _background_tasks.add(_metric_task)
+        _metric_task.add_done_callback(_background_tasks.discard)
 
         # Fire-and-forget: save turn after stream is already done
         user_message_text = original_user_message
@@ -573,29 +665,30 @@ async def generate_chat_stream(
         # Flush Langfuse traces immediately after request completes
         if langfuse_handler:
             try:
-                get_langfuse_client().flush()
+                langfuse_client.flush()
                 logger.debug("Langfuse traces flushed")
             except Exception as flush_error:
                 logger.debug(f"Langfuse flush warning: {flush_error}")
 
     except Exception as e:
-        # Log error with centralized logger
+        # Log error with centralized logger including RFC §4.1 correlation ID
         logger.error(
             f"Error in chat_stream: {str(e)}",
             exc_info=True,
             extra={
+                "request_id": request_id,
                 "session_id": session_id,
                 "user_id": user_id,
                 "message_preview": message[:100] if message else ""
             }
         )
 
-        # Return simple error message
-        error_chunk = {
-            "error": "Something went wrong. If this issue persists please try again.",
-            "done": True,
-        }
-        yield f"data: {json.dumps(error_chunk)}\n\n"
+        # Emit a named error event so the stream always ends with a terminal event
+        yield _sse_event("error", {
+            "code": "internal_error",
+            "message": "Something went wrong. If this issue persists please try again.",
+            "recoverable": True,
+        })
 
 
 @router.get("/conversations")
@@ -854,6 +947,14 @@ async def chat_stream(
     from app.services.preference_service import load_user_preferences
     user_preferences = await load_user_preferences(db, returned_user_id) if returned_user_id else {}
 
+    # RFC §4.1 — extract or generate request_id for end-to-end trace correlation
+    from uuid import uuid4
+    request_id = request.headers.get("X-Interaction-ID") or str(uuid4())
+    logger.info(
+        "[chat] request received",
+        extra={"request_id": request_id, "session_id": session_id},
+    )
+
     # Return streaming response with user_id
     # Note: ChatHistoryManager is used internally for saving/loading messages
     return StreamingResponse(
@@ -862,7 +963,8 @@ async def chat_stream(
             session_id,
             returned_user_id,
             country_code,  # Pass detected/stored country_code
-            user_preferences  # Pass loaded preferences
+            user_preferences,  # Pass loaded preferences
+            request_id,  # RFC §4.1 correlation ID
         ),
         media_type="text/event-stream",
         headers={

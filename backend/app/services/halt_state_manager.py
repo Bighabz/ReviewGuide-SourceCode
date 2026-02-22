@@ -5,19 +5,13 @@ Centralized service for saving and loading halt state to/from Redis with process
 import json
 from app.core.centralized_logger import get_logger
 from typing import Dict, Any, Optional
-from datetime import datetime
 
 from app.core.redis_client import get_redis
+from app.services.state_serializer import (
+    safe_serialize_state, StateOverflowError, check_state_size, MAX_TOOL_INPUTS_BYTES
+)
 
 logger = get_logger(__name__)
-
-
-class DateTimeEncoder(json.JSONEncoder):
-    """JSON encoder that handles datetime objects"""
-    def default(self, obj):
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        return super().default(obj)
 
 
 class HaltStateManager:
@@ -160,8 +154,18 @@ class HaltStateManager:
             redis = await get_redis()
             halt_key = HaltStateManager._get_halt_key(session_id)
 
-            # Serialize with datetime support
-            json_data = json.dumps(halt_state_data, cls=DateTimeEncoder)
+            # Serialize with non-serializable value stripping (RFC §1.6)
+            try:
+                # Check the plan key which can be large
+                if "plan" in halt_state_data:
+                    check_state_size(halt_state_data, "plan", MAX_TOOL_INPUTS_BYTES)
+                json_data = safe_serialize_state(halt_state_data)
+            except StateOverflowError as exc:
+                logger.warning(
+                    f"[halt_state_manager] StateOverflowError for session={session_id}: {exc}. "
+                    "Serializing without size enforcement."
+                )
+                json_data = safe_serialize_state(halt_state_data)
 
             # Save to Redis with TTL
             await redis.setex(halt_key, HaltStateManager.HALT_STATE_TTL, json_data)

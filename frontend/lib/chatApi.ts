@@ -51,6 +51,55 @@ export interface StreamChunk {
   status_update?: string  // Agent status messages (e.g., "writing itinerary...")
   agent?: string  // Which agent sent the status
   create_new_message?: boolean  // Flag to tell frontend to create new message for subsequent data
+  // RFC §1.8 named event channel fields
+  text?: string          // status event: human-readable status text
+  step?: number          // status event: step number
+  type?: string          // artifact event: block type identifier
+  blocks?: any[]         // artifact event: block data payload
+  code?: string          // error event: error code
+  message?: string       // error event: error message
+  recoverable?: boolean  // error event: whether error is recoverable
+  completeness?: string  // done event: "full" | "degraded"
+  // RFC §4.1 correlation
+  request_id?: string    // done event: backend request_id for trace correlation
+}
+
+// RFC §4.1 — Render milestone timestamps for p95 time-to-first-content calculation
+interface RenderMilestones {
+  interaction_id: string
+  request_sent_ts: number
+  first_status_ts: number | null
+  first_content_ts: number | null
+  first_artifact_ts: number | null
+  done_ts: number | null
+}
+
+/**
+ * Fire-and-forget helper: POST render milestones to the telemetry endpoint.
+ * Errors are intentionally swallowed — telemetry is best-effort.
+ */
+function sendTelemetry(milestones: RenderMilestones): void {
+  fetch(`${API_URL}/v1/telemetry/render`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(milestones),
+  }).catch(() => {
+    // Telemetry is best-effort — swallow errors silently
+  })
+}
+
+/**
+ * Parsed SSE message with named event type and data payload.
+ * RFC §1.8 wire format:
+ *   event: <type>\n
+ *   data: <json>\n
+ *   \n
+ */
+export interface SSEMessage {
+  /** Named SSE event type (status | content | artifact | done | error).
+   *  Falls back to "data" for legacy unnamed events. */
+  eventType: string
+  data: StreamChunk
 }
 
 export interface ChatStreamOptions {
@@ -64,6 +113,10 @@ export interface ChatStreamOptions {
   onError: (error: string) => void
   onReconnecting?: (attempt: number, maxRetries: number) => void  // Called when retrying connection
   onReconnected?: () => void  // Called when connection is restored
+  /** RFC §1.8: optional callback invoked for every named SSE message before
+   *  the legacy handlers run.  Useful for routing by event type without
+   *  rewriting all existing call-sites. */
+  onEvent?: (msg: SSEMessage) => void
 }
 
 /**
@@ -81,7 +134,24 @@ export async function streamChat({
   onError,
   onReconnecting,
   onReconnected,
+  onEvent,
 }: ChatStreamOptions): Promise<void> {
+  // RFC §4.1 — Generate a unique interaction ID for this request for end-to-end trace correlation
+  const interactionId = crypto.randomUUID()
+
+  // RFC §4.1 — Track render milestones for p95 time-to-first-content calculation.
+  // NOTE: request_sent_ts is captured here, before the retry loop.  On retried
+  // requests this baseline therefore includes the duration of any prior failed
+  // attempts, so TTFC values may appear inflated for retried connections.
+  const milestones: RenderMilestones = {
+    interaction_id: interactionId,
+    request_sent_ts: Date.now(),
+    first_status_ts: null,
+    first_content_ts: null,
+    first_artifact_ts: null,
+    done_ts: null,
+  }
+
   let attempt = 0
 
   while (attempt < MAX_RETRIES) {
@@ -104,6 +174,7 @@ export async function streamChat({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Interaction-ID': interactionId,
         },
         body: JSON.stringify(body),
         signal: controller.signal,
@@ -141,6 +212,14 @@ export async function streamChat({
       const decoder = new TextDecoder()
       let buffer = ''
 
+      // RFC §1.8: track the current named event type across multi-line SSE messages.
+      // Resets to 'data' (legacy unnamed) at each blank-line boundary.
+      // NOTE: this declaration is intentionally inside the try block so that it is
+      // re-initialised to 'data' on every connection attempt (including retries).
+      // A stale event type from a previous failed connection can never bleed into
+      // the next attempt.
+      let currentEventType = 'data'
+
       while (true) {
         const { done, value } = await reader.read()
 
@@ -151,15 +230,112 @@ export async function streamChat({
         // Decode and add to buffer
         buffer += decoder.decode(value, { stream: true })
 
-        // Process complete SSE messages
+        // Process complete SSE messages (split on newlines, keep partial last line)
         const lines = buffer.split('\n')
         buffer = lines.pop() || '' // Keep incomplete line in buffer
 
         for (const line of lines) {
+          // RFC §1.8: parse the `event:` field to capture the named channel
+          if (line.startsWith('event: ')) {
+            currentEventType = line.slice(7).trim()
+            continue
+          }
+
+          // Blank line = end of SSE message; reset event type for next message
+          if (line === '') {
+            currentEventType = 'data'
+            continue
+          }
+
           if (line.startsWith('data: ')) {
             const jsonStr = line.slice(6) // Remove 'data: ' prefix
             try {
               const chunk: StreamChunk = JSON.parse(jsonStr)
+
+              // RFC §1.8: Fire the generic onEvent callback first (if provided)
+              if (onEvent) {
+                onEvent({ eventType: currentEventType, data: chunk })
+              }
+
+              // ── Route by named SSE event type ─────────────────────────────
+              if (currentEventType === 'status') {
+                // RFC §4.1 — record first status milestone
+                if (milestones.first_status_ts === null) {
+                  milestones.first_status_ts = Date.now()
+                }
+                // status event: human-readable progress text
+                const statusText = chunk.text || chunk.status_update || ''
+                if (statusText) {
+                  onToken(statusText, true) // isPlaceholder=true → shown as statusText
+                }
+                continue
+              }
+
+              if (currentEventType === 'content') {
+                // RFC §4.1 — record first content milestone
+                if (milestones.first_content_ts === null) {
+                  milestones.first_content_ts = Date.now()
+                }
+                // content event: single streaming token
+                if (chunk.token) {
+                  onToken(chunk.token, false)
+                }
+                continue
+              }
+
+              if (currentEventType === 'artifact') {
+                // RFC §4.1 — record first artifact milestone
+                if (milestones.first_artifact_ts === null) {
+                  milestones.first_artifact_ts = Date.now()
+                }
+                // artifact event: rich UI blocks or clear signal
+                if (chunk.clear && onClear) {
+                  onClear()
+                }
+                if (chunk.blocks || chunk.ui_blocks || chunk.itinerary) {
+                  const blocks = chunk.blocks ?? chunk.ui_blocks
+                  onComplete({
+                    ui_blocks: Array.isArray(blocks) ? blocks : undefined,
+                    itinerary: chunk.itinerary,
+                    create_new_message: chunk.create_new_message,
+                  })
+                }
+                continue
+              }
+
+              if (currentEventType === 'done') {
+                // RFC §4.1 — record done milestone and fire-and-forget telemetry POST
+                milestones.done_ts = Date.now()
+                sendTelemetry(milestones)
+                // done event: terminal — workflow completed
+                // Guard: only dispatch RECEIVE_DONE when chunk carries a real session_id,
+                // preventing artifact onComplete callbacks from triggering the FSM transition.
+                if (chunk.session_id) {
+                  onComplete({
+                    session_id: chunk.session_id,
+                    user_id: chunk.user_id,
+                    status: chunk.status,
+                    intent: chunk.intent,
+                    ui_blocks: chunk.ui_blocks,
+                    citations: chunk.citations,
+                    followups: chunk.followups,
+                    next_suggestions: chunk.next_suggestions,
+                    completeness: chunk.completeness,
+                    request_id: chunk.request_id,
+                  })
+                }
+                return
+              }
+
+              if (currentEventType === 'error') {
+                // error event: terminal — backend signalled a failure
+                const errMsg = chunk.message || chunk.error || 'An error occurred'
+                onError(errMsg)
+                return
+              }
+
+              // ── Legacy / unnamed events (eventType === 'data') ───────────
+              // Kept for backward-compatibility during the transition period.
 
               if (chunk.error) {
                 onError(chunk.error)
@@ -170,7 +346,7 @@ export async function streamChat({
                 onClear()
               }
 
-              // Forward status updates to UI as live typing indicators
+              // Forward legacy status updates to UI as live typing indicators
               // (e.g., "Searching reviews...", "Comparing prices...")
               if (chunk.status_update) {
                 onToken(chunk.status_update, true) // true = isPlaceholder (shows as statusText)
@@ -193,6 +369,10 @@ export async function streamChat({
               }
 
               if (chunk.done) {
+                // RFC §4.1 — record done milestone and fire-and-forget telemetry POST (legacy path).
+                // TODO: remove this branch once legacy unnamed events are no longer emitted.
+                milestones.done_ts = Date.now()
+                sendTelemetry(milestones)
                 onComplete({
                   session_id: chunk.session_id,
                   user_id: chunk.user_id,  // Pass user_id to callback for persistence
@@ -202,6 +382,7 @@ export async function streamChat({
                   citations: chunk.citations,
                   followups: chunk.followups,
                   next_suggestions: chunk.next_suggestions,  // Follow-up questions at end of response
+                  request_id: chunk.request_id,
                   // Note: itinerary and product carousel are sent in intermediate chunk, not in final chunk
                 })
                 return

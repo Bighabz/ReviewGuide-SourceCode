@@ -8,6 +8,7 @@ from app.models.product_index import ProductIndex
 from app.models.airport_cache import AirportCache
 from app.models.api_usage_log import APIUsageLog
 from app.models.affiliate_click import AffiliateClick
+from app.models.request_metric import RequestMetric
 
 __all__ = [
     "User",
@@ -19,4 +20,5 @@ __all__ = [
     "AirportCache",
     "APIUsageLog",
     "AffiliateClick",
+    "RequestMetric",
 ]

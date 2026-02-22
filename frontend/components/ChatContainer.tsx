@@ -4,11 +4,14 @@ import { useState, useEffect, useRef } from 'react'
 import MessageList from './MessageList'
 import ChatInput from './ChatInput'
 import ErrorBanner from './ErrorBanner'
+import BlockSkeleton from './BlockSkeleton'
 import { streamChat, fetchConversationHistory } from '@/lib/chatApi'
 import { SUGGESTION_CLICK_PREFIX } from '@/lib/utils'
 import { TRENDING_SEARCHES, UI_TEXT, CHAT_CONFIG } from '@/lib/constants'
 import { saveRecentSearch } from '@/lib/recentSearches'
 import { useStreamReducer } from '@/hooks/useStreamReducer'
+import { TOOL_BLOCK_MAP, BLOCK_SKELETON_CONFIG } from '@/lib/skeletonMap'
+import type { SkeletonBlockType } from '@/components/BlockSkeleton'
 
 export interface FollowupQuestion {
   slot: string
@@ -65,6 +68,9 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
   // Reconnecting state for SSE connection drops
   const [isReconnecting, setIsReconnecting] = useState(false)
   const [reconnectAttempt, setReconnectAttempt] = useState(0)
+
+  // RFC §2.2: skeleton block type shown while a tool is running but before the artifact arrives
+  const [pendingSkeleton, setPendingSkeleton] = useState<SkeletonBlockType | null>(null)
 
   // Track which message ID is currently being updated (can change if create_new_message is sent)
   const currentMessageIdRef = useRef<string>('')
@@ -275,6 +281,7 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
   const handleStream = async (messageToSend: string, isSuggestion: boolean = false, overrideSessionId?: string) => {
     dispatchStream({ type: 'RESET' })
     dispatchStream({ type: 'SEND_MESSAGE' })
+    setPendingSkeleton(null)
     setError('')
     setShowErrorBanner(false)
     setPendingUserMessage(messageToSend)
@@ -316,6 +323,38 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
       message: messageToSend,
       sessionId: currentSessionId,
       userId: userId || undefined,
+      // RFC §1.8: dispatch stream-reducer actions by named SSE event type.
+      // The legacy onToken/onClear/onComplete/onError callbacks still run for
+      // the actual UI updates — this layer only drives the FSM state machine.
+      // RFC §2.2: also manages pendingSkeleton based on tool names in status text.
+      onEvent: ({ eventType, data }) => {
+        switch (eventType) {
+          case 'status': {
+            dispatchStream({ type: 'RECEIVE_STATUS', text: '' })
+            // RFC §2.2: parse status text for known tool names → show skeleton
+            const text = (data as any).text || (data as any).status_update || ''
+            const normalizedText = text.toLowerCase().replace(/_/g, ' ')
+            const toolMatch = Object.keys(TOOL_BLOCK_MAP).find(
+              (tool) => normalizedText.includes(tool.replace(/_/g, ' '))
+            )
+            if (toolMatch) {
+              setPendingSkeleton(TOOL_BLOCK_MAP[toolMatch])
+            }
+            break
+          }
+          case 'content':
+            dispatchStream({ type: 'RECEIVE_CONTENT', token: '' })
+            break
+          case 'artifact':
+            dispatchStream({ type: 'RECEIVE_ARTIFACT', blocks: [] })
+            // RFC §2.2: real blocks have arrived — clear the skeleton
+            setPendingSkeleton(null)
+            break
+          // 'done' and 'error' are dispatched inside onComplete / onError below
+          default:
+            break
+        }
+      },
       onToken: (token, isPlaceholder) => {
         if (isPlaceholder) {
           dispatchStream({ type: 'RECEIVE_STATUS', text: token })
@@ -383,7 +422,14 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
             )
           )
         }
-        dispatchStream({ type: 'RECEIVE_DONE', data: data as any })
+        // Only dispatch RECEIVE_DONE for the actual terminal 'done' event.
+        // Intermediate artifact events also call onComplete (to attach ui_blocks /
+        // itinerary to the message) but must NOT move the FSM to finalized, because
+        // the backend stream is still open.  session_id is present only on the real
+        // done payload, so it's a reliable sentinel.
+        if (data.session_id) {
+          dispatchStream({ type: 'RECEIVE_DONE', data: data as any })
+        }
 
         // Save to recent searches if product results were shown
         if (data.ui_blocks && pendingUserMessage) {
@@ -404,6 +450,8 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
         setPendingUserMessage('')
         setIsRetrying(false)
         setIsReconnecting(false)
+        // RFC §2.2: stream finished — ensure skeleton is cleared
+        setPendingSkeleton(null)
       },
       onError: (errorMsg) => {
         console.error('Stream error:', errorMsg)
@@ -418,6 +466,8 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
         dispatchStream({ type: 'RECEIVE_ERROR', error: { message: errorMsg } })
         setIsRetrying(false)
         setIsReconnecting(false)
+        // RFC §2.2: stream errored — clear skeleton
+        setPendingSkeleton(null)
       },
       onReconnecting: (attempt, maxRetries) => {
         setIsReconnecting(true)
@@ -578,6 +628,20 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
       {messages.length > 0 && (
         <>
           <MessageList messages={messages} isStreaming={isStreaming} />
+
+          {/* RFC §2.2: Block skeleton — shown while a tool is running, before artifact arrives */}
+          {pendingSkeleton && isStreaming && (
+            <div
+              id="block-skeleton-container"
+              className="mx-auto px-4 pb-2"
+              style={{ maxWidth: '780px' }}
+            >
+              <BlockSkeleton
+                blockType={pendingSkeleton}
+                count={BLOCK_SKELETON_CONFIG[pendingSkeleton].count}
+              />
+            </div>
+          )}
 
           {/* Reconnecting indicator */}
           {isReconnecting && (
