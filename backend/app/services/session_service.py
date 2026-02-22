@@ -132,13 +132,23 @@ async def _get_or_create_user(
 
     elif user_id:
         # Anonymous user with existing user_id - try to reuse
+        # SECURITY: Only honor client-supplied user_id if it maps to an anonymous account.
+        # Authenticated accounts must not be claimable by anonymous clients.
         stmt = select(User).where(User.id == user_id)
         result = await db.execute(stmt)
         user = result.scalar_one_or_none()
 
         if user:
-            logger.info(f"Reusing existing user: {user.email} ({user.id})")
-            return user
+            # Only allow reuse if this is an anonymous account (email matches anonymous prefix)
+            if user.email and user.email.startswith(settings.ANONYMOUS_EMAIL_PREFIX):
+                logger.info(f"Reusing existing anonymous user: {user.email} ({user.id})")
+                return user
+            else:
+                # Client is trying to claim an authenticated user's ID — deny and create new
+                logger.warning(
+                    f"[security] Anonymous request attempted to claim authenticated user_id={user_id} "
+                    f"(email={user.email}). Creating new anonymous user instead."
+                )
         else:
             logger.warning(f"user_id {user_id} not found, creating new user")
 

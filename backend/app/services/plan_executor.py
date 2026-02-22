@@ -22,6 +22,17 @@ from tool_contracts import get_tool_contracts_dict  # noqa: E402
 
 logger = get_logger(__name__)
 
+# Tool execution timeout configuration
+_TOOL_TIMEOUT_S = 15.0        # Hard timeout per individual tool call
+_STEP_TIMEOUT_S = 45.0        # Hard timeout for entire step (parallel fan-out)
+_CRITICAL_TOOLS = {           # Tools whose failure aborts the pipeline
+    "product_compose",
+    "travel_compose",
+    "general_compose",
+    "intro_compose",
+    "unclear_compose",
+}
+
 def _load_tool_registry() -> Dict[str, Any]:
     """
     Dynamically load all tools from tool contracts.
@@ -113,11 +124,17 @@ class PlanExecutor:
             logger.info(f"🔧 Calling tool directly: {tool_name}")
 
             # Execute tool directly (no subprocess, no MCP protocol)
-            result = await tool_func(state)
+            result = await asyncio.wait_for(
+                tool_func(state),
+                timeout=_TOOL_TIMEOUT_S,
+            )
 
             logger.info(f"✅ Tool {tool_name} completed (direct call)")
             return result
 
+        except asyncio.TimeoutError:
+            logger.warning(f"⏱️  Tool {tool_name} timed out after {_TOOL_TIMEOUT_S}s")
+            return {"error": f"timeout after {_TOOL_TIMEOUT_S}s", "success": False, "timed_out": True}
         except Exception as e:
             logger.error(f"❌ Tool {tool_name} direct call failed: {e}", exc_info=True)
             return {"error": str(e), "success": False}
@@ -148,6 +165,10 @@ class PlanExecutor:
         self.context = {}
         self.state = state  # Store state for access in arg resolution
         self.tool_citations = []  # Reset tool citations
+
+        # Ensure missing_sources exists in state for partial-success tracking
+        if "missing_sources" not in self.state:
+            self.state["missing_sources"] = []
 
         # DEBUG: Log slots being passed to Plan Executor
         slots = state.get("slots", {})
@@ -221,8 +242,16 @@ class PlanExecutor:
                 serializable_state = self._make_serializable(self.state)
                 tasks.append(self._call_tool_direct(tool_name, serializable_state))
 
-            # Gather results
-            results = await asyncio.gather(*tasks, return_exceptions=True)
+            # Gather results (with step-level timeout)
+            try:
+                results = await asyncio.wait_for(
+                    asyncio.gather(*tasks, return_exceptions=True),
+                    timeout=_STEP_TIMEOUT_S,
+                )
+            except asyncio.TimeoutError:
+                logger.warning(f"  ⏱️  Step {step_id} parallel fan-out timed out after {_STEP_TIMEOUT_S}s — treating all pending tools as failed")
+                # Return degraded results: treat all as timed out
+                results = [asyncio.TimeoutError(f"step timeout after {_STEP_TIMEOUT_S}s")] * len(tool_names)
 
             # Store results back into state
             for tool_name, result in zip(tool_names, results):
@@ -234,6 +263,19 @@ class PlanExecutor:
                     self.context[f"{step_id}.{tool_name}"] = result
                     # Write tool outputs back to state
                     self._write_tool_outputs_to_state(tool_name, result, contracts.get(tool_name))
+
+            # Collect failed/timed-out tools into missing_sources for partial-success tracking
+            failed_tools = [
+                name for name, res in zip(tool_names, results)
+                if isinstance(res, Exception) or (isinstance(res, dict) and not res.get("success", True))
+            ]
+            if failed_tools:
+                existing_missing = self.state.get("missing_sources", [])
+                self.state["missing_sources"] = existing_missing + [
+                    {"tool": t, "step": step_id, "reason": "failed_or_timeout"}
+                    for t in failed_tools
+                ]
+                logger.info(f"  ⚠️  Partial success for step {step_id}: {len(tool_names) - len(failed_tools)}/{len(tool_names)} tools succeeded")
 
         else:
             # Execute tools sequentially
@@ -256,6 +298,15 @@ class PlanExecutor:
 
                     # Write tool outputs back to state
                     self._write_tool_outputs_to_state(tool_name, result, contracts.get(tool_name))
+
+                    # Check for tool failure (timeout or error returned from _call_tool_direct)
+                    if isinstance(result, dict) and not result.get("success", True):
+                        reason = "timed_out" if result.get("timed_out") else "failed"
+                        existing_missing = self.state.get("missing_sources", [])
+                        self.state["missing_sources"] = existing_missing + [
+                            {"tool": tool_name, "step": step_id, "reason": reason}
+                        ]
+                        logger.info(f"  ⚠️  Tool {tool_name} failed (sequential): adding to missing_sources (reason={reason})")
 
                 except Exception as e:
                     logger.error(f"  ❌ Tool {tool_name} failed: {e}")
@@ -762,9 +813,7 @@ class PlanExecutor:
         # Compose steps are usually critical (final output)
         tool_names = step.get("tools", [])  # Now just a list of strings
 
-        critical_tools = {"product_compose", "travel_compose", "general_compose"}
-
-        return any(tool in critical_tools for tool in tool_names)
+        return any(tool in _CRITICAL_TOOLS for tool in tool_names)
 
     def _extract_results(self) -> Dict[str, Any]:
         """

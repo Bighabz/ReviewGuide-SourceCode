@@ -11,6 +11,7 @@ from app.core.centralized_logger import get_logger
 from app.core.config import settings
 from app.core.redis_client import get_redis
 from app.core.rate_limiter import RateLimiter
+from app.services.geolocation import extract_client_ip
 
 logger = get_logger(__name__)
 
@@ -117,13 +118,11 @@ async def check_rate_limit(
         is_authenticated = True
     else:
         # Guest user - use IP address as identifier
-        client_ip = request.client.host if request.client else "unknown"
-        # Also check X-Forwarded-For header for proxy setups
-        forwarded_for = request.headers.get("X-Forwarded-For")
-        if forwarded_for:
-            # Take first IP from comma-separated list
-            client_ip = forwarded_for.split(",")[0].strip()
-
+        # X-Forwarded-For is only trusted when the connecting IP is a known proxy
+        client_ip = extract_client_ip(request)
+        if client_ip == "unknown":
+            logger.warning("check_rate_limit: could not resolve client IP, skipping rate limit check")
+            return
         identifier = f"ip:{client_ip}"
         is_authenticated = False
 

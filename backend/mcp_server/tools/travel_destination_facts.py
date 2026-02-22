@@ -10,7 +10,6 @@ import sys
 import os
 import json
 from typing import Dict, Any
-from app.core.error_manager import tool_error_handler
 
 # Add backend to path (portable path)
 backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -87,7 +86,15 @@ async def travel_destination_facts(state: Dict[str, Any]) -> Dict[str, Any]:
                     max_results=5
                 )
                 if search_results:
-                    web_context = "\n".join([f"- {r.title}: {r.snippet}" for r in search_results])
+                    from app.services.search.web_context import build_web_context
+                    wc = build_web_context(
+                        results=search_results,
+                        query=search_query,
+                        slots=slots,
+                    )
+                    web_context = wc.text
+                    if wc.omitted_count:
+                        logger.info(f"[travel_destination_facts] Web context: {wc.source_count} sources used, {wc.omitted_count} omitted, ~{wc.token_estimate} tokens")
                     logger.info(f"[travel_destination_facts] Got {len(search_results)} web results")
         except Exception as search_err:
             logger.warning(f"[travel_destination_facts] Web search failed, continuing with LLM-only: {search_err}")
