@@ -299,6 +299,15 @@ class PlanExecutor:
                     # Write tool outputs back to state
                     self._write_tool_outputs_to_state(tool_name, result, contracts.get(tool_name))
 
+                    # Check for tool failure (timeout or error returned from _call_tool_direct)
+                    if isinstance(result, dict) and not result.get("success", True):
+                        reason = "timed_out" if result.get("timed_out") else "failed"
+                        existing_missing = self.state.get("missing_sources", [])
+                        self.state["missing_sources"] = existing_missing + [
+                            {"tool": tool_name, "step": step_id, "reason": reason}
+                        ]
+                        logger.info(f"  ⚠️  Tool {tool_name} failed (sequential): adding to missing_sources (reason={reason})")
+
                 except Exception as e:
                     logger.error(f"  ❌ Tool {tool_name} failed: {e}")
                     self.context[f"{step_id}.{tool_name}"] = {"error": str(e), "success": False}
