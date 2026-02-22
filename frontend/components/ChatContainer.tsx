@@ -653,7 +653,7 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
               }}
             >
               <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" style={{ color: 'var(--primary)' }} />
-              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <span className="stream-status-text">
                 {UI_TEXT.RECONNECTING}{reconnectAttempt > 0 ? ` (attempt ${reconnectAttempt}/3)` : '...'}
               </span>
             </div>

@@ -119,7 +119,7 @@ export default function Message({ message }: MessageProps) {
               {!message.content && message.isThinking && (
                 <div className="flex items-center gap-2 py-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-pulse" />
-                  <span className="text-sm text-[var(--text-secondary)] font-medium tracking-tight">
+                  <span className="stream-status-text tracking-tight">
                     {message.statusText || 'Thinking...'}
                   </span>
                 </div>
