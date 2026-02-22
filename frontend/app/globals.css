@@ -91,10 +91,6 @@
   --citation-weight: 500;
   --citation-color: var(--primary);
 
-  /* Semantic aliases used by streaming tokens */
-  --text-primary: var(--text);
-  --color-primary: var(--primary);
-  --font-sans: var(--font-dm-sans, system-ui, sans-serif);
 }
 
 [data-theme="dark"] {
@@ -399,9 +395,9 @@ a, button, input, textarea, select {
    ═══════════════════════════════════════════ */
 
 @media (prefers-reduced-motion: reduce) {
-  .stream-transition,
-  .skeleton-transition,
-  .card-enter {
+  .animate-card-enter,
+  .animate-pulse,
+  .stream-status-text {
     transition: none !important;
     animation: none !important;
   }

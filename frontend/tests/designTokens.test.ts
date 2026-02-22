@@ -36,20 +36,14 @@ describe('RFC §2.6 design tokens', () => {
     expect(globals).toContain('.citation-text')
   })
 
-  it('defines prefers-reduced-motion override', () => {
-    expect(globals).toContain('prefers-reduced-motion')
-  })
-
-  it('collapses stream-transition under prefers-reduced-motion', () => {
-    expect(globals).toContain('.stream-transition')
-  })
-
-  it('collapses skeleton-transition under prefers-reduced-motion', () => {
-    expect(globals).toContain('.skeleton-transition')
-  })
-
-  it('collapses card-enter under prefers-reduced-motion', () => {
-    expect(globals).toContain('.card-enter')
+  it('prefers-reduced-motion block targets real animation classes', () => {
+    const motionIdx = globals.indexOf('prefers-reduced-motion: reduce')
+    expect(motionIdx).toBeGreaterThan(-1)
+    // Extract ~400 chars after the media query declaration to cover the block
+    const motionBlock = globals.slice(motionIdx, motionIdx + 400)
+    expect(motionBlock).toContain('.animate-card-enter')
+    expect(motionBlock).toContain('.animate-pulse')
+    expect(motionBlock).toContain('.stream-status-text')
   })
 
   it('defines card-enter animation in tailwind.config', () => {
