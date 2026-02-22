@@ -71,8 +71,6 @@ class TestConfidenceThreshold:
     """Test that low-confidence cases fall through to LLM planner."""
 
     def test_ambiguous_query_has_lower_confidence(self):
-        # Short but contains neither factoid nor comparison signals
         complexity, confidence = classify_query_complexity("tell me about laptops", {}, "product")
-        # Should be recommendation or deep_research with lower confidence
-        assert isinstance(complexity, str)
-        assert 0.0 <= confidence <= 1.0
+        assert complexity in ("recommendation", "deep_research")
+        assert confidence < 0.7  # Must fall through to LLM planner

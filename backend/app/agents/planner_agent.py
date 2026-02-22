@@ -136,6 +136,9 @@ class PlannerAgent(BaseAgent):
                     self._validate_plan(plan, available_tools)
                 else:
                     plan = self._get_product_plan_for_complexity(complexity)
+                    # Validate fast-path plans same as LLM-generated plans
+                    available_tools_for_validation = list(get_tool_contracts_dict().values())
+                    self._validate_plan(plan, available_tools_for_validation)
                     self.colored_logger.info(
                         f"🚀 FAST PATH: product intent → {complexity} template "
                         f"(confidence={confidence:.2f})"
@@ -564,16 +567,17 @@ Example: {{"tools": ["product_search"]}} - this will auto-add normalize, affilia
     def _get_product_plan_for_complexity(self, complexity: str) -> Dict[str, Any]:
         """Return execution plan template based on query complexity class."""
         if complexity == "factoid":
-            return self._create_minimal_product_plan()
+            plan = self._create_minimal_product_plan()
         elif complexity in ("comparison", "recommendation"):
-            return self._create_standard_product_plan()
+            plan = self._create_standard_product_plan()
         else:  # deep_research
-            return self._create_fast_path_product_plan()
+            plan = self._create_fast_path_product_plan()
+        return self._ensure_next_step_suggestion(plan)
 
     def _create_minimal_product_plan(self) -> Dict[str, Any]:
         """
         Minimal plan for factoid queries (e.g., 'what year was Sony XM5 released?').
-        Pipeline: extractor → product_general_information → compose
+        Pipeline: extractor → product_general_information → compose → suggestions
         Skips search, reviews, affiliate, ranking.
         """
         return {

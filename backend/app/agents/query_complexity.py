@@ -14,7 +14,7 @@ import re
 # ── Keyword lists ─────────────────────────────────────────────────────────────
 
 COMPARISON_KEYWORDS = [
-    "vs", "versus", "compare", "comparison", "difference", "better", "or"
+    "vs", "versus", "compare", "comparison", "difference"
 ]
 
 RECOMMENDATION_KEYWORDS = [
@@ -77,6 +77,9 @@ def classify_query_complexity(
       - recommendation: recommendation_keywords present AND product_names count == 0
       - deep_research:  review_keywords present OR len(tokens) > 20
     """
+    if not isinstance(user_message, str):
+        return ("deep_research", 0.6)
+
     text_lower = user_message.lower()
     tokens = user_message.split()
     token_count = len(tokens)
