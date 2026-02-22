@@ -20,7 +20,38 @@ class ModelService:
     """Service for LLM interactions. All observability handled by Langfuse CallbackHandler."""
 
     def __init__(self):
-        pass
+        self._llm_cache: dict = {}
+
+    def _get_llm(
+        self,
+        model: str,
+        temperature: float,
+        max_tokens: Optional[int],
+        json_mode: bool,
+        stream: bool,
+    ) -> ChatOpenAI:
+        """Get or create a cached ChatOpenAI instance.
+
+        Instances are cached by (model, temperature, max_tokens, json_mode, stream)
+        so HTTP connections are reused via the underlying httpx.AsyncClient.
+        """
+        cache_key = (model, temperature, max_tokens, json_mode, stream)
+        if cache_key not in self._llm_cache:
+            kwargs: dict = {
+                "model": model,
+                "openai_api_key": settings.OPENAI_API_KEY,
+                "streaming": stream,
+            }
+            # o3 models don't support temperature parameter
+            if not model.startswith("o3"):
+                kwargs["temperature"] = temperature
+            if max_tokens:
+                kwargs["max_tokens"] = max_tokens
+            if json_mode:
+                kwargs["model_kwargs"] = {"response_format": {"type": "json_object"}}
+            self._llm_cache[cache_key] = ChatOpenAI(**kwargs)
+            logger.info(f"[model_service] Created new ChatOpenAI instance (cache size: {len(self._llm_cache)})")
+        return self._llm_cache[cache_key]
 
     def _convert_messages(self, messages: list[Dict[str, str]]):
         """Convert dict messages to LangChain message objects"""
@@ -79,26 +110,9 @@ class ModelService:
             # Convert messages to LangChain format
             lc_messages = self._convert_messages(messages)
 
-            # Build ChatOpenAI kwargs
-            llm_kwargs = {
-                "model": model,
-                "openai_api_key": settings.OPENAI_API_KEY,
-                "streaming": stream,
-            }
-
-            # o3 models don't support temperature parameter
-            if not model.startswith("o3"):
-                llm_kwargs["temperature"] = temperature
-
-            if max_tokens:
-                llm_kwargs["max_tokens"] = max_tokens
-
-            # Handle JSON mode
-            if response_format and response_format.get("type") == "json_object":
-                llm_kwargs["model_kwargs"] = {"response_format": {"type": "json_object"}}
-
-            # Create LLM instance
-            llm = ChatOpenAI(**llm_kwargs)
+            # Get cached LLM instance (enables HTTP connection pooling)
+            json_mode = bool(response_format and response_format.get("type") == "json_object")
+            llm = self._get_llm(model, temperature, max_tokens, json_mode, stream)
 
             # Log API input (YELLOW)
             colored_logger.api_input(
