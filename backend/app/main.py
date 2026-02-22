@@ -17,6 +17,11 @@ from app.api.v1 import chat, health, admin, admin_auth, admin_users, affiliate
 from app.services.search.config import setup_search_provider
 from app.services.travel.config import setup_travel_providers
 from app.services.scheduler import start_scheduler, stop_scheduler
+from app.services.startup_manifest import (
+    build_startup_manifest,
+    log_startup_manifest,
+    set_manifest,
+)
 
 # Configure structured logging with centralized control
 setup_logging(
@@ -49,6 +54,11 @@ async def lifespan(app: FastAPI):
         # Initialize travel providers
         setup_travel_providers()
         logger.info("Travel providers initialized")
+
+        # Build and log the provider capability manifest (RFC §3.3)
+        _manifest = build_startup_manifest()
+        log_startup_manifest(_manifest)
+        set_manifest(_manifest)
 
         # Start background scheduler for link health checks
         start_scheduler()

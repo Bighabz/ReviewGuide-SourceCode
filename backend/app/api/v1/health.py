@@ -1,6 +1,7 @@
 """
 Health Check Endpoint
 """
+import dataclasses
 import sqlalchemy
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
@@ -9,6 +10,7 @@ from app.core.centralized_logger import get_logger
 
 from app.core.redis_client import get_redis
 from app.core.database import engine
+from app.services.startup_manifest import get_manifest
 
 logger = get_logger(__name__)
 
@@ -82,3 +84,38 @@ async def health_check():
         raise HTTPException(status_code=503, detail=health_status)
 
     return health_status
+
+
+@router.get("/health/ready")
+async def readiness_check():
+    """
+    RFC §3.3 — Provider capability readiness probe.
+
+    Returns 200 for 'ok' or 'degraded' (service is up, even if some optional
+    providers are missing env vars).
+    Returns 503 only when critical providers (LLM) are unavailable or when the
+    startup manifest has not been generated yet.
+    """
+    manifest = get_manifest()
+
+    if manifest is None:
+        raise HTTPException(status_code=503, detail="Startup not complete")
+
+    if manifest.all_critical_providers_ok:
+        all_ok = all(
+            p.status == "ok" for p in manifest.providers if p.enabled
+        )
+        status = "ok" if all_ok else "degraded"
+    else:
+        status = "unavailable"
+
+    response = {
+        "status": status,
+        "manifest": dataclasses.asdict(manifest),
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+    }
+
+    if status == "unavailable":
+        raise HTTPException(status_code=503, detail=response)
+
+    return response
