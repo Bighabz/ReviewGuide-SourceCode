@@ -5,8 +5,6 @@ Manages multiple affiliate providers and handles provider selection/fallback
 from app.core.centralized_logger import get_logger
 from typing import List, Dict, Any, Optional
 from app.services.affiliate.base import BaseAffiliateProvider, AffiliateProduct
-from app.services.affiliate.providers.ebay_provider import EbayAffiliateProvider
-from app.services.affiliate.providers.amazon_provider import AmazonAffiliateProvider
 from app.core.config import settings
 
 logger = get_logger(__name__)
@@ -136,7 +134,9 @@ class AffiliateManager:
         self._initialize_providers()
 
     def _initialize_providers(self):
-        """Initialize affiliate providers based on configuration"""
+        """Initialize affiliate providers via auto-discovery registry"""
+        from app.services.affiliate.loader import setup_affiliate_providers
+
         logger.info("Initializing affiliate providers")
 
         # Check if we should use mock provider
@@ -145,29 +145,16 @@ class AffiliateManager:
             mock_provider = MockAffiliateProvider()
             self.register_provider("mock", mock_provider)
             self.primary_provider = "mock"
-            # Still initialize real providers (they have their own mock modes)
-            # Don't return early — fall through to eBay + Amazon init below
 
-        # Always initialize eBay provider (has mock mode when no credentials)
-        logger.info("Initializing eBay affiliate provider")
-        try:
-            ebay_provider = EbayAffiliateProvider(
-                app_id=settings.EBAY_APP_ID,
-                cert_id=settings.EBAY_CERT_ID,
-                campaign_id=settings.EBAY_CAMPAIGN_ID,
-                custom_id=settings.EBAY_AFFILIATE_CUSTOM_ID,
-            )
-            self.register_provider("ebay", ebay_provider)
+        # Auto-discover, validate, and register all decorated providers
+        setup_affiliate_providers(self)
 
-            # Set eBay as primary if it's the first provider
-            if not self.primary_provider:
-                self.primary_provider = "ebay"
-
-        except Exception as e:
-            logger.error(f"Failed to initialize eBay provider: {e}")
-
-        # Initialize Amazon provider
-        self._initialize_amazon_provider()
+        # Set primary to first real provider if not already set
+        if not self.primary_provider:
+            for name in self.providers:
+                if name != "mock":
+                    self.primary_provider = name
+                    break
 
         # Fallback to mock if no providers configured
         if not self.providers:
@@ -182,23 +169,6 @@ class AffiliateManager:
             f"Affiliate manager initialized with providers: {list(self.providers.keys())}"
         )
         logger.info(f"Primary provider: {self.primary_provider}")
-
-    def _initialize_amazon_provider(self):
-        """Initialize Amazon affiliate provider"""
-        # Amazon provider works in two modes:
-        # 1. Mock mode (default): Uses local JSON with real ASINs - affiliate links still work
-        # 2. Real mode: Uses PA-API (requires AMAZON_API_ENABLED=true + credentials)
-        try:
-            amazon_provider = AmazonAffiliateProvider(
-                country_code=settings.AMAZON_DEFAULT_COUNTRY,
-                associate_tag=settings.AMAZON_ASSOCIATE_TAG,
-            )
-            self.register_provider("amazon", amazon_provider)
-            logger.info(
-                f"Amazon provider initialized (api_enabled={settings.AMAZON_API_ENABLED})"
-            )
-        except Exception as e:
-            logger.error(f"Failed to initialize Amazon provider: {e}")
 
     def register_provider(self, name: str, provider: BaseAffiliateProvider):
         """Register a new affiliate provider"""
@@ -426,6 +396,7 @@ class AffiliateManager:
 
         try:
             # Amazon provider has extended search_products with country_code
+            from app.services.affiliate.providers.amazon_provider import AmazonAffiliateProvider
             if isinstance(amazon_provider, AmazonAffiliateProvider):
                 products = await amazon_provider.search_products(
                     query=query,
@@ -474,6 +445,7 @@ class AffiliateManager:
         """
         amazon_provider = self.providers.get("amazon")
 
+        from app.services.affiliate.providers.amazon_provider import AmazonAffiliateProvider
         if not amazon_provider or not isinstance(amazon_provider, AmazonAffiliateProvider):
             logger.warning("Amazon provider not available for search URL")
             return None

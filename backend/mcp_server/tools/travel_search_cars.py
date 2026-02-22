@@ -89,30 +89,41 @@ async def travel_search_cars(state: Dict[str, Any]) -> Dict[str, Any]:
         pickup_date_obj = datetime.strptime(departure_date, "%Y-%m-%d").date() if departure_date else None
         dropoff_date_obj = datetime.strptime(return_date, "%Y-%m-%d").date() if return_date else None
 
-        # Generate Expedia PLP search URL using provider
-        search_url = ExpediaPLPLinkGenerator.generate_car_rental_search_url(
-            location=destination,
-            pickup_date=pickup_date_obj,
-            dropoff_date=dropoff_date_obj
-        )
+        # Loop over all registered PLP car rental providers
+        cars = []
+        citations = []
 
-        logger.info(f"[travel_search_cars] Generated Expedia car rental search URL: {search_url}")
-
-        # Return PLP link result
-        car_result = {
-            "type": "plp_link",
-            "provider": "expedia",
-            "location": destination,
-            "search_url": search_url,
-            "title": f"Rental cars in {destination}",
-            "pickup_date": departure_date,
-            "dropoff_date": return_date
+        plp_generators = {
+            "expedia_plp": ExpediaPLPLinkGenerator.generate_car_rental_search_url,
         }
 
+        for provider_key, generate_fn in plp_generators.items():
+            try:
+                search_url = generate_fn(
+                    location=destination,
+                    pickup_date=pickup_date_obj,
+                    dropoff_date=dropoff_date_obj,
+                )
+                provider_label = provider_key.replace("_plp", "")
+                car_result = {
+                    "type": "plp_link",
+                    "provider": provider_label,
+                    "location": destination,
+                    "search_url": search_url,
+                    "title": f"Rental cars in {destination}",
+                    "pickup_date": departure_date,
+                    "dropoff_date": return_date,
+                }
+                cars.append(car_result)
+                citations.append(search_url)
+                logger.info(f"[travel_search_cars] Generated {provider_label} car rental search URL: {search_url}")
+            except Exception as e:
+                logger.warning(f"[travel_search_cars] Provider {provider_key} failed: {e}")
+
         return {
-            "cars": [car_result],
-            "citations": [search_url],
-            "success": True
+            "cars": cars,
+            "citations": citations,
+            "success": len(cars) > 0,
         }
 
     except Exception as e:

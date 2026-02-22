@@ -18,8 +18,14 @@ if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
 from app.services.travel.providers.expedia_plp_provider import ExpediaPLPLinkGenerator
+from app.services.travel.registry import ProviderRegistry
+from app.services.travel.loader import _auto_import_providers
+from app.core.config import settings
 
 logger = get_logger(__name__)
+
+# Ensure all provider modules are imported so decorators fire
+_auto_import_providers()
 
 # Tool contract for planner
 TOOL_CONTRACT = {
@@ -117,33 +123,53 @@ async def travel_search_hotels(state: Dict[str, Any]) -> Dict[str, Any]:
         check_in_obj = datetime.strptime(check_in, "%Y-%m-%d").date() if check_in else None
         check_out_obj = datetime.strptime(check_out, "%Y-%m-%d").date() if check_out else None
 
-        # Generate Expedia PLP search URL using provider
-        search_url = ExpediaPLPLinkGenerator.generate_hotel_search_url(
-            destination=destination,
-            check_in=check_in_obj,
-            check_out=check_out_obj,
-            guests=adults + children,
-            rooms=1
-        )
+        # Loop over all registered PLP hotel providers
+        hotels = []
+        citations = []
 
-        logger.info(f"[travel_search_hotels] Generated Expedia hotel search URL: {search_url}")
-
-        # Return PLP link result
-        hotel_result = {
-            "type": "plp_link",
-            "provider": "expedia",
-            "destination": destination,
-            "search_url": search_url,
-            "title": f"Hotels in {destination}",
-            "check_in": check_in,
-            "check_out": check_out,
-            "guests": adults + children
+        # Map provider name -> link generator for PLP providers
+        plp_generators = {
+            "expedia_plp": ExpediaPLPLinkGenerator.generate_hotel_search_url,
         }
 
+        # Add Booking.com PLP if configured
+        if settings.BOOKING_AFFILIATE_ID:
+            try:
+                from app.services.travel.providers.booking_plp_provider import BookingPLPLinkGenerator
+                plp_generators["booking_plp"] = BookingPLPLinkGenerator.generate_hotel_search_url
+            except Exception as e:
+                logger.warning(f"[travel_search_hotels] Could not load Booking PLP provider: {e}")
+
+        for provider_key, generate_fn in plp_generators.items():
+            try:
+                search_url = generate_fn(
+                    destination=destination,
+                    check_in=check_in_obj,
+                    check_out=check_out_obj,
+                    guests=adults + children,
+                    rooms=1,
+                )
+                provider_label = provider_key.replace("_plp", "")
+                hotel_result = {
+                    "type": "plp_link",
+                    "provider": provider_label,
+                    "destination": destination,
+                    "search_url": search_url,
+                    "title": f"Hotels in {destination}",
+                    "check_in": check_in,
+                    "check_out": check_out,
+                    "guests": adults + children,
+                }
+                hotels.append(hotel_result)
+                citations.append(search_url)
+                logger.info(f"[travel_search_hotels] Generated {provider_label} hotel search URL: {search_url}")
+            except Exception as e:
+                logger.warning(f"[travel_search_hotels] Provider {provider_key} failed: {e}")
+
         return {
-            "hotels": [hotel_result],
-            "citations": [search_url],
-            "success": True
+            "hotels": hotels,
+            "citations": citations,
+            "success": len(hotels) > 0,
         }
 
     except Exception as e:

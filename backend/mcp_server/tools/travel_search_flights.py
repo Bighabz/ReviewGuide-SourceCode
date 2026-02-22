@@ -21,6 +21,7 @@ from app.services.travel.providers.expedia_plp_provider import ExpediaPLPLinkGen
 
 logger = get_logger(__name__)
 
+
 # Tool contract for planner
 TOOL_CONTRACT = {
     "name": "travel_search_flights",
@@ -98,38 +99,49 @@ async def travel_search_flights(state: Dict[str, Any]) -> Dict[str, Any]:
         depart_date_obj = datetime.strptime(departure_date, "%Y-%m-%d").date() if departure_date else None
         return_date_obj = datetime.strptime(return_date, "%Y-%m-%d").date() if return_date else None
 
-        # Generate Expedia PLP search URL using provider
-        search_url = ExpediaPLPLinkGenerator.generate_flight_search_url(
-            origin=origin,
-            destination=destination,
-            departure_date=depart_date_obj,
-            return_date=return_date_obj,
-            passengers=adults + children,
-            cabin_class="economy"
-        )
-
-        logger.info(f"[travel_search_flights] Generated Expedia flight search URL: {search_url}")
-
         # Determine trip type for title
         trip_type = "Round-trip" if return_date else "One-way"
 
-        # Return PLP link result
-        flight_result = {
-            "type": "plp_link",
-            "provider": "expedia",
-            "origin": origin,
-            "destination": destination,
-            "search_url": search_url,
-            "title": f"{trip_type} flights from {origin} to {destination}",
-            "departure_date": departure_date,
-            "return_date": return_date,
-            "passengers": adults + children
+        # Loop over all registered PLP flight providers
+        flights = []
+        citations = []
+
+        plp_generators = {
+            "expedia_plp": ExpediaPLPLinkGenerator.generate_flight_search_url,
         }
 
+        for provider_key, generate_fn in plp_generators.items():
+            try:
+                search_url = generate_fn(
+                    origin=origin,
+                    destination=destination,
+                    departure_date=depart_date_obj,
+                    return_date=return_date_obj,
+                    passengers=adults + children,
+                    cabin_class="economy",
+                )
+                provider_label = provider_key.replace("_plp", "")
+                flight_result = {
+                    "type": "plp_link",
+                    "provider": provider_label,
+                    "origin": origin,
+                    "destination": destination,
+                    "search_url": search_url,
+                    "title": f"{trip_type} flights from {origin} to {destination}",
+                    "departure_date": departure_date,
+                    "return_date": return_date,
+                    "passengers": adults + children,
+                }
+                flights.append(flight_result)
+                citations.append(search_url)
+                logger.info(f"[travel_search_flights] Generated {provider_label} flight search URL: {search_url}")
+            except Exception as e:
+                logger.warning(f"[travel_search_flights] Provider {provider_key} failed: {e}")
+
         return {
-            "flights": [flight_result],
-            "citations": [search_url],
-            "success": True
+            "flights": flights,
+            "citations": citations,
+            "success": len(flights) > 0,
         }
 
     except Exception as e:

@@ -115,6 +115,9 @@ class PlannerAgent(BaseAgent):
             elif intent == "intro":
                 plan = self._create_manual_plan_for_intro()
                 self.colored_logger.info("📋 Using manual plan for intro intent")
+            elif intent == "product":
+                plan = self._create_fast_path_product_plan()
+                self.colored_logger.info("🚀 FAST PATH: product intent → Bypassing LLM Planner (hardcoded parallel DAG)")
             else:
                 # Get tool contracts directly (no MCP subprocess needed)
                 available_tools = list(get_tool_contracts_dict().values())
@@ -533,6 +536,69 @@ Example: {{"tools": ["product_search"]}} - this will auto-add normalize, affilia
                     "tools": ["unclear_compose"],
                     "parallel": False
                 }
+            ]
+        }
+
+    def _create_fast_path_product_plan(self) -> Dict[str, Any]:
+        """
+        Hardcoded optimal execution plan for product intent.
+        Bypasses the LLM Planner entirely to save ~1.5s latency.
+
+        Pipeline:
+          Step 1: product_extractor (extract explicit names)
+          Step 2: product_search + product_evidence (PARALLEL - both I/O bound)
+          Step 3: review_search (needs product_search output)
+          Step 4: product_normalize (merges search + evidence + ranking)
+          Step 5: product_affiliate (needs normalized products)
+          Step 6: product_ranking (needs affiliate data)
+          Step 7: product_compose (final assembly, tool_order 800)
+          Step 8: next_step_suggestion (follow-ups, tool_order 900)
+
+        Returns:
+            Execution plan dict with parallel step 2
+        """
+        return {
+            "steps": [
+                {
+                    "id": "step_1",
+                    "tools": ["product_extractor"],
+                    "parallel": False
+                },
+                {
+                    "id": "step_2",
+                    "tools": ["product_search", "product_evidence"],
+                    "parallel": True  # Both read product_names, no dependency on each other
+                },
+                {
+                    "id": "step_3",
+                    "tools": ["review_search"],
+                    "parallel": False
+                },
+                {
+                    "id": "step_4",
+                    "tools": ["product_normalize"],
+                    "parallel": False
+                },
+                {
+                    "id": "step_5",
+                    "tools": ["product_affiliate"],
+                    "parallel": False
+                },
+                {
+                    "id": "step_6",
+                    "tools": ["product_ranking"],
+                    "parallel": False
+                },
+                {
+                    "id": "step_7",
+                    "tools": ["product_compose"],
+                    "parallel": False
+                },
+                {
+                    "id": "step_8",
+                    "tools": ["next_step_suggestion"],
+                    "parallel": False
+                },
             ]
         }
 

@@ -11,6 +11,7 @@ import time
 from typing import List, Dict, Any, Optional
 from urllib.parse import quote, urlencode
 from app.services.affiliate.base import BaseAffiliateProvider, AffiliateProduct
+from app.services.affiliate.registry import AffiliateProviderRegistry
 from app.core.config import settings
 
 logger = get_logger(__name__)
@@ -158,6 +159,11 @@ EBAY_DOMAINS: Dict[str, str] = {
 }
 
 
+@AffiliateProviderRegistry.register(
+    "ebay",
+    required_env_vars=[],
+    optional_env_vars=["EBAY_APP_ID", "EBAY_CERT_ID", "EBAY_CAMPAIGN_ID"],
+)
 class EbayAffiliateProvider(BaseAffiliateProvider):
     """
     eBay Partner Network (EPN) Integration

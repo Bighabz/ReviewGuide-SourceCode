@@ -12,6 +12,7 @@ from typing import List, Dict, Any, Optional
 import httpx
 from app.core.centralized_logger import get_logger
 from app.services.affiliate.base import BaseAffiliateProvider, AffiliateProduct
+from app.services.affiliate.registry import AffiliateProviderRegistry
 from app.core.config import settings
 
 logger = get_logger(__name__)
@@ -285,6 +286,11 @@ def generate_amazon_affiliate_link(
         return f"https://www.{domain}/dp/{asin}"
 
 
+@AffiliateProviderRegistry.register(
+    "amazon",
+    required_env_vars=[],
+    optional_env_vars=["AMAZON_ACCESS_KEY", "AMAZON_SECRET_KEY", "AMAZON_ASSOCIATE_TAG"],
+)
 class AmazonAffiliateProvider(BaseAffiliateProvider):
     """
     Amazon Affiliate Provider
