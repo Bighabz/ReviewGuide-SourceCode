@@ -3,6 +3,7 @@ Tests for RFC §3.3 — Provider Capability Manifest at Startup
 
 backend/tests/test_startup_manifest.py
 """
+import dataclasses
 import os
 
 # ---------------------------------------------------------------------------
@@ -20,6 +21,7 @@ os.environ.setdefault("LOG_ENABLED", "false")
 from unittest.mock import patch, MagicMock
 
 import pytest
+from fastapi.testclient import TestClient
 
 from app.services.startup_manifest import (
     ProviderCapabilityReport,
@@ -29,6 +31,38 @@ from app.services.startup_manifest import (
     get_manifest,
     set_manifest,
 )
+
+
+# ---------------------------------------------------------------------------
+# Minimal FastAPI app for HTTP-level endpoint tests
+# ---------------------------------------------------------------------------
+
+def _make_test_manifest(all_critical_ok: bool, providers_ok: bool = True) -> StartupManifest:
+    """Build a minimal StartupManifest for use in HTTP endpoint tests."""
+    status = "ok" if providers_ok else "missing_env"
+    return StartupManifest(
+        timestamp="2026-01-01T00:00:00+00:00",
+        providers=[
+            ProviderCapabilityReport(
+                provider="openai",
+                enabled=True,
+                status="ok" if all_critical_ok else "missing_env",
+                missing_vars=[] if all_critical_ok else ["OPENAI_API_KEY"],
+                error_message=None,
+            ),
+            ProviderCapabilityReport(
+                provider="perplexity",
+                enabled=True,
+                status=status,
+                missing_vars=[] if providers_ok else ["PERPLEXITY_API_KEY"],
+                error_message=None,
+            ),
+        ],
+        search_provider="perplexity",
+        llm_model="gpt-4o-mini",
+        rate_limiting_enabled=False,
+        all_critical_providers_ok=all_critical_ok,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -111,12 +145,11 @@ def test_all_critical_ok_when_optional_missing():
 
     assert manifest.all_critical_providers_ok is True
 
-    # Optional providers should NOT affect the critical flag
+    # Optional providers' status must not influence the critical flag regardless of their state
     optional_names = {"booking", "viator", "amazon", "ebay", "serpapi", "amadeus"}
     for report in manifest.providers:
         if report.provider in optional_names:
-            # They are disabled (enabled=False) so they shouldn't fail critical check
-            assert report.provider not in {"openai"}  # sanity
+            assert report.status in ("ok", "missing_env", "import_error", "init_error")
 
 
 # ---------------------------------------------------------------------------
@@ -182,7 +215,8 @@ def test_build_manifest_returns_correct_fields():
     # Structural checks
     assert isinstance(manifest, StartupManifest)
     assert isinstance(manifest.timestamp, str)
-    assert manifest.timestamp.endswith("Z")
+    # datetime.now(timezone.utc).isoformat() produces "+00:00" suffix
+    assert "+00:00" in manifest.timestamp or manifest.timestamp.endswith("Z")
     assert isinstance(manifest.providers, list)
     assert len(manifest.providers) > 0
     assert manifest.search_provider == "perplexity"
@@ -225,3 +259,93 @@ def test_import_error_when_module_cannot_be_loaded():
     assert report.provider == "fake"
     assert report.enabled is True
     assert "fake_provider" in (report.error_message or "")
+
+
+# ---------------------------------------------------------------------------
+# 7. test_readiness_endpoint_returns_200_when_all_ok
+# ---------------------------------------------------------------------------
+
+def test_readiness_endpoint_returns_200_when_all_ok():
+    """GET /health/ready returns 200 with status='ok' when all enabled providers are ok."""
+    from app.api.v1.health import router
+    from fastapi import FastAPI
+
+    app = FastAPI()
+    app.include_router(router)
+    client = TestClient(app, raise_server_exceptions=False)
+
+    manifest = _make_test_manifest(all_critical_ok=True, providers_ok=True)
+
+    with patch("app.api.v1.health.get_manifest", return_value=manifest):
+        response = client.get("/health/ready")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "ok"
+    assert "manifest" in body
+    assert "timestamp" in body
+
+
+# ---------------------------------------------------------------------------
+# 8. test_readiness_endpoint_returns_200_degraded_when_optional_missing
+# ---------------------------------------------------------------------------
+
+def test_readiness_endpoint_returns_200_degraded_when_optional_missing():
+    """GET /health/ready returns 200 with status='degraded' when optional providers are missing."""
+    from app.api.v1.health import router
+    from fastapi import FastAPI
+
+    app = FastAPI()
+    app.include_router(router)
+    client = TestClient(app, raise_server_exceptions=False)
+
+    # Critical OK but optional perplexity is missing_env
+    manifest = _make_test_manifest(all_critical_ok=True, providers_ok=False)
+
+    with patch("app.api.v1.health.get_manifest", return_value=manifest):
+        response = client.get("/health/ready")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "degraded"
+
+
+# ---------------------------------------------------------------------------
+# 9. test_readiness_endpoint_returns_503_when_critical_missing
+# ---------------------------------------------------------------------------
+
+def test_readiness_endpoint_returns_503_when_critical_missing():
+    """GET /health/ready returns 503 with status='unavailable' when LLM key is absent."""
+    from app.api.v1.health import router
+    from fastapi import FastAPI
+
+    app = FastAPI()
+    app.include_router(router)
+    client = TestClient(app, raise_server_exceptions=False)
+
+    manifest = _make_test_manifest(all_critical_ok=False)
+
+    with patch("app.api.v1.health.get_manifest", return_value=manifest):
+        response = client.get("/health/ready")
+
+    assert response.status_code == 503
+    body = response.json()
+    assert body["detail"]["status"] == "unavailable"
+
+
+# ---------------------------------------------------------------------------
+# 10. test_build_startup_manifest_fallback_on_exception
+# ---------------------------------------------------------------------------
+
+def test_build_startup_manifest_fallback_on_exception():
+    """When an unexpected error occurs in build_startup_manifest, a safe fallback manifest is returned."""
+    # Force _get_str to raise an exception to trigger the outer except block
+    with patch("app.services.startup_manifest._get_str", side_effect=RuntimeError("unexpected")):
+        manifest = build_startup_manifest()
+
+    # Must return a valid StartupManifest, never raise
+    assert isinstance(manifest, StartupManifest)
+    assert manifest.all_critical_providers_ok is False
+    assert len(manifest.providers) == 1
+    assert manifest.providers[0].provider == "unknown"
+    assert manifest.providers[0].status == "init_error"

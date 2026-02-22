@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import dataclasses
 import importlib as _importlib
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal
 
 from app.core.centralized_logger import get_logger
@@ -175,8 +175,6 @@ def build_startup_manifest() -> StartupManifest:
                         booking, amadeus, viator.
     """
     try:
-        from app.core.config import settings
-
         search_provider = _get_str("SEARCH_PROVIDER") or "perplexity"
         llm_model = _get_str("DEFAULT_MODEL") or "gpt-4o-mini"
         rate_limiting_enabled = _get_bool("RATE_LIMIT_ENABLED")
@@ -304,7 +302,7 @@ def build_startup_manifest() -> StartupManifest:
         all_critical_ok = openai_report.status == "ok"
 
         return StartupManifest(
-            timestamp=datetime.utcnow().isoformat() + "Z",
+            timestamp=datetime.now(timezone.utc).isoformat(),
             providers=providers,
             search_provider=search_provider,
             llm_model=llm_model,
@@ -316,7 +314,7 @@ def build_startup_manifest() -> StartupManifest:
         # Last-resort fallback: return a manifest that marks everything failed
         logger.error(f"[startup] Failed to build startup manifest: {exc}", exc_info=True)
         return StartupManifest(
-            timestamp=datetime.utcnow().isoformat() + "Z",
+            timestamp=datetime.now(timezone.utc).isoformat(),
             providers=[
                 ProviderCapabilityReport(
                     provider="unknown",
