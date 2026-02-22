@@ -8,7 +8,9 @@ from typing import Dict, Any, Optional
 from datetime import datetime
 
 from app.core.redis_client import get_redis
-from app.services.state_serializer import safe_serialize_state, StateOverflowError
+from app.services.state_serializer import (
+    safe_serialize_state, StateOverflowError, check_state_size, MAX_UI_PROJECTION_BYTES
+)
 
 logger = get_logger(__name__)
 
@@ -163,11 +165,14 @@ class HaltStateManager:
 
             # Serialize with non-serializable value stripping (RFC §1.6)
             try:
+                # Check total state size (ui_projection is the largest typical key)
+                if "ui_projection" in halt_state_data:
+                    check_state_size(halt_state_data, "ui_projection", MAX_UI_PROJECTION_BYTES)
                 json_data = safe_serialize_state(halt_state_data)
             except StateOverflowError as exc:
                 logger.warning(
-                    f"[halt_state_manager] StateOverflowError during serialization for "
-                    f"session={session_id}: {exc}. Proceeding with best-effort serialization."
+                    f"[halt_state_manager] StateOverflowError for session={session_id}: {exc}. "
+                    "Serializing without size enforcement."
                 )
                 json_data = safe_serialize_state(halt_state_data)
 
