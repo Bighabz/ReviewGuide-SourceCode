@@ -291,77 +291,33 @@ def test_qos_summary_returns_populated_metrics():
 # ---------------------------------------------------------------------------
 
 def test_qos_log_is_emitted_with_correct_structure():
-    """
-    After generate_chat_stream yields the 'done' event, a structured JSON
-    log line prefixed with '[qos]' must be emitted via logger.info.
+    """_build_qos_log must produce all 7 RFC §4.2 required fields."""
+    from app.api.v1.chat import _build_qos_log
 
-    The JSON payload must contain all RFC §4.2 required fields:
-      request_id, session_id, intent, total_duration_ms,
-      completeness, tool_durations, provider_errors.
-    """
-    import app.api.v1.chat as chat_module
+    result_state = {
+        "intent": "product",
+        "completeness": "full",
+        "tool_durations": {"product_search": 1200},
+        "provider_errors": ["serpapi_timeout"],
+    }
+    log = _build_qos_log(
+        request_id="550e8400-e29b-41d4-a716-446655440000",
+        session_id="test-session",
+        result_state=result_state,
+        duration_ms=3500,
+    )
 
-    captured_logs: list[str] = []
+    required_fields = ["event", "request_id", "session_id", "intent",
+                       "total_duration_ms", "completeness", "tool_durations", "provider_errors"]
+    for field in required_fields:
+        assert field in log, f"Missing required QoS field: {field}"
 
-    original_info = chat_module.logger.info
-
-    def _capture_info(msg, *args, **kwargs):
-        if isinstance(msg, str) and msg.startswith("[qos]"):
-            captured_logs.append(msg)
-        original_info(msg, *args, **kwargs)
-
-    with patch.object(chat_module.logger, "info", side_effect=_capture_info):
-        # Build a minimal result_state that simulate what the workflow returns
-        result_state = {
-            "intent": "product",
-            "completeness": "full",
-            "tool_durations": {"search": 1200},
-            "provider_errors": [],
-            "status": "completed",
-            "assistant_text": "Here are some headphones.",
-            "ui_blocks": [],
-            "citations": [],
-            "next_suggestions": [],
-            "current_agent": "compose",
-        }
-
-        # Directly test the log structure by simulating what the code emits
-        import json
-        import time
-
-        request_id = "550e8400-e29b-41d4-a716-446655440000"
-        session_id = "test-session-123"
-        stream_start_time = time.time() - 5.0  # simulate 5 s elapsed
-
-        _qos_duration_ms = int((time.time() - stream_start_time) * 1000)
-        qos_log = {
-            "event": "request_completed",
-            "request_id": request_id,
-            "session_id": session_id,
-            "intent": result_state.get("intent", "unknown"),
-            "total_duration_ms": _qos_duration_ms,
-            "completeness": result_state.get("completeness", "full"),
-            "tool_durations": result_state.get("tool_durations", {}),
-            "provider_errors": result_state.get("provider_errors", []),
-        }
-        chat_module.logger.info(f"[qos] {json.dumps(qos_log)}")
-
-    assert len(captured_logs) == 1, "Expected exactly one [qos] log line"
-    log_line = captured_logs[0]
-    assert log_line.startswith("[qos] "), "Log must be prefixed with '[qos] '"
-
-    payload = json.loads(log_line[len("[qos] "):])
-
-    # Verify all RFC §4.2 required fields
-    assert payload["event"] == "request_completed"
-    assert payload["request_id"] == request_id
-    assert payload["session_id"] == session_id
-    assert payload["intent"] == "product"
-    assert isinstance(payload["total_duration_ms"], int)
-    assert payload["total_duration_ms"] > 0
-    assert payload["completeness"] == "full"
-    assert payload["tool_durations"] == {"search": 1200}
-    assert payload["provider_errors"] == []
+    assert log["request_id"] == "550e8400-e29b-41d4-a716-446655440000"
+    assert log["session_id"] == "test-session"
+    assert log["intent"] == "product"
+    assert log["total_duration_ms"] == 3500
+    assert isinstance(log["tool_durations"], dict)
+    assert isinstance(log["provider_errors"], list)
 
 
 # ---------------------------------------------------------------------------

@@ -130,6 +130,25 @@ def is_consent_confirmation(request) -> bool:
 
 
 
+def _build_qos_log(
+    request_id: str,
+    session_id: str,
+    result_state: dict,
+    duration_ms: int,
+) -> dict:
+    """Build the RFC §4.2 QoS structured log payload."""
+    return {
+        "event": "request_completed",
+        "request_id": request_id,
+        "session_id": session_id,
+        "intent": result_state.get("intent", "unknown"),
+        "total_duration_ms": duration_ms,
+        "completeness": result_state.get("completeness", "full"),
+        "tool_durations": result_state.get("tool_durations", {}),
+        "provider_errors": result_state.get("provider_errors", []),
+    }
+
+
 async def _write_request_metric(metric_data: dict) -> None:
     """
     RFC §4.2 — Fire-and-forget helper to persist QoS metrics to the database.
@@ -138,18 +157,17 @@ async def _write_request_metric(metric_data: dict) -> None:
     can run as an asyncio.create_task() without holding a reference to the
     request-scoped session which may already be closed.
     """
+    db_gen = get_db()
+    db = await anext(db_gen)
     try:
         from app.models.request_metric import RequestMetric
-        db_gen = get_db()
-        db = await anext(db_gen)
-        try:
-            metric = RequestMetric(**metric_data)
-            db.add(metric)
-            await db.commit()
-        finally:
-            await db_gen.aclose()
+        metric = RequestMetric(**metric_data)
+        db.add(metric)
+        # commit handled by get_db generator on aclose()
     except Exception as e:
         logger.warning(f"[qos] Failed to write request metric: {e}")
+    finally:
+        await db_gen.aclose()
 
 
 async def generate_chat_stream(
@@ -597,16 +615,7 @@ async def generate_chat_stream(
 
         # RFC §4.2 — emit structured QoS log line after stream completes
         _qos_duration_ms = int((time.time() - stream_start_time) * 1000)
-        qos_log = {
-            "event": "request_completed",
-            "request_id": request_id,
-            "session_id": session_id,
-            "intent": result_state.get("intent", "unknown"),
-            "total_duration_ms": _qos_duration_ms,
-            "completeness": result_state.get("completeness", "full"),
-            "tool_durations": result_state.get("tool_durations", {}),
-            "provider_errors": result_state.get("provider_errors", []),
-        }
+        qos_log = _build_qos_log(request_id, session_id, result_state, _qos_duration_ms)
         logger.info(f"[qos] {json.dumps(qos_log)}")
 
         # RFC §4.2 — persist QoS metric to database (fire-and-forget)

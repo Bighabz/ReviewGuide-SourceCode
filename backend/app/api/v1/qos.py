@@ -64,9 +64,9 @@ async def get_qos_summary(
                 AVG(CASE WHEN total_duration_ms IS NOT NULL THEN 1.0 ELSE 0.0 END) AS completion_rate,
                 AVG(CASE WHEN completeness != 'full' THEN 1.0 ELSE 0.0 END) AS degraded_rate
             FROM request_metrics
-            WHERE created_at > NOW() - CAST(:hours_interval AS INTERVAL)
+            WHERE created_at > NOW() - (:hours * INTERVAL '1 hour')
         """),
-        {"hours_interval": f"{hours} hours"},
+        {"hours": hours},
     )
 
     row = result.fetchone()
@@ -80,11 +80,11 @@ async def get_qos_summary(
             SELECT
                 COUNT(*) AS rows_with_provider_errors
             FROM request_metrics
-            WHERE created_at > NOW() - CAST(:hours_interval AS INTERVAL)
+            WHERE created_at > NOW() - (:hours * INTERVAL '1 hour')
               AND provider_errors IS NOT NULL
               AND jsonb_array_length(provider_errors) > 0
         """),
-        {"hours_interval": f"{hours} hours"},
+        {"hours": hours},
     )
 
     pe_row = pe_result.fetchone()
@@ -114,6 +114,7 @@ async def get_qos_summary(
         "reliability": {
             "completion_rate": round(float(row.completion_rate or 0), 4),
             "degraded_rate": round(float(row.degraded_rate or 0), 4),
+            "note": "degraded_rate requires RFC §1.8 completeness tracking (currently always 0.0 — completeness field deferred to §1.8).",
             "targets": {
                 "completion_rate": 0.98,
                 "degraded_rate": 0.05,
