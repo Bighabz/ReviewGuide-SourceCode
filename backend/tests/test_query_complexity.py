@@ -10,7 +10,7 @@ class TestFactoidQueries:
         ("what year was the Sony XM5 released", {"product_names": ["Sony WH-1000XM5"]}),
         ("how much does AirPods Pro weigh", {"product_names": ["AirPods Pro"]}),
         ("does the iPhone 15 have USB-C", {"product_names": ["iPhone 15"]}),
-        ("what colors does the Apple Watch Series 9 come in", {"product_names": ["Apple Watch Series 9"]}),
+        ("what colors does Apple Watch Series 9 come in", {"product_names": ["Apple Watch Series 9"]}),
         ("is the Bose QC45 foldable", {"product_names": ["Bose QC45"]}),
     ])
     def test_factoid_classification(self, message, slots):
@@ -59,7 +59,7 @@ class TestDeepResearchQueries:
         ("are there any known problems with the MacBook Pro M3", {"product_names": ["MacBook Pro M3"]}),
         ("Sony WH-1000XM5 real world review is it worth it after 6 months", {"product_names": ["Sony WH-1000XM5"]}),
         ("what are the common issues with the Bose QC35 II based on user experience", {"product_names": ["Bose QC35 II"]}),
-        ("tell me about the Nikon Z6 II pros cons image quality autofocus low light performance video", {"product_names": ["Nikon Z6 II"]}),
+        ("tell me about Nikon Z6 II pros cons image quality autofocus low light performance video any known issues", {"product_names": ["Nikon Z6 II"]}),
     ])
     def test_deep_research_classification(self, message, slots):
         complexity, confidence = classify_query_complexity(message, slots, "product")

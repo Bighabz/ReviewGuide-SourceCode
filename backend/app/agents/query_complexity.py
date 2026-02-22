@@ -96,12 +96,8 @@ def classify_query_complexity(
     has_recommend   = _contains_any(text_lower, RECOMMENDATION_KEYWORDS)
 
     # ── Rule 1: Comparison ────────────────────────────────────────────────────
-    # Comparison keywords found AND (>=2 named products OR keyword alone is enough)
-    if has_comparison and named_product_count >= 2:
-        return ("comparison", 0.85)
-
-    # Explicit compare/versus even with just one product in slots
-    if _contains_any(text_lower, ["vs", "versus", "compare", "comparison", "difference"]):
+    # comparison: 2+ named products OR any comparison keyword present
+    if named_product_count >= 2 or has_comparison:
         return ("comparison", 0.85)
 
     # ── Rule 2: Deep research — review keywords ───────────────────────────────
@@ -109,18 +105,16 @@ def classify_query_complexity(
         return ("deep_research", 0.9)
 
     # ── Rule 3: Deep research — long query ───────────────────────────────────
-    # >20 tokens: confident deep_research; >14 tokens: likely multi-criteria deep_research
     if token_count > 20:
-        return ("deep_research", 0.75)
-    if token_count > 14:
         return ("deep_research", 0.75)
 
     # ── Rule 4: Recommendation ────────────────────────────────────────────────
-    if has_recommend and slot_product_count == 0:
+    if has_recommend and named_product_count == 0:
         return ("recommendation", 0.8)
 
     # ── Rule 5: Factoid ───────────────────────────────────────────────────────
-    if token_count <= 10 and not has_comparison and not has_review and not has_recommend:
+    # factoid: short query + exactly one entity + no comparison/review/recommendation
+    if token_count < 10 and named_product_count == 1 and not has_comparison and not has_review and not has_recommend:
         return ("factoid", 0.85)
 
     # ── Rule 6: Default fallback ──────────────────────────────────────────────
