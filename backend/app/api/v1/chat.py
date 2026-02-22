@@ -134,7 +134,8 @@ async def generate_chat_stream(
     session_id: str,
     user_id: int,
     country_code: Optional[str] = None,
-    user_preferences: Optional[dict] = None
+    user_preferences: Optional[dict] = None,
+    request_id: Optional[str] = None,
 ) -> AsyncGenerator[str, None]:
     """
     Generate SSE stream for chat responses with Langfuse tracking
@@ -145,9 +146,14 @@ async def generate_chat_stream(
         session_id: Session UUID (string)
         user_id: User ID (integer) to return to frontend for persistence
         country_code: User's country code for regional affiliate links
+        request_id: RFC §4.1 correlation ID propagated from X-Interaction-ID header
     """
     # Generate conversation_id for this query
     conversation_id = str(uuid.uuid4())
+
+    # RFC §4.1 — fall back to a fresh UUID if the caller didn't supply one
+    if not request_id:
+        request_id = str(uuid.uuid4())
 
     # Save original user message BEFORE it gets overwritten by status updates
     original_user_message = message
@@ -156,6 +162,12 @@ async def generate_chat_stream(
     # Token usage and cost are sent once per search via langfuse_handler
 
     try:
+        # RFC §4.1 — log request start with correlation ID
+        logger.info(
+            "[chat] stream_start",
+            extra={"request_id": request_id, "session_id": session_id, "user_id": user_id},
+        )
+
         # Send initial placeholder message IMMEDIATELY
         yield _sse_event("status", {
             "text": "Thinking...",
@@ -448,6 +460,16 @@ async def generate_chat_stream(
                 trace = langfuse_handler.trace
                 if trace:
                     langfuse_trace_url = f"https://cloud.langfuse.com/trace/{trace.id}"
+                    # RFC §4.1 — tag the Langfuse trace with the correlation request_id
+                    # so it can be looked up via GET /v1/admin/trace/:interaction_id
+                    if langfuse_client:
+                        try:
+                            langfuse_client.trace(
+                                id=trace.id,
+                                tags=["request_id:" + request_id],
+                            )
+                        except Exception as tag_err:
+                            logger.debug(f"Could not tag Langfuse trace: {tag_err}")
             except Exception as e:
                 logger.debug(f"Could not get langfuse trace URL: {e}")
 
@@ -455,6 +477,7 @@ async def generate_chat_stream(
         # Cost/token metrics are tracked by Langfuse CallbackHandler and visible in trace URL
         consolidated_log = {
             "event": "query_completed",
+            "request_id": request_id,  # RFC §4.1 correlation ID
             "session_id": session_id,
             "conversation_id": conversation_id,
             "query": message[:200],
@@ -531,6 +554,7 @@ async def generate_chat_stream(
 
         final_done_payload = {
             "session_id": session_id,
+            "request_id": request_id,  # RFC §4.1 correlation ID for frontend trace lookup
             "status": result_state.get("status", "completed"),
             "intent": result_state.get("intent"),
             "ui_blocks": [] if ui_blocks_sent_early else ui_blocks,
@@ -591,11 +615,12 @@ async def generate_chat_stream(
                 logger.debug(f"Langfuse flush warning: {flush_error}")
 
     except Exception as e:
-        # Log error with centralized logger
+        # Log error with centralized logger including RFC §4.1 correlation ID
         logger.error(
             f"Error in chat_stream: {str(e)}",
             exc_info=True,
             extra={
+                "request_id": request_id,
                 "session_id": session_id,
                 "user_id": user_id,
                 "message_preview": message[:100] if message else ""
@@ -866,6 +891,14 @@ async def chat_stream(
     from app.services.preference_service import load_user_preferences
     user_preferences = await load_user_preferences(db, returned_user_id) if returned_user_id else {}
 
+    # RFC §4.1 — extract or generate request_id for end-to-end trace correlation
+    from uuid import uuid4
+    request_id = request.headers.get("X-Interaction-ID") or str(uuid4())
+    logger.info(
+        "[chat] request received",
+        extra={"request_id": request_id, "session_id": session_id},
+    )
+
     # Return streaming response with user_id
     # Note: ChatHistoryManager is used internally for saving/loading messages
     return StreamingResponse(
@@ -874,7 +907,8 @@ async def chat_stream(
             session_id,
             returned_user_id,
             country_code,  # Pass detected/stored country_code
-            user_preferences  # Pass loaded preferences
+            user_preferences,  # Pass loaded preferences
+            request_id,  # RFC §4.1 correlation ID
         ),
         media_type="text/event-stream",
         headers={

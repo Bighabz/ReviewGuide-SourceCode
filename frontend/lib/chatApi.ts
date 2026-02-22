@@ -60,6 +60,18 @@ export interface StreamChunk {
   message?: string       // error event: error message
   recoverable?: boolean  // error event: whether error is recoverable
   completeness?: string  // done event: "full" | "degraded"
+  // RFC §4.1 correlation
+  request_id?: string    // done event: backend request_id for trace correlation
+}
+
+// RFC §4.1 — Render milestone timestamps for p95 time-to-first-content calculation
+interface RenderMilestones {
+  interaction_id: string
+  request_sent_ts: number
+  first_status_ts: number | null
+  first_content_ts: number | null
+  first_artifact_ts: number | null
+  done_ts: number | null
 }
 
 /**
@@ -110,6 +122,19 @@ export async function streamChat({
   onReconnected,
   onEvent,
 }: ChatStreamOptions): Promise<void> {
+  // RFC §4.1 — Generate a unique interaction ID for this request for end-to-end trace correlation
+  const interactionId = crypto.randomUUID()
+
+  // RFC §4.1 — Track render milestones for p95 time-to-first-content calculation
+  const milestones: RenderMilestones = {
+    interaction_id: interactionId,
+    request_sent_ts: Date.now(),
+    first_status_ts: null,
+    first_content_ts: null,
+    first_artifact_ts: null,
+    done_ts: null,
+  }
+
   let attempt = 0
 
   while (attempt < MAX_RETRIES) {
@@ -132,6 +157,7 @@ export async function streamChat({
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-Interaction-ID': interactionId,
         },
         body: JSON.stringify(body),
         signal: controller.signal,
@@ -216,6 +242,10 @@ export async function streamChat({
 
               // ── Route by named SSE event type ─────────────────────────────
               if (currentEventType === 'status') {
+                // RFC §4.1 — record first status milestone
+                if (milestones.first_status_ts === null) {
+                  milestones.first_status_ts = Date.now()
+                }
                 // status event: human-readable progress text
                 const statusText = chunk.text || chunk.status_update || ''
                 if (statusText) {
@@ -225,6 +255,10 @@ export async function streamChat({
               }
 
               if (currentEventType === 'content') {
+                // RFC §4.1 — record first content milestone
+                if (milestones.first_content_ts === null) {
+                  milestones.first_content_ts = Date.now()
+                }
                 // content event: single streaming token
                 if (chunk.token) {
                   onToken(chunk.token, false)
@@ -233,6 +267,10 @@ export async function streamChat({
               }
 
               if (currentEventType === 'artifact') {
+                // RFC §4.1 — record first artifact milestone
+                if (milestones.first_artifact_ts === null) {
+                  milestones.first_artifact_ts = Date.now()
+                }
                 // artifact event: rich UI blocks or clear signal
                 if (chunk.clear && onClear) {
                   onClear()
@@ -249,6 +287,16 @@ export async function streamChat({
               }
 
               if (currentEventType === 'done') {
+                // RFC §4.1 — record done milestone and fire-and-forget telemetry POST
+                milestones.done_ts = Date.now()
+                // Fire-and-forget: do not await, do not block the stream
+                fetch(`${API_URL}/v1/telemetry/render`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(milestones),
+                }).catch(() => {
+                  // Telemetry is best-effort — swallow errors silently
+                })
                 // done event: terminal — workflow completed
                 onComplete({
                   session_id: chunk.session_id,
@@ -260,6 +308,7 @@ export async function streamChat({
                   followups: chunk.followups,
                   next_suggestions: chunk.next_suggestions,
                   completeness: chunk.completeness,
+                  request_id: chunk.request_id,
                 })
                 return
               }
@@ -306,6 +355,15 @@ export async function streamChat({
               }
 
               if (chunk.done) {
+                // RFC §4.1 — record done milestone and fire-and-forget telemetry POST (legacy path)
+                milestones.done_ts = Date.now()
+                fetch(`${API_URL}/v1/telemetry/render`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(milestones),
+                }).catch(() => {
+                  // Telemetry is best-effort — swallow errors silently
+                })
                 onComplete({
                   session_id: chunk.session_id,
                   user_id: chunk.user_id,  // Pass user_id to callback for persistence
@@ -315,6 +373,7 @@ export async function streamChat({
                   citations: chunk.citations,
                   followups: chunk.followups,
                   next_suggestions: chunk.next_suggestions,  // Follow-up questions at end of response
+                  request_id: chunk.request_id,
                   // Note: itinerary and product carousel are sent in intermediate chunk, not in final chunk
                 })
                 return
