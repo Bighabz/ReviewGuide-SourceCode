@@ -112,8 +112,10 @@ class Settings(BaseSettings):
             if v.startswith("["):
                 try:
                     return json.loads(v)
-                except json.JSONDecodeError:
-                    pass
+                except json.JSONDecodeError as exc:
+                    raise ValueError(
+                        f"TRUSTED_PROXY_CIDRS looks like JSON but failed to parse: {exc}"
+                    ) from exc
             if v:
                 return [cidr.strip() for cidr in v.split(",") if cidr.strip()]
         return []
