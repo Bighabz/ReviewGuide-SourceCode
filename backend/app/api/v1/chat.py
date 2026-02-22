@@ -36,6 +36,10 @@ colored_logger = get_colored_logger(__name__)
 
 router = APIRouter()
 
+# Retains references to fire-and-forget background tasks so they are not
+# garbage-collected before they complete.
+_background_tasks: set = set()
+
 # Initialize Langfuse with CallbackHandler but disable unwanted OpenTelemetry instrumentation
 from langfuse import Langfuse
 from langfuse.langchain import CallbackHandler
@@ -553,7 +557,7 @@ async def generate_chat_stream(
         if result_state.get("status"):
             assistant_metadata["status"] = result_state.get("status")
 
-        asyncio.create_task(
+        _save_task = asyncio.create_task(
             chat_history_manager.save_turn(
                 session_id=session_id,
                 user_content=user_message_text,
@@ -562,6 +566,8 @@ async def generate_chat_stream(
                 assistant_metadata=assistant_metadata if assistant_metadata else None,
             )
         )
+        _background_tasks.add(_save_task)
+        _save_task.add_done_callback(_background_tasks.discard)
         logger.info(f"[ChatEndpoint] Scheduled turn persistence for session {session_id}")
 
         # Flush Langfuse traces immediately after request completes

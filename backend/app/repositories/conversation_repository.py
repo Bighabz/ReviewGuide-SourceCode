@@ -339,7 +339,14 @@ class ConversationRepository:
         Returns True if successful, False otherwise
         """
         try:
-            # Create message objects with sequence numbers
+            # Query current max sequence number to avoid overwriting existing messages
+            stmt = select(ConversationMessage.sequence_number).where(
+                ConversationMessage.session_id == session_id
+            ).order_by(desc(ConversationMessage.sequence_number)).limit(1)
+            result = await self.db.execute(stmt)
+            max_seq = result.scalar() or 0
+
+            # Create message objects with sequence numbers continuing from max_seq
             message_objects = []
             for idx, msg in enumerate(messages):
                 message_objects.append(
@@ -348,7 +355,7 @@ class ConversationRepository:
                         role=msg["role"],
                         content=msg["content"],
                         message_metadata=msg.get("message_metadata"),
-                        sequence_number=idx + 1
+                        sequence_number=max_seq + idx + 1
                     )
                 )
 

@@ -206,7 +206,11 @@ class ChatHistoryManager:
                     {"role": "user", "content": user_content, "message_metadata": user_metadata},
                     {"role": "assistant", "content": assistant_content, "message_metadata": assistant_metadata},
                 ]
-                await conversation_repo.save_messages_batch(session_id=session_id, messages=messages)
+                success = await conversation_repo.save_messages_batch(session_id=session_id, messages=messages)
+                if not success:
+                    logger.error(f"[ChatHistoryManager] save_messages_batch failed for session {session_id}")
+                    return False
+
                 # Invalidate cache once after both saves
                 await ChatHistoryManager.invalidate_cache(session_id)
 

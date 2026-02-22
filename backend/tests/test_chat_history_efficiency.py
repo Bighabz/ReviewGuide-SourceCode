@@ -102,3 +102,29 @@ class TestSaveTurnMethod:
         assert messages[0]["content"] == "hello"
         assert messages[1]["role"] == "assistant"
         assert messages[1]["content"] == "hi there"
+
+    @pytest.mark.asyncio
+    async def test_save_turn_does_not_set_marker_on_batch_failure(self):
+        """When save_messages_batch returns False, has_history marker must NOT be set."""
+        mock_redis = AsyncMock()
+        mock_repo = AsyncMock()
+        mock_repo.save_messages_batch.return_value = False  # Simulate DB failure
+
+        async def mock_db_gen():
+            yield AsyncMock()
+
+        with patch('app.services.chat_history_manager.redis_client', mock_redis):
+            with patch('app.core.database.get_db', return_value=mock_db_gen()):
+                with patch('app.core.redis_client.get_redis', return_value=AsyncMock()):
+                    with patch('app.repositories.conversation_repository.ConversationRepository', return_value=mock_repo):
+                        result = await ChatHistoryManager.save_turn(
+                            session_id="test-session",
+                            user_content="hello",
+                            assistant_content="hi there",
+                        )
+
+        assert result is False
+        # has_history marker must NOT be set when save failed
+        for call in mock_redis.set.call_args_list:
+            key = call.args[0] if call.args else call.kwargs.get("name", "")
+            assert "has_history" not in str(key), "has_history marker must not be set on batch failure"
