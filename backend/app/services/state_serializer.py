@@ -5,6 +5,7 @@ Provides safe JSON serialization for GraphState with non-serializable value stri
 and size-guard infrastructure to prevent Redis payload bloat.
 """
 import json
+from datetime import datetime, date
 from app.core.centralized_logger import get_logger
 
 logger = get_logger(__name__)
@@ -43,6 +44,8 @@ def safe_serialize_state(state: dict) -> str:
         A JSON string representing the (possibly stripped) state.
     """
     def _safe_default(obj):
+        if isinstance(obj, (datetime, date)):
+            return obj.isoformat()
         type_name = type(obj).__name__
         logger.debug(
             f"[state_serializer] Replacing non-serializable {type_name} with placeholder"
@@ -69,9 +72,9 @@ def check_state_size(state: dict, key: str, max_bytes: int) -> None:
         StateOverflowError: When the serialized size of *state[key]* exceeds
             *max_bytes*.
     """
-    value = state.get(key)
-    if value is None:
+    if key not in state:
         return
+    value = state[key]
 
     serialized = json.dumps(value).encode()
     actual_bytes = len(serialized)

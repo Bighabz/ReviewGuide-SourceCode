@@ -4,6 +4,7 @@ backend/tests/test_state_serializer.py
 """
 import json
 import pytest
+from datetime import datetime, timezone
 
 from app.services.state_serializer import (
     safe_serialize_state,
@@ -118,3 +119,12 @@ def test_check_state_size_missing_key_is_noop():
 
     # Key does not exist — should not raise anything
     check_state_size(state, "nonexistent_key", max_bytes=100)
+
+
+def test_safe_serialize_datetime_as_iso_string():
+    """datetime values must serialize as ISO strings, not placeholder text."""
+    state = {"created_at": datetime(2026, 2, 22, 8, 0, 0, tzinfo=timezone.utc)}
+    result = safe_serialize_state(state)
+    data = json.loads(result)
+    assert data["created_at"] == "2026-02-22T08:00:00+00:00"
+    assert "<non-serializable" not in result
