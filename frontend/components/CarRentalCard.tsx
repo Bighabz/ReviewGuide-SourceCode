@@ -1,6 +1,7 @@
 'use client'
 
 import { Car, ExternalLink, Search, Calendar } from 'lucide-react'
+import { trackAffiliateClick } from '@/lib/trackAffiliate'
 
 interface CarRental {
   type: 'plp_link'
@@ -52,6 +53,15 @@ export default function CarRentalCard({ cars }: CarRentalCardProps) {
             target="_blank"
             rel="noopener noreferrer"
             className="block bg-[var(--surface)] border border-[var(--border)] rounded-xl p-8 transition-all shadow-card hover:shadow-card-hover product-card-hover"
+            onClick={(e) => {
+              e.preventDefault()
+              trackAffiliateClick({
+                provider: car.provider || 'car',
+                product_name: car.title,
+                category: 'car_rental',
+                url: car.search_url,
+              })
+            }}
           >
             <div className="flex flex-col items-center text-center">
               {/* Search icon */}

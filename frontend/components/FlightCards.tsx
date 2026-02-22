@@ -1,6 +1,7 @@
 'use client'
 
 import { Plane, Clock, ExternalLink, Search, ArrowRight } from 'lucide-react'
+import { trackAffiliateClick } from '@/lib/trackAffiliate'
 
 // Traditional flight card with full details
 interface FlightCard {
@@ -67,6 +68,15 @@ function PLPLinkCard({ flight, fullHeight = false }: { flight: FlightPLPLink; fu
       target="_blank"
       rel="noopener noreferrer"
       className={`block bg-[var(--surface)] border border-[var(--border)] rounded-xl p-8 transition-all shadow-card hover:shadow-card-hover product-card-hover ${fullHeight ? 'h-full flex flex-col' : ''}`}
+      onClick={(e) => {
+        e.preventDefault()
+        trackAffiliateClick({
+          provider: flight.provider || 'flight',
+          product_name: flight.title,
+          category: 'flight',
+          url: flight.search_url,
+        })
+      }}
     >
       <div className={`flex flex-col items-center text-center ${fullHeight ? 'h-full justify-between' : ''}`}>
         {/* Search icon */}
@@ -152,6 +162,15 @@ function TraditionalFlightCard({ flight }: { flight: FlightCard }) {
       target="_blank"
       rel="noopener noreferrer"
       className="block bg-[var(--surface)] border border-[var(--border)] rounded-xl p-5 transition-all shadow-card hover:shadow-card-hover product-card-hover"
+      onClick={(e) => {
+        e.preventDefault()
+        trackAffiliateClick({
+          provider: flight.carrier || 'flight',
+          product_name: `${flight.carrier} ${flight.origin} to ${flight.destination}`,
+          category: 'flight',
+          url: flight.deeplink,
+        })
+      }}
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         {/* Flight Details Section */}

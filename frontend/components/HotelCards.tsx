@@ -1,6 +1,7 @@
 'use client'
 
 import { MapPin, Star, ExternalLink, Search, Hotel as HotelIcon } from 'lucide-react'
+import { trackAffiliateClick } from '@/lib/trackAffiliate'
 
 // Traditional hotel card with full details
 interface HotelCard {
@@ -61,6 +62,15 @@ function PLPLinkCard({ hotel, fullHeight = false }: { hotel: HotelPLPLink; fullH
       target="_blank"
       rel="noopener noreferrer"
       className={`block border border-[var(--border)] rounded-xl p-8 transition-all bg-[var(--surface)] hover:shadow-card-hover product-card-hover ${fullHeight ? 'h-full flex flex-col' : ''}`}
+      onClick={(e) => {
+        e.preventDefault()
+        trackAffiliateClick({
+          provider: hotel.provider || 'hotel',
+          product_name: hotel.title,
+          category: 'hotel',
+          url: hotel.search_url,
+        })
+      }}
     >
       <div className={`flex flex-col items-center text-center ${fullHeight ? 'h-full justify-between' : ''}`}>
         {/* Search icon */}
@@ -112,6 +122,15 @@ function TraditionalHotelCard({ hotel }: { hotel: HotelCard }) {
       target="_blank"
       rel="noopener noreferrer"
       className="block border border-[var(--border)] rounded-xl overflow-hidden bg-[var(--surface)] shadow-card hover:shadow-card-hover transition-all product-card-hover group"
+      onClick={(e) => {
+        e.preventDefault()
+        trackAffiliateClick({
+          provider: 'hotel',
+          product_name: hotel.name,
+          category: 'hotel',
+          url: hotel.deeplink,
+        })
+      }}
     >
       <div className="flex flex-col sm:flex-row h-full">
         {/* Image Section (Left) */}
