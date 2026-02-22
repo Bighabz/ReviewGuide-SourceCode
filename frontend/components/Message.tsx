@@ -191,8 +191,6 @@ export default function Message({ message }: MessageProps) {
               {message.completeness === 'degraded' && (
                 <MessageRecoveryUI
                   completeness="degraded"
-                  onShowPartial={() => {}}
-                  onRetryFull={() => {}}
                 />
               )}
 

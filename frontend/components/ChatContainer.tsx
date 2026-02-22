@@ -329,8 +329,10 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
       content: '',
       timestamp: new Date(),
       isThinking: true,  // Show "Thinking..." immediately until first real token
-      // RFC §2.3: track completeness throughout the message lifecycle
-      completeness: 'partial',
+      // RFC §2.3: completeness is intentionally left undefined here.
+      // It is set to 'full' when the stream completes normally (done event),
+      // or to 'degraded' by the interruption handler. Starting as 'partial'
+      // would cause a persisted message to incorrectly appear interrupted.
       originalQuery: messageToSend,
     }
 
@@ -485,6 +487,10 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
       onError: (errorMsg) => {
         console.error('Stream error:', errorMsg)
 
+        // 'errored' state: explicit error event from backend → global error banner
+        // 'interrupted' state: no terminal event after 120s → inline recovery UI
+        // These are separate concerns; recovery UI is not shown for explicit backend errors
+
         // Remove the empty assistant message
         setMessages((prev) => prev.filter(msg => msg.id !== assistantMessageId))
 
@@ -610,6 +616,11 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
 
   // RFC §2.3: when the stream transitions to 'interrupted', preserve partial content
   // and mark the current streaming message as degraded rather than wiping it.
+  //
+  // Note: the 120-second watchdog in useStreamReducer is cleared when RESET is
+  // dispatched at the top of handleStream (before a new currentMessageIdRef is set).
+  // This guarantees that when 'interrupted' fires, currentMessageIdRef.current
+  // refers to the correct in-flight message, not a subsequent stream.
   useEffect(() => {
     if (streamState === 'interrupted' && currentMessageIdRef.current) {
       const msgId = currentMessageIdRef.current
@@ -753,11 +764,17 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
               className="mx-auto px-4 pb-2"
               style={{ maxWidth: '780px' }}
             >
-              <MessageRecoveryUI
-                completeness="partial"
-                onShowPartial={handleShowPartial}
-                onRetryFull={handleRetryFull}
-              />
+              {(() => {
+                const interruptedMsg = messages.find(m => m.id === interruptedMessageId)
+                return (
+                  <MessageRecoveryUI
+                    completeness="partial"
+                    onShowPartial={handleShowPartial}
+                    onRetryFull={handleRetryFull}
+                    interruptionReason={interruptedMsg?.interruptionReason}
+                  />
+                )
+              })()}
             </div>
           )}
 

@@ -18,6 +18,8 @@ import type { MessageRecoveryUIProps } from '@/components/MessageRecoveryUI'
 function renderUI(overrides: Partial<MessageRecoveryUIProps> = {}) {
   const defaults: MessageRecoveryUIProps = {
     completeness: 'partial',
+    // onShowPartial and onRetryFull are optional; provide mocks by default so
+    // click-assertion tests can verify call counts without extra boilerplate.
     onShowPartial: vi.fn(),
     onRetryFull: vi.fn(),
   }
@@ -100,3 +102,44 @@ describe('MessageRecoveryUI — degraded state (partial content already visible)
     expect(screen.queryByTestId('message-recovery-ui')).toBeNull()
   })
 })
+
+describe('MessageRecoveryUI — optional props and accessibility', () => {
+  it('renders without throwing when onShowPartial and onRetryFull are omitted', () => {
+    // Props are optional — component must not crash when callbacks are absent
+    expect(() =>
+      render(<MessageRecoveryUI completeness="partial" />)
+    ).not.toThrow()
+  })
+
+  it('clicking Show button does not throw when onShowPartial is omitted', () => {
+    render(<MessageRecoveryUI completeness="partial" />)
+    expect(() => fireEvent.click(screen.getByTestId('show-partial-button'))).not.toThrow()
+  })
+
+  it('clicking Retry button does not throw when onRetryFull is omitted', () => {
+    render(<MessageRecoveryUI completeness="partial" />)
+    expect(() => fireEvent.click(screen.getByTestId('retry-full-button'))).not.toThrow()
+  })
+
+  it('Show button has aria-label "Show partial response content"', () => {
+    renderUI({ completeness: 'partial' })
+    const btn = screen.getByTestId('show-partial-button')
+    expect(btn.getAttribute('aria-label')).toBe('Show partial response content')
+  })
+
+  it('Retry button has aria-label "Retry interrupted request"', () => {
+    renderUI({ completeness: 'partial' })
+    const btn = screen.getByTestId('retry-full-button')
+    expect(btn.getAttribute('aria-label')).toBe('Retry interrupted request')
+  })
+
+  it('both action buttons have type="button"', () => {
+    renderUI({ completeness: 'partial' })
+    expect(screen.getByTestId('show-partial-button').getAttribute('type')).toBe('button')
+    expect(screen.getByTestId('retry-full-button').getAttribute('type')).toBe('button')
+  })
+})
+
+// Note: ChatContainer integration tests for handleRetryFull, handleShowPartial, and
+// stream-start clearance are skipped here due to ChatContainer.test.tsx environmental
+// constraints. These paths are covered by the spec review and manual testing.

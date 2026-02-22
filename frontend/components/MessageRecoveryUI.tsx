@@ -1,8 +1,16 @@
 'use client'
 
+// Module-level constant (not recreated on each render)
+const REASON_LABELS: Record<string, string> = {
+  network: 'network error',
+  server_error: 'server error',
+  timeout: 'timed out',
+  provider_failure: 'provider failure',
+}
+
 export interface MessageRecoveryUIProps {
-  onShowPartial: () => void
-  onRetryFull: () => void
+  onShowPartial?: () => void
+  onRetryFull?: () => void
   completeness: 'partial' | 'degraded'
   interruptionReason?: string
 }
@@ -62,13 +70,7 @@ export default function MessageRecoveryUI({
   }
 
   // Partial state: stream was interrupted mid-response, offer recovery actions
-  const reasonLabel: Record<string, string> = {
-    network: 'network error',
-    server_error: 'server error',
-    timeout: 'timed out',
-    provider_failure: 'provider failure',
-  }
-  const reasonText = interruptionReason ? reasonLabel[interruptionReason] ?? interruptionReason : undefined
+  const reasonText = interruptionReason ? REASON_LABELS[interruptionReason] ?? interruptionReason : undefined
 
   return (
     <div
@@ -104,19 +106,15 @@ export default function MessageRecoveryUI({
 
       {/* Action: Show what I have */}
       <button
+        type="button"
         data-testid="show-partial-button"
-        onClick={onShowPartial}
-        className="text-[12px] px-2.5 py-1 rounded-md transition-colors"
+        aria-label="Show partial response content"
+        onClick={() => onShowPartial?.()}
+        className="text-[12px] px-2.5 py-1 rounded-md transition-colors hover:text-[var(--text)] focus-visible:text-[var(--text)] outline-none focus-visible:ring-1 focus-visible:ring-[var(--primary)]"
         style={{
           background: 'var(--surface-hover)',
           color: 'var(--text-secondary)',
           border: '1px solid var(--border)',
-        }}
-        onMouseEnter={(e) => {
-          ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--text)'
-        }}
-        onMouseLeave={(e) => {
-          ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)'
         }}
       >
         Show what I have
@@ -124,19 +122,15 @@ export default function MessageRecoveryUI({
 
       {/* Action: Retry */}
       <button
+        type="button"
         data-testid="retry-full-button"
-        onClick={onRetryFull}
-        className="text-[12px] px-2.5 py-1 rounded-md transition-colors"
+        aria-label="Retry interrupted request"
+        onClick={() => onRetryFull?.()}
+        className="text-[12px] px-2.5 py-1 rounded-md transition-colors hover:opacity-90 focus-visible:opacity-90 outline-none focus-visible:ring-1 focus-visible:ring-[var(--primary)]"
         style={{
           background: 'var(--accent)',
           color: '#fff',
           border: '1px solid var(--accent)',
-        }}
-        onMouseEnter={(e) => {
-          ;(e.currentTarget as HTMLButtonElement).style.opacity = '0.88'
-        }}
-        onMouseLeave={(e) => {
-          ;(e.currentTarget as HTMLButtonElement).style.opacity = '1'
         }}
       >
         Retry
