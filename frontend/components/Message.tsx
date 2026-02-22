@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { Message as MessageType, NextSuggestion } from './ChatContainer'
 import { normalizeBlocks } from '@/lib/normalizeBlocks'
 import { UIBlocks } from '@/components/blocks/BlockRegistry'
+import MessageRecoveryUI from './MessageRecoveryUI'
 import { useState, useEffect } from 'react'
 import { formatTimestamp, formatFullTimestamp, SUGGESTION_CLICK_PREFIX } from '@/lib/utils'
 
@@ -181,6 +182,18 @@ export default function Message({ message }: MessageProps) {
                     )}
                   </div>
                 </div>
+              )}
+
+              {/* RFC §2.3: degraded completeness indicator — shown when partial content was preserved
+                   after a stream interruption. No action buttons here; the recovery UI in
+                   ChatContainer handles the initial recovery actions. Once dismissed (onShowPartial),
+                   the message remains with this subtle indicator to signal incomplete results. */}
+              {message.completeness === 'degraded' && (
+                <MessageRecoveryUI
+                  completeness="degraded"
+                  onShowPartial={() => {}}
+                  onRetryFull={() => {}}
+                />
               )}
 
               {/* Timestamp for assistant */}
