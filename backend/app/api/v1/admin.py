@@ -21,6 +21,7 @@ from app.core.database import get_db
 from app.core.centralized_logger import get_logger
 from app.core.config import settings
 from app.services.config_service import ConfigService
+from app.api.v1.admin_auth import get_current_admin_user
 
 logger = get_logger(__name__)
 router = APIRouter(tags=["admin"])
@@ -499,3 +500,26 @@ async def get_error_chart_data(
     except Exception as e:
         logger.error(f"[admin] Error fetching error chart data: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to fetch error chart data: {str(e)}")
+
+
+# ===== Internal Model Cache Endpoint =====
+
+@router.post("/internal/model-cache/invalidate")
+async def invalidate_model_cache(
+    reason: str = "manual",
+    admin: dict = Depends(get_current_admin_user),
+):
+    """
+    Invalidate the LLM instance cache on the model service.
+
+    Useful after rotating the OpenAI API key so stale ChatOpenAI instances
+    (which embed the old key) are evicted and recreated on the next request.
+
+    Requires admin Bearer token.
+
+    Returns:
+        {"cleared": N, "reason": "..."}
+    """
+    from app.services.model_service import model_service
+    cleared = model_service.invalidate_cache(reason=reason)
+    return {"cleared": cleared, "reason": reason}
