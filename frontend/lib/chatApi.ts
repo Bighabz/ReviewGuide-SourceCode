@@ -170,10 +170,10 @@ export async function streamChat({
                 onClear()
               }
 
-              // Status updates are suppressed — backend no longer sends them,
-              // but ignore any that leak through for safety
+              // Forward status updates to UI as live typing indicators
+              // (e.g., "Searching reviews...", "Comparing prices...")
               if (chunk.status_update) {
-                // Do nothing — frontend shows generic "Thinking..." instead
+                onToken(chunk.status_update, true) // true = isPlaceholder (shows as statusText)
                 continue
               }
 
