@@ -241,6 +241,8 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
         - affiliate_products: Dict of provider -> products (dynamic)
         - intent: User intent (optional)
         - slots: Extracted slots (optional)
+        - review_data: Dict of product_name -> ReviewBundle (optional)
+        - general_product_info: Factoid answer from product_general_information tool (optional)
 
     Writes to state:
         - assistant_text: Final response text
@@ -288,7 +290,7 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
 
         # Check if we have any data to display
         if not normalized_products and not affiliate_products and not review_data:
-            if general_product_info:
+            if general_product_info and general_product_info.strip():
                 return {
                     "assistant_text": general_product_info,
                     "ui_blocks": [],

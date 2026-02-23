@@ -53,6 +53,7 @@ class GraphState(TypedDict):
 
     # Review Data (from SerpAPI review search)
     review_data: Dict[str, Any]  # product_name -> ReviewBundle dict
+    general_product_info: Optional[str]  # Factoid answer from product_general_information tool
 
     # Product Normalization
     entity: Optional[Dict[str, Any]]

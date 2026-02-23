@@ -98,6 +98,31 @@ async def test_compose_falls_back_to_generic_message_when_no_data_at_all(mock_mo
 
 
 @pytest.mark.asyncio
+async def test_compose_ignores_whitespace_only_general_product_info(mock_model_service):
+    """
+    Whitespace-only general_product_info must not be surfaced as assistant_text.
+    """
+    state = {
+        "user_message": "tell me more about Sony WH-1000XM5",
+        "intent": "product",
+        "slots": {},
+        "normalized_products": [],
+        "affiliate_products": {},
+        "review_data": {},
+        "comparison_html": None,
+        "comparison_data": None,
+        "general_product_info": "   ",
+        "conversation_history": [],
+        "last_search_context": {},
+        "search_history": [],
+    }
+    result = await product_compose(state)
+    assert result["success"] is True
+    assert result["assistant_text"].strip()
+    assert "wasn't able to find" in result["assistant_text"]
+
+
+@pytest.mark.asyncio
 async def test_compose_general_product_info_not_used_when_listings_present(mock_model_service):
     """
     When listing data IS present alongside general_product_info, the tool must
