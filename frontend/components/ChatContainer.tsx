@@ -622,8 +622,9 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
     }
   }, [])
 
-  const handleSendMessage = async () => {
-    if (!input.trim() || isStreaming) return
+  const handleSendMessage = async (overrideText?: string) => {
+    const messageToSend = overrideText ?? input
+    if (!messageToSend.trim() || isStreaming) return
 
     // Clear error banner when sending new message
     setShowErrorBanner(false)
@@ -632,12 +633,11 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
-      content: input,
+      content: messageToSend,
       timestamp: new Date(),
     }
 
     setMessages((prev) => [...prev, userMessage])
-    const messageToSend = input
     setInput('')
 
     // Use shared streaming function
@@ -737,6 +737,7 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
                     key={idx}
                     onClick={() => {
                       setInput(suggestion)
+                      handleSendMessage(suggestion)
                     }}
                     className="px-4 py-2 rounded-full text-sm border border-[var(--border)] text-[var(--text-secondary)] bg-[var(--surface)] hover:bg-[var(--surface-hover)] hover:text-[var(--text)] hover:border-[var(--border-strong)] transition-all"
                   >
