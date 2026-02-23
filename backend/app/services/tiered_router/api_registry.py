@@ -114,7 +114,7 @@ API_REGISTRY: dict[str, APIConfig] = {
         mcp_tool="review_search",
         provider="serpapi",
         cost_cents=1,
-        requires_consent=False,
+        requires_consent=True,
         feature_flag="ENABLE_SERPAPI",
     ),
 
