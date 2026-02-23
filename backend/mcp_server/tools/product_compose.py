@@ -442,12 +442,12 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
                 ])
                 llm_tasks[f'consensus:{product_name}'] = model_service.generate(
                     messages=[
-                        {"role": "system", "content": "You summarize product review consensus. Never open with 'Based on X sources' or mention how many sources you searched. Write 2-3 sentences explaining why this product is highly rated. Mention specific strengths reviewers agree on. Weave in source names only when it adds credibility (e.g., 'Wirecutter highlights its noise cancellation' rather than 'According to Wirecutter and RTINGS...'). Be concise and factual."},
-                        {"role": "user", "content": f"Product: {product_name}\nAvg Rating: {bundle.get('avg_rating', 0)}/5 from {bundle.get('total_reviews', 0)} reviews\n\nReview excerpts:\n{source_snippets}\n\nWrite a 2-3 sentence consensus summary."}
+                        {"role": "system", "content": "You are an editorial product reviewer writing a concise expert summary. Write a 3-5 sentence summary that covers: (1) what reviewers consistently praise, (2) any notable criticisms or caveats, and (3) who this product is best suited for. Write in a warm, authoritative editorial voice — like a knowledgeable friend giving the tldr. Never open with \"Based on X sources\" or mention how many sources. Weave in source names only when it adds credibility (e.g., \"Wirecutter highlights its noise cancellation\"). End with a sentence describing the ideal buyer."},
+                        {"role": "user", "content": f"Product: {product_name}\nAvg Rating: {bundle.get('avg_rating', 0)}/5 from {bundle.get('total_reviews', 0)} reviews\n\nReview excerpts:\n{source_snippets}\n\nWrite a 3-5 sentence editorial summary covering: strengths, criticisms, and ideal buyer."}
                     ],
                     model=settings.COMPOSER_MODEL,
                     temperature=0.5,
-                    max_tokens=120,
+                    max_tokens=220,
                     agent_name="review_consensus"
                 )
 
@@ -513,12 +513,12 @@ Products to describe:
         if products_by_provider:
             llm_tasks['conclusion'] = model_service.generate(
                 messages=[
-                    {"role": "system", "content": f"Today is {datetime.utcnow().strftime('%B %Y')}. Write ONE short sentence (max 25 words) wrapping up a product search. Mention the number of results and where they're from. Be warm and conversational. Never describe your process or mention 'sources'. Do NOT list products or prices. Do NOT use markdown."},
-                    {"role": "user", "content": f'User asked: "{user_message}"\nShowing {num_products} products from {num_providers} retailer(s). Providers: {", ".join(products_by_provider.keys())}'}
+                    {"role": "system", "content": "You are a helpful shopping assistant. Write 2 sentences: first, briefly interpret what was found (mention count and price range if evident), then ask a natural follow-up question to help narrow down. Be warm and conversational — like a knowledgeable friend. Never describe your process. Do NOT use markdown. Max 50 words total."},
+                    {"role": "user", "content": f'User asked: "{user_message}"\nFound {num_products} products from {", ".join(products_by_provider.keys())}. Write a 2-sentence response: what was found + a follow-up question to narrow things down.'}
                 ],
                 model=settings.COMPOSER_MODEL,
                 temperature=0.7,
-                max_tokens=50,
+                max_tokens=80,
                 agent_name="product_conclusion"
             )
 

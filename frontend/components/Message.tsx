@@ -115,7 +115,7 @@ export default function Message({ message }: MessageProps) {
       id={`message-${message.id}`}
       className="w-full py-4 sm:py-5 px-3 sm:px-4"
     >
-      <div id="message-container" className="mx-auto flex gap-3 sm:gap-4 items-start flex-row overflow-visible" style={{ maxWidth: '780px' }}>
+      <div id="message-container" className="mr-auto flex gap-3 sm:gap-4 items-start flex-row overflow-visible" style={{ maxWidth: '780px' }}>
         {/* Avatar - Only show for assistant */}
         {!isUser && (
           <div className="flex-shrink-0 mt-0.5">

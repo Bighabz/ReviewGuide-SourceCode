@@ -57,6 +57,8 @@ interface ChatContainerProps {
   initialQuery?: string  // Initial query from URL params (for sticky chat bar)
 }
 
+const CYCLING_VERBS = ['simplified.', 'effortless.', 'smarter.', 'reimagined.', 'personalized.', 'instant.']
+
 export default function ChatContainer({ clearHistoryTrigger, externalSessionId, onSessionChange, initialQuery }: ChatContainerProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
@@ -79,6 +81,10 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
   // RFC §2.2: skeleton block type shown while a tool is running but before the artifact arrives
   const [pendingSkeleton, setPendingSkeleton] = useState<SkeletonBlockType | null>(null)
 
+  // Cycling verb animation for welcome screen headline
+  const [verbIndex, setVerbIndex] = useState(0)
+  const [verbVisible, setVerbVisible] = useState(true)
+
   // Track which message ID is currently being updated (can change if create_new_message is sent)
   const currentMessageIdRef = useRef<string>('')
 
@@ -87,6 +93,18 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
   const [interruptedMessageId, setInterruptedMessageId] = useState<string | null>(null)
   // originalQueryRef — the user query that triggered the interrupted stream (for retry)
   const originalQueryRef = useRef<string>('')
+
+  // Cycling verb animation for welcome screen headline
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setVerbVisible(false)
+      setTimeout(() => {
+        setVerbIndex(prev => (prev + 1) % CYCLING_VERBS.length)
+        setVerbVisible(true)
+      }, 300) // fade out then swap word then fade in
+    }, 2500) // show each word for 2.5 seconds
+    return () => clearInterval(interval)
+  }, [])
 
   // Load from localStorage on mount and fetch from database if needed
   useEffect(() => {
@@ -692,7 +710,12 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
               />
               <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl text-center text-[var(--text)] leading-tight tracking-tight">
                 Smart shopping,{' '}
-                <span className="italic text-[var(--primary)]">simplified.</span>
+                <span
+                  className="italic text-[var(--primary)] transition-opacity duration-300"
+                  style={{ opacity: verbVisible ? 1 : 0 }}
+                >
+                  {CYCLING_VERBS[verbIndex]}
+                </span>
               </h1>
               <p className="text-sm sm:text-base text-[var(--text-secondary)] text-center mt-3 max-w-md">
                 AI-powered product reviews, travel planning, and price comparison — all in one conversation.

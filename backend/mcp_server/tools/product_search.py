@@ -102,15 +102,57 @@ async def product_search(state: Dict[str, Any]) -> Dict[str, Any]:
 
         # Extract optional slots for product search, with context fallback
         product_name = slots.get("product_name", "")
-        category = slots.get("category", "") or last_search_context.get("category", "")
-        brand = slots.get("brand", "") or last_search_context.get("brand") or ""
-        budget = slots.get("budget", "") or last_search_context.get("budget") or ""
+
+        # If no product_name in slots, try to extract from user message directly
+        if not product_name:
+            import re
+            # Match patterns like: "tell me more about X", "more about X", "what about X"
+            name_patterns = [
+                r"(?:tell me )?more about (?:the |a |an )?([A-Za-z0-9][^?.,!]{3,40})",
+                r"what (?:about|can you tell me about) (?:the |a |an )?([A-Za-z0-9][^?.,!]{3,40})",
+                r"(?:info|information|details|specs) (?:on|about|for) (?:the |a |an )?([A-Za-z0-9][^?.,!]{3,40})",
+                r"(?:show me|find|search for|look up) (?:the |a |an )?([A-Za-z0-9][^?.,!]{3,40})",
+            ]
+            for pattern in name_patterns:
+                match = re.search(pattern, query.lower())
+                if match:
+                    extracted = match.group(1).strip().rstrip('?.!')
+                    # Only use if it looks like a specific product name (2+ words or contains digits)
+                    if len(extracted.split()) >= 2 or any(c.isdigit() for c in extracted):
+                        product_name = extracted
+                        logger.info(f"[product_search] Extracted product name from message: '{product_name}'")
+                        break
+
+        # Check if last_search_context is relevant to the current query.
+        # If the user is asking about a clearly different product/category, don't use stale context.
+        _context_is_relevant = True
+        if last_search_context and product_name:
+            # We extracted a specific product name from the current message.
+            # Check if it's related to the previous context.
+            prev_cat = last_search_context.get("category", "").lower()
+            prev_prods = [p.lower() for p in last_search_context.get("product_names", [])]
+            pname_lower = product_name.lower()
+
+            topic_in_context = (
+                (prev_cat and (prev_cat in pname_lower or any(w in pname_lower for w in prev_cat.split())))
+                or any(pp in pname_lower or pname_lower in pp for pp in prev_prods)
+            )
+            if not topic_in_context:
+                _context_is_relevant = False
+                logger.info(
+                    f"[product_search] Stale context detected "
+                    f"(prev: '{prev_cat}', current: '{product_name}') — ignoring last_search_context"
+                )
+
+        category = slots.get("category", "") or (last_search_context.get("category", "") if _context_is_relevant else "")
+        brand = slots.get("brand", "") or (last_search_context.get("brand", "") if _context_is_relevant else "")
+        budget = slots.get("budget", "") or (last_search_context.get("budget", "") if _context_is_relevant else "")
         size = slots.get("size", "")
         color = slots.get("color", "")
         material = slots.get("material", "")
         style = slots.get("style", "")
-        features = slots.get("features", "") or last_search_context.get("features") or ""
-        use_case = slots.get("use_case", "") or last_search_context.get("use_case") or ""
+        features = slots.get("features", "") or (last_search_context.get("features", "") if _context_is_relevant else "")
+        use_case = slots.get("use_case", "") or (last_search_context.get("use_case", "") if _context_is_relevant else "")
         gender = slots.get("gender", "")
 
         # Build search criteria from slots
@@ -161,9 +203,10 @@ async def product_search(state: Dict[str, Any]) -> Dict[str, Any]:
             if context_lines:
                 conversation_context = "\n".join(context_lines)
 
-        # Add previous search context for follow-up resolution
+        # Add previous search context for follow-up resolution.
+        # Only inject when the context is relevant to the current query to avoid contamination.
         prev_products_block = ""
-        if last_search_context.get("product_names"):
+        if last_search_context.get("product_names") and _context_is_relevant:
             prev_names = ", ".join(last_search_context["product_names"][:5])
             prev_cat = last_search_context.get("category", "")
             prev_products_block = f"\nPreviously discussed products ({prev_cat}): {prev_names}\n"

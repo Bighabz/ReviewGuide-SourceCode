@@ -118,63 +118,50 @@ export default function ReviewSources({ data, title = 'What Reviewers Say' }: Re
 
             {/* Consensus summary */}
             {product.consensus && (
-              <p className="text-sm text-[var(--text-secondary)] leading-relaxed mb-3.5">
+              <p className="text-sm sm:text-base text-[var(--text)] leading-relaxed mb-4">
                 {product.consensus}
               </p>
             )}
 
-            {/* Source cards - horizontal scroll on mobile, grid on desktop */}
+            {/* Source tags */}
             {product.sources.length > 0 && (
-              <div className="flex gap-2.5 overflow-x-auto pb-1 -mx-1 px-1 sm:grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 sm:overflow-x-visible">
+              <div className="flex flex-wrap gap-1.5">
                 {product.sources.map((source, sourceIdx) => (
-                  <a
-                    key={sourceIdx}
-                    href={source.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-shrink-0 w-[160px] sm:w-auto rounded-lg border border-[var(--border)] bg-[var(--background)] p-3 product-card-hover transition-all group cursor-pointer"
-                  >
-                    {/* Source header with favicon */}
-                    <div className="flex items-center gap-2 mb-1.5">
+                  source.url ? (
+                    <a
+                      key={sourceIdx}
+                      href={source.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-[var(--border)] bg-[var(--background)] text-[11px] font-medium text-[var(--text-muted)] hover:text-[var(--text)] hover:border-[var(--primary)] transition-colors cursor-pointer"
+                    >
                       {source.favicon_url && (
                         <img
                           src={source.favicon_url}
                           alt=""
-                          className="w-4 h-4 rounded-sm"
+                          className="w-3 h-3 rounded-sm flex-shrink-0"
                           loading="lazy"
                         />
                       )}
-                      <span className="text-xs font-semibold text-[var(--text)] truncate">
-                        {source.site_name}
-                      </span>
-                      <ExternalLink
-                        size={10}
-                        className="ml-auto text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
-                      />
-                    </div>
-
-                    {/* Rating if available */}
-                    {source.rating && source.rating > 0 && (
-                      <div className="flex items-center gap-1 mb-1.5">
-                        <StarRatingCompact value={source.rating} size={10} />
-                        <span className="text-[11px] font-medium text-[var(--text-secondary)]">
-                          {source.rating}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Snippet */}
-                    <p className="text-[11px] text-[var(--text-muted)] leading-snug line-clamp-2">
-                      {source.snippet || source.title}
-                    </p>
-
-                    {/* Date if available */}
-                    {source.date && (
-                      <p className="text-[10px] text-[var(--text-muted)] mt-1.5 opacity-70">
-                        {source.date}
-                      </p>
-                    )}
-                  </a>
+                      {source.site_name}
+                      <ExternalLink size={9} className="flex-shrink-0 opacity-60" />
+                    </a>
+                  ) : (
+                    <span
+                      key={sourceIdx}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full border border-[var(--border)] bg-[var(--background)] text-[11px] font-medium text-[var(--text-muted)]"
+                    >
+                      {source.favicon_url && (
+                        <img
+                          src={source.favicon_url}
+                          alt=""
+                          className="w-3 h-3 rounded-sm flex-shrink-0"
+                          loading="lazy"
+                        />
+                      )}
+                      {source.site_name}
+                    </span>
+                  )
                 ))}
               </div>
             )}

@@ -101,9 +101,9 @@ const BLOCK_RENDERERS: Record<string, BlockRenderer> = {
         <PriceComparison items={(b.data as any[]) ?? []} title={b.title} />
     ),
     conclusion: (b) => (
-        <p className="text-sm text-[var(--text-muted)] mt-4 italic">
+        <div className="mt-4 px-4 py-3 rounded-2xl rounded-tl-md bg-[var(--surface-elevated)] border border-[var(--border)] text-[15px] leading-relaxed text-[var(--text)]">
             {(b.data as any)?.text}
-        </p>
+        </div>
     ),
 }
 

@@ -9,6 +9,7 @@ Responsibilities:
 """
 from app.core.centralized_logger import get_logger
 import json
+import re
 import sys
 import os
 from typing import Dict, Any, List, Set
@@ -86,6 +87,50 @@ class ClarifierAgent(BaseAgent):
                     "the one with", "how about the",
                 ]
                 is_follow_up = any(signal in user_msg for signal in reference_signals) or len(user_msg.split()) <= 4
+
+                # If a reference signal matched, check whether it contains an anaphoric reference
+                # (e.g. "tell me more about the blue one") vs. a genuinely new topic
+                # (e.g. "tell me more about Sony headphones" when previous context was laptops).
+                if is_follow_up:
+                    # Try to extract the noun phrase following reference-signal phrases
+                    topic_patterns = [
+                        r"(?:tell me )?more about (?:the |a |an )?(.+)",
+                        r"what (?:about|can you tell me about) (?:the |a |an )?(.+)",
+                        r"(?:info|information|details|specs) (?:on|about|for) (?:the |a |an )?(.+)",
+                    ]
+                    new_topic = None
+                    for tp in topic_patterns:
+                        tm = re.search(tp, user_msg)
+                        if tm:
+                            new_topic = tm.group(1).strip().rstrip('?.!')
+                            break
+
+                    if new_topic:
+                        # Anaphoric patterns — these clearly refer to a previous item, not a new product
+                        anaphoric_patterns = [
+                            r"^(?:the |a |an )?(?:first|second|third|last|other|that|this|those|these)? ?(?:one|ones|option|options|model|item|thing|version)$",
+                            r"^(?:blue|red|black|white|silver|gold|gray|grey|green|purple|pink|yellow|orange) (?:one|ones|option|version|model)$",
+                            r"^(?:cheap(?:er|est)?|expensive|best|worst|top|bottom) (?:one|ones|option|version|model)$",
+                        ]
+                        is_anaphoric = any(re.match(pattern, new_topic) for pattern in anaphoric_patterns)
+
+                        if is_anaphoric:
+                            logger.info(f"[Clarifier Agent] Anaphoric reference detected: '{new_topic}' — keeping as follow-up")
+                            # is_follow_up stays True
+                        else:
+                            # Check whether the topic relates to the existing search context
+                            prev_names_lower = [n.lower() for n in last_search_context.get("product_names", [])]
+                            prev_category = last_search_context.get("category", "").lower()
+                            prev_product_type = last_search_context.get("product_type", "").lower()
+                            topic_is_related_to_context = (
+                                any(new_topic in n or n in new_topic for n in prev_names_lower)
+                                or (prev_category and prev_category in new_topic)
+                                or (prev_product_type and prev_product_type in new_topic)
+                            )
+                            if not topic_is_related_to_context:
+                                logger.info(f"[Clarifier Agent] New topic detected: '{new_topic}' — treating as new query")
+                                is_follow_up = False
+
                 if is_follow_up:
                     logger.info(f"[Clarifier Agent] Follow-up query detected with search context — skipping clarification")
                     # Inherit unfilled slots from context
