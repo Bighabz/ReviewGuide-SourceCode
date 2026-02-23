@@ -24,13 +24,13 @@ const CATEGORY_SORT_ORDER: Record<SuggestionCategory, number> = {
 }
 
 // RFC §2.4 — Human-readable category labels for editorial chips
-const CATEGORY_LABELS: Record<SuggestionCategory, string> = {
+const CATEGORY_LABELS: Record<string, string> = {
   clarify: 'Clarify',
-  refine_budget: 'Refine budget',
-  refine_features: 'Refine features',
-  alternate_destination: 'Alternatives',
   compare: 'Compare',
-  deeper_research: 'Dig deeper',
+  refine_budget: 'Budget',
+  refine_features: 'Features',
+  deeper_research: 'Deep dive',
+  alternate_destination: 'Alternatives',
 }
 
 /**
@@ -260,10 +260,10 @@ export default function Message({ message }: MessageProps) {
                       {/* Category label — subtle editorial pill */}
                       {suggestion.category && (
                         <span
-                          className="flex-shrink-0 mt-0.5 text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full bg-[var(--surface-hover)] text-[var(--text-muted)] border border-[var(--border)] whitespace-nowrap"
+                          className="flex-shrink-0 mt-0.5 text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--surface-hover)] text-[var(--text-muted)] border border-[var(--border)] whitespace-nowrap"
                           data-testid={`suggestion-category-label-${idx}`}
                         >
-                          {CATEGORY_LABELS[suggestion.category]}
+                          {CATEGORY_LABELS[suggestion.category] ?? suggestion.category}
                         </span>
                       )}
                       <span className="flex-1 text-sm text-[var(--text)] leading-snug">
