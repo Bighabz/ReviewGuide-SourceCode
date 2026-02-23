@@ -50,6 +50,8 @@ const config: Config = {
       animation: {
         'fade-up': 'fadeUp 0.5s ease-out forwards',
         'slide-in': 'slideIn 0.3s ease-out forwards',
+        // RFC §2.6 — card entrance animation
+        'card-enter': 'card-enter 200ms ease-out',
       },
       keyframes: {
         fadeUp: {
@@ -60,6 +62,22 @@ const config: Config = {
           '0%': { opacity: '0', transform: 'translateX(-8px)' },
           '100%': { opacity: '1', transform: 'translateX(0)' },
         },
+        // RFC §2.6 — card entrance keyframes
+        'card-enter': {
+          '0%': { opacity: '0', transform: 'translateY(4px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      // RFC §2.6 — named duration utilities for streaming / skeleton / card transitions
+      transitionDuration: {
+        'stream': '150ms',
+        'skeleton': '200ms',
+        'card': '200ms',
+      },
+      // RFC §2.6 — named easing utilities for streaming state transitions
+      transitionTimingFunction: {
+        'stream-out': 'ease-out',
+        'stream-inout': 'ease-in-out',
       },
     },
   },

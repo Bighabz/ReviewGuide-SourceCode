@@ -5,7 +5,8 @@ import MessageList from './MessageList'
 import ChatInput from './ChatInput'
 import ErrorBanner from './ErrorBanner'
 import BlockSkeleton from './BlockSkeleton'
-import { streamChat, fetchConversationHistory } from '@/lib/chatApi'
+import MessageRecoveryUI from './MessageRecoveryUI'
+import { streamChat, fetchConversationHistory, NextSuggestion, ResponseMetadata } from '@/lib/chatApi'
 import { SUGGESTION_CLICK_PREFIX } from '@/lib/utils'
 import { TRENDING_SEARCHES, UI_TEXT, CHAT_CONFIG } from '@/lib/constants'
 import { saveRecentSearch } from '@/lib/recentSearches'
@@ -24,10 +25,9 @@ export interface StructuredFollowups {
   closing: string
 }
 
-export interface NextSuggestion {
-  id: string
-  question: string
-}
+// RFC §2.4 — SuggestionCategory and NextSuggestion are canonical in chatApi.ts
+// Re-export for consumers that import from ChatContainer
+export type { SuggestionCategory, NextSuggestion } from '@/lib/chatApi'
 
 export interface Message {
   id: string
@@ -41,6 +41,13 @@ export interface Message {
   isSuggestionClick?: boolean  // True when message was triggered by clicking a suggestion button
   isThinking?: boolean  // True while waiting for real tokens (status updates hidden)
   statusText?: string   // Current tool status text (e.g., "Checking reviews...")
+  // RFC §2.3 — message-level recovery
+  completeness?: 'full' | 'partial' | 'degraded'
+  interruptionReason?: 'network' | 'server_error' | 'timeout' | 'provider_failure'
+  partialContent?: string
+  originalQuery?: string
+  // RFC §2.5 — content trust and explainability
+  response_metadata?: ResponseMetadata
 }
 
 interface ChatContainerProps {
@@ -74,6 +81,12 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
 
   // Track which message ID is currently being updated (can change if create_new_message is sent)
   const currentMessageIdRef = useRef<string>('')
+
+  // RFC §2.3: inline recovery UI state
+  // interruptedMessageId — the assistant message that was interrupted (null when dismissed)
+  const [interruptedMessageId, setInterruptedMessageId] = useState<string | null>(null)
+  // originalQueryRef — the user query that triggered the interrupted stream (for retry)
+  const originalQueryRef = useRef<string>('')
 
   // Load from localStorage on mount and fetch from database if needed
   useEffect(() => {
@@ -285,6 +298,10 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
     setError('')
     setShowErrorBanner(false)
     setPendingUserMessage(messageToSend)
+    // RFC §2.3: store the query so we can re-send on retry
+    originalQueryRef.current = messageToSend
+    // RFC §2.3: clear any previous recovery UI
+    setInterruptedMessageId(null)
 
     // Use override if provided (for cases where state hasn't updated yet), otherwise fall back to state
     let currentSessionId = overrideSessionId || sessionId
@@ -313,6 +330,11 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
       content: '',
       timestamp: new Date(),
       isThinking: true,  // Show "Thinking..." immediately until first real token
+      // RFC §2.3: completeness is intentionally left undefined here.
+      // It is set to 'full' when the stream completes normally (done event),
+      // or to 'degraded' by the interruption handler. Starting as 'partial'
+      // would cause a persisted message to incorrectly appear interrupted.
+      originalQuery: messageToSend,
     }
 
     setMessages((prev) => [...prev, assistantMessage])
@@ -429,6 +451,27 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
         // done payload, so it's a reliable sentinel.
         if (data.session_id) {
           dispatchStream({ type: 'RECEIVE_DONE', data: data as any })
+          // RFC §2.3: stream completed successfully — mark the message as full
+          // RFC §2.4: attach next_suggestions to the message for chip rendering
+          // RFC §2.5: attach response_metadata for explainability panel
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === currentMessageIdRef.current
+                ? {
+                    ...msg,
+                    completeness: 'full',
+                    ...(data.next_suggestions && data.next_suggestions.length > 0
+                      ? { next_suggestions: data.next_suggestions }
+                      : {}),
+                    ...(data.response_metadata
+                      ? { response_metadata: data.response_metadata }
+                      : {}),
+                  }
+                : msg
+            )
+          )
+          // RFC §2.3: no interruption to recover from
+          setInterruptedMessageId(null)
         }
 
         // Save to recent searches if product results were shown
@@ -455,6 +498,10 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
       },
       onError: (errorMsg) => {
         console.error('Stream error:', errorMsg)
+
+        // 'errored' state: explicit error event from backend → global error banner
+        // 'interrupted' state: no terminal event after 120s → inline recovery UI
+        // These are separate concerns; recovery UI is not shown for explicit backend errors
 
         // Remove the empty assistant message
         setMessages((prev) => prev.filter(msg => msg.id !== assistantMessageId))
@@ -490,6 +537,32 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
 
     // Re-stream with the pending message (don't add user message again - it's already in the array)
     await handleStream(pendingUserMessage, false)
+  }
+
+  // RFC §2.3: "Show what I have" — dismiss the recovery UI, keep partial content visible
+  const handleShowPartial = () => {
+    setInterruptedMessageId(null)
+  }
+
+  // RFC §2.3: "Retry" — re-send the original query as a new user turn
+  const handleRetryFull = async () => {
+    if (isStreaming) return
+    const query = originalQueryRef.current
+    if (!query) return
+
+    // Dismiss recovery UI first
+    setInterruptedMessageId(null)
+
+    // Add a fresh user message bubble so the conversation makes sense
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: query,
+      timestamp: new Date(),
+    }
+    setMessages((prev) => [...prev, userMessage])
+
+    await handleStream(query, false)
   }
 
   // Handle suggestion click from next_suggestions buttons
@@ -552,6 +625,34 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
     // Use shared streaming function
     await handleStream(messageToSend, false)
   }
+
+  // RFC §2.3: when the stream transitions to 'interrupted', preserve partial content
+  // and mark the current streaming message as degraded rather than wiping it.
+  //
+  // Note: the 120-second watchdog in useStreamReducer is cleared when RESET is
+  // dispatched at the top of handleStream (before a new currentMessageIdRef is set).
+  // This guarantees that when 'interrupted' fires, currentMessageIdRef.current
+  // refers to the correct in-flight message, not a subsequent stream.
+  useEffect(() => {
+    if (streamState === 'interrupted' && currentMessageIdRef.current) {
+      const msgId = currentMessageIdRef.current
+      setMessages((prev) =>
+        prev.map((msg) => {
+          if (msg.id !== msgId) return msg
+          return {
+            ...msg,
+            completeness: 'degraded',
+            partialContent: msg.content,
+            isThinking: false,
+            statusText: undefined,
+          }
+        })
+      )
+      setInterruptedMessageId(msgId)
+      // RFC §2.2: ensure skeleton is cleared on interruption
+      setPendingSkeleton(null)
+    }
+  }, [streamState])
 
   // Clear history when trigger changes
   useEffect(() => {
@@ -653,7 +754,7 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
               }}
             >
               <div className="animate-spin h-4 w-4 border-2 border-current border-t-transparent rounded-full" style={{ color: 'var(--primary)' }} />
-              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+              <span className="stream-status-text">
                 {UI_TEXT.RECONNECTING}{reconnectAttempt > 0 ? ` (attempt ${reconnectAttempt}/3)` : '...'}
               </span>
             </div>
@@ -667,35 +768,25 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
             />
           )}
 
-          {/* Interrupted Banner - stream closed without terminal event (distinct from errored) */}
-          {streamState === 'interrupted' && !showErrorBanner && (
+          {/* RFC §2.3: Inline recovery UI — rendered below the interrupted message bubble.
+               Only shown while interruptedMessageId is set (dismissed by onShowPartial or
+               cleared automatically when a new stream starts / retry fires). */}
+          {interruptedMessageId && streamState === 'interrupted' && !showErrorBanner && (
             <div
-              className="flex items-center gap-3 py-3 px-4 mx-4 mb-2 rounded-lg"
-              style={{
-                background: 'var(--surface)',
-                border: '1px solid var(--border)',
-                color: 'var(--text-secondary)',
-              }}
+              className="mx-auto px-4 pb-2"
+              style={{ maxWidth: '780px' }}
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{ flexShrink: 0, color: '#E85D3A' }}
-                aria-hidden="true"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
-              <span className="text-sm">
-                Response may be incomplete — the stream was interrupted.
-              </span>
+              {(() => {
+                const interruptedMsg = messages.find(m => m.id === interruptedMessageId)
+                return (
+                  <MessageRecoveryUI
+                    completeness="partial"
+                    onShowPartial={handleShowPartial}
+                    onRetryFull={handleRetryFull}
+                    interruptionReason={interruptedMsg?.interruptionReason}
+                  />
+                )
+              })()}
             </div>
           )}
 

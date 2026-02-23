@@ -12,6 +12,8 @@ import os
 from typing import Dict, Any, List, Tuple, Set
 from collections import defaultdict
 
+from app.services.tool_validator import ToolOutputValidator
+
 # Add MCP server to path for tool contract imports
 backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 mcp_server_path = os.path.join(backend_dir, 'mcp_server')
@@ -260,6 +262,8 @@ class PlanExecutor:
                     self.context[f"{step_id}.{tool_name}"] = {"error": str(result), "success": False}
                 else:
                     logger.info(f"  ✓ Tool {tool_name} completed")
+                    # RFC §3.4 — validate output contract before writing to state
+                    result = ToolOutputValidator.validate(tool_name, result)
                     self.context[f"{step_id}.{tool_name}"] = result
                     # Write tool outputs back to state
                     self._write_tool_outputs_to_state(tool_name, result, contracts.get(tool_name))
@@ -293,6 +297,8 @@ class PlanExecutor:
                     serializable_state = self._make_serializable(self.state)
                     result = await self._call_tool_direct(tool_name, serializable_state)
 
+                    # RFC §3.4 — validate output contract before writing to state
+                    result = ToolOutputValidator.validate(tool_name, result)
                     self.context[f"{step_id}.{tool_name}"] = result
                     logger.info(f"  ✓ Tool {tool_name} completed")
 

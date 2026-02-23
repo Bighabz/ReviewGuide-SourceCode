@@ -68,6 +68,29 @@
   --gpt-shadow-input: var(--shadow-sm);
   --gpt-shadow-lg: var(--shadow-lg);
   --gpt-transition: 200ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ═══════════════════════════════════════════
+     RFC §2.6 — Streaming State Tokens (Light)
+     ═══════════════════════════════════════════ */
+
+  /* Status / loading text */
+  --stream-status-font: var(--font-dm-sans, system-ui, sans-serif);
+  --stream-status-size: 0.875rem;
+  --stream-status-weight: 400;
+  --stream-status-color: var(--text-secondary);
+
+  /* Content streaming */
+  --stream-content-font: var(--font-dm-sans, system-ui, sans-serif);
+  --stream-content-size: 1rem;
+  --stream-content-weight: 400;
+  --stream-content-color: var(--text);
+
+  /* Citation / source labels */
+  --citation-font: var(--font-dm-sans, system-ui, sans-serif);
+  --citation-size: 0.75rem;
+  --citation-weight: 500;
+  --citation-color: var(--primary);
+
 }
 
 [data-theme="dark"] {
@@ -111,6 +134,15 @@
   --shadow-float: 0 12px 32px rgba(107, 138, 255, 0.12);
 
   --gpt-glass-bg: rgba(26, 24, 22, 0.92);
+
+  /* ═══════════════════════════════════════════
+     RFC §2.6 — Streaming State Tokens (Dark)
+     All streaming tokens resolve via semantic vars above:
+       --stream-status-color → --text-secondary → #A8A29E (dark)
+       --stream-content-color → --text → #F5F0EB (dark)
+       --citation-color → --primary → #6B8AFF (dark)
+     No additional overrides needed.
+     ═══════════════════════════════════════════ */
 }
 
 /* Theme Color Variants */
@@ -328,4 +360,45 @@ a, button, input, textarea, select {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
   background-repeat: repeat;
   background-size: 256px;
+}
+
+/* ═══════════════════════════════════════════
+   RFC §2.6 — Streaming State Utility Classes
+   ═══════════════════════════════════════════ */
+
+.stream-status-text {
+  font-family: var(--stream-status-font);
+  font-size: var(--stream-status-size);
+  font-weight: var(--stream-status-weight);
+  color: var(--stream-status-color);
+}
+
+.stream-content-text {
+  font-family: var(--stream-content-font);
+  font-size: var(--stream-content-size);
+  font-weight: var(--stream-content-weight);
+  color: var(--stream-content-color);
+}
+
+.citation-text {
+  font-family: var(--citation-font);
+  font-size: var(--citation-size);
+  font-weight: var(--citation-weight);
+  color: var(--citation-color);
+}
+
+/* ═══════════════════════════════════════════
+   RFC §2.6 — prefers-reduced-motion
+   Collapses all streaming / skeleton / card-entrance
+   transitions and animations to instant for users who
+   prefer reduced motion.
+   ═══════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-card-enter,
+  .animate-pulse,
+  .stream-status-text {
+    transition: none !important;
+    animation: none !important;
+  }
 }

@@ -341,6 +341,7 @@ async def generate_chat_stream(
             "last_search_context": halt_state_data.get("last_search_context", {}) if halt_state_data else {},
             "search_history": halt_state_data.get("search_history", []) if halt_state_data else [],
             "errors": [],
+            "stage_telemetry": [],  # RFC §1.1 — populated by each agent node
             "metadata": {
                 # NOTE: Do NOT add langfuse_handler or callbacks here!
                 # CallbackHandler is passed via LangGraph config, not state
@@ -378,6 +379,8 @@ async def generate_chat_stream(
 
         # Background task that polls event stream
         event_queue = asyncio.Queue()
+        # RFC §1.1 — track whether the 60-second hard limit fired
+        sse_total_timeout_hit = False
 
         async def consume_events():
             """Consume LangGraph events and put them in queue"""
@@ -397,80 +400,123 @@ async def generate_chat_stream(
         last_node_name = None
         data_already_streamed = False  # Track if we already streamed any data (from stream_chunk_data)
 
-        # Main loop: check both citation buffer and event queue
-        while True:
-            # Drain citation buffer (log only, don't stream to frontend)
-            while citation_buffer:
-                citation = citation_buffer.pop(0)
-                tool_name = citation.get("tool", "")
-                message = citation.get("message", "")
-                if message:
-                    logger.info(f"🔇 Tool citation (suppressed): {tool_name} - {message}")
+        # RFC §1.1 — enforce 60-second hard limit on the entire SSE connection.
+        # asyncio.wait_for cannot wrap an async generator, so the deadline is
+        # enforced inline inside _drain_event_loop on every iteration.
+        from app.services.stage_telemetry import MAX_TOTAL_REQUEST_S
 
-            # Then try to get event with short timeout
-            try:
-                event = await asyncio.wait_for(event_queue.get(), timeout=settings.CHAT_EVENT_QUEUE_TIMEOUT)
-                if event is None:  # Sentinel - workflow finished
+        async def _drain_event_loop():
+            """Drain the event queue until the workflow sentinel arrives or the 60-second hard cap fires."""
+            nonlocal result_state, last_node_name, data_already_streamed, sse_total_timeout_hit
+            # RFC §1.1 — enforce hard cap by checking elapsed time on every iteration.
+            # asyncio.wait_for cannot wrap an async generator directly, so the deadline
+            # is enforced inline: the check fires within one CHAT_EVENT_QUEUE_TIMEOUT
+            # tick of MAX_TOTAL_REQUEST_S.
+            deadline = stream_start_time + MAX_TOTAL_REQUEST_S
+            # Main loop: check both citation buffer and event queue
+            while True:
+                # RFC §1.1 — abort if the wall-clock deadline has passed
+                if time.time() >= deadline:
+                    sse_total_timeout_hit = True
+                    logger.error(
+                        f"[stage_telemetry] SSE total 60s hard limit exceeded for session {session_id}"
+                        " — cancelling background event consumer"
+                    )
+                    event_task.cancel()
                     break
-            except asyncio.TimeoutError:
-                # No event yet, loop back to check citations
-                continue
 
-            event_type = event.get("event")
-            event_name = event.get("name", "")
+                # Drain citation buffer (log only, don't stream to frontend)
+                while citation_buffer:
+                    citation = citation_buffer.pop(0)
+                    tool_name = citation.get("tool", "")
+                    message = citation.get("message", "")
+                    if message:
+                        logger.info(f"Tool citation (suppressed): {tool_name} - {message}")
 
-            # Detect when agents START (on_chain_start) - log only, don't stream to frontend
-            if event_type == "on_chain_start":
-                agent_instance = AGENT_NAME_TO_INSTANCE.get(event_name)
-                if agent_instance and hasattr(agent_instance, 'on_chain_start_message') and agent_instance.on_chain_start_message:
-                    agent_short_name = event_name.split("_")[-1] if "_" in event_name else event_name
-                    logger.info(f"🔇 Agent status (suppressed): {event_name} - {agent_instance.on_chain_start_message}")
-                    last_node_name = agent_short_name
+                # Then try to get event with short timeout
+                try:
+                    event = await asyncio.wait_for(event_queue.get(), timeout=settings.CHAT_EVENT_QUEUE_TIMEOUT)
+                    if event is None:  # Sentinel - workflow finished
+                        break
+                except asyncio.TimeoutError:
+                    # No event yet, loop back to check citations
+                    continue
 
-            # Detect when nodes complete and check next_agent (for immediate status messages)
-            elif event_type == "on_chain_end":
-                if event_name == "LangGraph":
-                    # Capture final state
-                    result_state = event.get("data", {}).get("output", {})
-                else:
-                    # Check if any node just completed
-                    output_data = event.get("data", {}).get("output", {})
+                event_type = event.get("event")
+                event_name = event.get("name", "")
 
-                    # STREAM DATA IMMEDIATELY if agent returned stream_chunk_data
-                    if isinstance(output_data, dict):
-                        stream_data = output_data.get("stream_chunk_data")
-                        if stream_data:
-                            # Clear placeholder first via artifact event with clear flag
-                            data_type = stream_data.get("type")
-                            data_content = stream_data.get("data")
+                # Detect when agents START (on_chain_start) - log only
+                if event_type == "on_chain_start":
+                    agent_instance = AGENT_NAME_TO_INSTANCE.get(event_name)
+                    if agent_instance and hasattr(agent_instance, 'on_chain_start_message') and agent_instance.on_chain_start_message:
+                        agent_short_name = event_name.split("_")[-1] if "_" in event_name else event_name
+                        logger.info(f"Agent status (suppressed): {event_name} - {agent_instance.on_chain_start_message}")
+                        last_node_name = agent_short_name
 
-                            if data_type and data_content:
-                                artifact_payload = {
-                                    "type": data_type,
-                                    "blocks": data_content,
-                                    "clear": True,
-                                }
-                                # Check if stream_data has create_new_message flag
-                                if stream_data.get("create_new_message"):
-                                    artifact_payload["create_new_message"] = True
-                                yield _sse_event("artifact", artifact_payload)
+                # Detect when nodes complete
+                elif event_type == "on_chain_end":
+                    if event_name == "LangGraph":
+                        result_state = event.get("data", {}).get("output", {})
+                    else:
+                        output_data = event.get("data", {}).get("output", {})
 
-                                # Mark that we've streamed data
-                                data_already_streamed = True
-                                logger.info(f"📤 Streamed {data_type} from {event_name}")
+                        # STREAM DATA IMMEDIATELY if agent returned stream_chunk_data
+                        if isinstance(output_data, dict):
+                            stream_data = output_data.get("stream_chunk_data")
+                            if stream_data:
+                                data_type = stream_data.get("type")
+                                data_content = stream_data.get("data")
 
-                    # Log travel planner transition (no longer streamed to frontend)
-                    if isinstance(output_data, dict) and output_data.get("next_agent") == "travel_planner":
-                        logger.info(f"🔇 Travel planner status (suppressed): from {event_name}")
-                        last_node_name = "planner"
+                                if data_type and data_content:
+                                    artifact_payload = {
+                                        "type": data_type,
+                                        "blocks": data_content,
+                                        "clear": True,
+                                    }
+                                    if stream_data.get("create_new_message"):
+                                        artifact_payload["create_new_message"] = True
+                                    yield _sse_event("artifact", artifact_payload)
 
-        # Wait for event task to complete
-        await event_task
+                                    data_already_streamed = True
+                                    logger.info(f"Streamed {data_type} from {event_name}")
+
+                        if isinstance(output_data, dict) and output_data.get("next_agent") == "travel_planner":
+                            logger.info(f"Travel planner status (suppressed): from {event_name}")
+                            last_node_name = "planner"
+
+        try:
+            # RFC §1.1 — drain; the 60-second hard cap fires inside _drain_event_loop
+            # on every iteration, so this loop is always bounded by MAX_TOTAL_REQUEST_S
+            # plus at most one CHAT_EVENT_QUEUE_TIMEOUT tick.
+            async for sse_chunk in _drain_event_loop():
+                yield sse_chunk
+        except Exception:
+            pass  # handled below
+
+        # RFC §1.1 — await background task to surface any exception.
+        # If the hard cap fired, event_task was already cancelled inside _drain_event_loop;
+        # CancelledError is expected and swallowed here.
+        try:
+            await event_task
+        except asyncio.CancelledError:
+            pass  # expected when hard cap cancels event_task inside _drain_event_loop
+        except Exception as exc:
+            logger.warning(f"[stage_telemetry] Background event consumer raised an unexpected error: {exc}")
+
+        # RFC §1.1 — if the 60-second hard cap fired, terminate the stream immediately
+        if sse_total_timeout_hit:
+            clear_tool_citation_callbacks()
+            yield _sse_event("error", {
+                "code": "request_timeout",
+                "message": "Request exceeded the 60-second time limit. Please try a simpler query.",
+                "recoverable": True,
+            })
+            return
 
         # Drain any remaining citations (log only)
         while citation_buffer:
             citation = citation_buffer.pop(0)
-            logger.info(f"🔇 Remaining citation (suppressed): {citation.get('tool')} - {citation.get('message')}")
+            logger.info(f"Remaining citation (suppressed): {citation.get('tool')} - {citation.get('message')}")
 
         # Fallback: if we didn't get final state from events, use astream to get it
         if not result_state:
@@ -588,6 +634,79 @@ async def generate_chat_stream(
         if next_suggestions:
             logger.info(f"🔍 Found {len(next_suggestions)} next step suggestions to send")
 
+        # RFC §2.5 — Build ResponseMetadata for content trust / explainability UI.
+        # Derive metadata from what is already available in result_state without
+        # requiring new GraphState fields.  A richer implementation can replace
+        # this stub once plan_executor exposes per-provider timing data.
+        _errors: list = result_state.get("errors", []) or []
+        _provider_errors: list = result_state.get("provider_errors", []) or []
+        _tool_durations: dict = result_state.get("tool_durations", {}) or {}
+
+        # Determine which providers ran based on affiliate_products and travel data present
+        _affiliate_products: dict = result_state.get("affiliate_products", {}) or {}
+        _provider_coverage = []
+        # Only include amazon/ebay coverage when the intent was product — these providers
+        # are never queried for travel or general intents, so including them unconditionally
+        # would always report them as "unavailable" and wrongly degrade the confidence score.
+        _intent = result_state.get("intent", "")
+        if _intent == "product":
+            for provider_key in ["amazon", "ebay"]:
+                items = _affiliate_products.get(provider_key, [])
+                _provider_coverage.append({
+                    "provider": provider_key,
+                    "status": "ok" if items else "unavailable",
+                    "result_count": len(items) if items else 0,
+                })
+        if result_state.get("hotels"):
+            _provider_coverage.append({"provider": "booking", "status": "ok", "result_count": len(result_state["hotels"])})
+        if result_state.get("flights"):
+            _provider_coverage.append({"provider": "amadeus", "status": "ok", "result_count": len(result_state["flights"])})
+        if result_state.get("search_results"):
+            _provider_coverage.append({"provider": "perplexity", "status": "ok", "result_count": len(result_state["search_results"])})
+
+        # Mark any provider errors as timed_out / unavailable.
+        # The inner for/else is intentional: the `else` branch runs only when the inner
+        # loop exhausted all items without hitting `break`, meaning no existing coverage
+        # entry matched this error provider — so we append a new timed_out entry.
+        for err in _provider_errors:
+            err_provider = err if isinstance(err, str) else err.get("provider", "")
+            for cov in _provider_coverage:
+                if cov["provider"] == err_provider:
+                    cov["status"] = "timed_out"
+                    break
+            else:
+                # No existing coverage entry matched — add a new timed_out entry.
+                if err_provider:
+                    _provider_coverage.append({"provider": err_provider, "status": "timed_out"})
+
+        _missing_sources = [
+            p["provider"] for p in _provider_coverage if p["status"] in ("timed_out", "unavailable")
+            and p.get("result_count", 0) == 0
+        ]
+        _degraded = bool(_provider_errors) or bool(_errors and result_state.get("status") != "completed")
+
+        # confidence_score: 1.0 if all ok, 0.5 if some providers failed, 0.3 if critical (affiliate) failed
+        _affiliate_failed = any(
+            p["status"] in ("timed_out", "unavailable") for p in _provider_coverage
+            if p["provider"] in ("amazon", "ebay")
+        )
+        if _affiliate_failed or (_degraded and _provider_errors):
+            _confidence_score = 0.3
+        elif _missing_sources:
+            _confidence_score = 0.5
+        else:
+            _confidence_score = result_state.get("confidence_score", 1.0) or 1.0
+
+        _response_metadata = {
+            "source_count": len(result_state.get("citations", []) or []),
+            "provider_coverage": _provider_coverage,
+            "confidence_score": float(_confidence_score),
+            "omitted_sections": [],  # Populated by future tool-level tracking
+            "degraded": _degraded,
+            "missing_sources": _missing_sources,
+            "web_context_cache_age_s": None,
+        }
+
         final_done_payload = {
             "session_id": session_id,
             "request_id": request_id,  # RFC §4.1 correlation ID for frontend trace lookup
@@ -599,6 +718,9 @@ async def generate_chat_stream(
             "next_suggestions": next_suggestions,  # Follow-up questions from next_step_suggestion tool
             "user_id": user_id,
             "completeness": "full",  # RFC §1.8: degraded logic deferred to a later phase
+            "response_metadata": _response_metadata,  # RFC §2.5 content trust metadata
+            # RFC §1.1 — stage-level latency telemetry
+            "stage_telemetry": result_state.get("stage_telemetry") or [],
         }
 
         logger.info(f"🔍 DEBUG: Final chunk - has_followups: {followups_to_send is not None}")
@@ -627,7 +749,7 @@ async def generate_chat_stream(
 
         # Fire-and-forget: save turn after stream is already done
         user_message_text = original_user_message
-        is_suggestion_click = original_user_message.startswith("[SUGGESTION_CLICK]")
+        is_suggestion_click = original_user_message.startswith("You chose:")
         user_metadata = {"is_suggestion_click": True} if is_suggestion_click else None
 
         if is_halted and followups_to_send and isinstance(followups_to_send, dict):
