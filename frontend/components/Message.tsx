@@ -3,12 +3,57 @@
 import { User, Copy, Check, ArrowRight } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { motion } from 'framer-motion'
-import { Message as MessageType, NextSuggestion } from './ChatContainer'
+import { Message as MessageType, NextSuggestion, SuggestionCategory } from './ChatContainer'
 import { normalizeBlocks } from '@/lib/normalizeBlocks'
 import { UIBlocks } from '@/components/blocks/BlockRegistry'
 import MessageRecoveryUI from './MessageRecoveryUI'
 import { useState, useEffect } from 'react'
 import { formatTimestamp, formatFullTimestamp, SUGGESTION_CLICK_PREFIX } from '@/lib/utils'
+import { trackAffiliate } from '@/lib/trackAffiliate'
+
+// RFC §2.4 — Category sort priority: clarify > refine_* > alternate_destination > compare > deeper_research
+const CATEGORY_SORT_ORDER: Record<SuggestionCategory, number> = {
+  clarify: 0,
+  refine_budget: 1,
+  refine_features: 2,
+  alternate_destination: 3,
+  compare: 4,
+  deeper_research: 5,
+}
+
+// RFC §2.4 — Human-readable category labels for editorial chips
+const CATEGORY_LABELS: Record<SuggestionCategory, string> = {
+  clarify: 'Clarify',
+  refine_budget: 'Refine budget',
+  refine_features: 'Refine features',
+  alternate_destination: 'Alternatives',
+  compare: 'Compare',
+  deeper_research: 'Dig deeper',
+}
+
+/**
+ * RFC §2.4 — Sort suggestions by category priority.
+ * Suggestions without a category are treated as lowest priority (after deeper_research).
+ */
+function sortSuggestions(suggestions: NextSuggestion[]): NextSuggestion[] {
+  return [...suggestions].sort((a, b) => {
+    const orderA = a.category !== undefined ? CATEGORY_SORT_ORDER[a.category] : 99
+    const orderB = b.category !== undefined ? CATEGORY_SORT_ORDER[b.category] : 99
+    return orderA - orderB
+  })
+}
+
+/**
+ * RFC §2.4 — Track a suggestion chip click with provenance data.
+ */
+function trackSuggestionClick(suggestion: NextSuggestion, messageId: string, index: number): void {
+  trackAffiliate('suggestion_click', {
+    suggestion_id: suggestion.id,
+    category: suggestion.category ?? 'unknown',
+    message_id: messageId,
+    position: index,
+  })
+}
 
 interface MessageProps {
   message: MessageType
@@ -181,6 +226,48 @@ export default function Message({ message }: MessageProps) {
                       </p>
                     )}
                   </div>
+                </div>
+              )}
+
+              {/* RFC §2.4: next_suggestions — sorted suggestion chips with category labels */}
+              {message.next_suggestions && message.next_suggestions.length > 0 && (
+                <div
+                  className="w-full mt-5 space-y-1.5"
+                  data-testid="next-suggestions-container"
+                >
+                  {sortSuggestions(message.next_suggestions).map((suggestion, idx) => (
+                    <button
+                      key={suggestion.id}
+                      data-testid={`suggestion-chip-${idx}`}
+                      data-category={suggestion.category}
+                      className="group flex items-start w-full text-left gap-3 px-3.5 py-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--primary)] hover:bg-[var(--primary-light)] transition-all"
+                      onClick={() => {
+                        trackSuggestionClick(suggestion, message.id, idx)
+                        const event = new CustomEvent('sendSuggestion', {
+                          detail: { question: suggestion.question }
+                        })
+                        window.dispatchEvent(event)
+                      }}
+                    >
+                      {/* Category label — subtle editorial pill */}
+                      {suggestion.category && (
+                        <span
+                          className="flex-shrink-0 mt-0.5 text-[10px] font-semibold uppercase tracking-widest px-2 py-0.5 rounded-full bg-[var(--surface-hover)] text-[var(--text-muted)] border border-[var(--border)] whitespace-nowrap"
+                          data-testid={`suggestion-category-label-${idx}`}
+                        >
+                          {CATEGORY_LABELS[suggestion.category]}
+                        </span>
+                      )}
+                      <span className="flex-1 text-sm text-[var(--text)] leading-snug">
+                        {suggestion.question}
+                      </span>
+                      <ArrowRight
+                        size={14}
+                        strokeWidth={1.5}
+                        className="flex-shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity text-[var(--primary)]"
+                      />
+                    </button>
+                  ))}
                 </div>
               )}
 

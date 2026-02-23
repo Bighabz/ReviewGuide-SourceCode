@@ -25,9 +25,24 @@ export interface StructuredFollowups {
   closing: string
 }
 
+// RFC §2.4 — Typed suggestions with category and click provenance
+export type SuggestionCategory =
+  | 'clarify'
+  | 'compare'
+  | 'refine_budget'
+  | 'refine_features'
+  | 'alternate_destination'
+  | 'deeper_research'
+
 export interface NextSuggestion {
   id: string
   question: string
+  /** RFC §2.4: suggestion category — used for sorting and label rendering */
+  category?: SuggestionCategory
+  /** RFC §2.4: LLM-estimated confidence 0.0–1.0 */
+  confidence?: number
+  /** RFC §2.4: tool gap that prompted this suggestion */
+  tool_gap?: string
 }
 
 export interface Message {
@@ -451,10 +466,17 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
         if (data.session_id) {
           dispatchStream({ type: 'RECEIVE_DONE', data: data as any })
           // RFC §2.3: stream completed successfully — mark the message as full
+          // RFC §2.4: attach next_suggestions to the message for chip rendering
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === currentMessageIdRef.current
-                ? { ...msg, completeness: 'full' }
+                ? {
+                    ...msg,
+                    completeness: 'full',
+                    ...(data.next_suggestions && data.next_suggestions.length > 0
+                      ? { next_suggestions: data.next_suggestions }
+                      : {}),
+                  }
                 : msg
             )
           )

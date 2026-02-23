@@ -281,16 +281,31 @@ CRITICAL RULES - READ THE CONVERSATION HISTORY CAREFULLY:
 - Each question should lead to a different type of action
 - Make them feel like a helpful friend suggesting next steps
 
+CATEGORY ASSIGNMENT (RFC §2.4):
+Each suggestion must include a "category" field. Choose the best-fitting category:
+- "clarify"              — asks for missing information needed to refine results (e.g. budget, use case, preferences)
+- "refine_budget"        — specifically narrows by price or budget range
+- "refine_features"      — narrows by technical features, specs, or attributes
+- "alternate_destination" — suggests a different destination or alternative option (travel intent)
+- "compare"             — compares two or more products, destinations, or options head-to-head
+- "deeper_research"     — digs into reviews, expert opinions, or detailed analysis
+
+Also include a "confidence" field (float 0.0–1.0) reflecting how confident you are the user will find this suggestion useful in context.
+
 Return ONLY valid JSON:
 {{
   "next_suggestions": [
     {{
       "id": "suggestion_1",
-      "question": "Your follow-up question here?"
+      "question": "Your follow-up question here?",
+      "category": "clarify",
+      "confidence": 0.9
     }},
     {{
       "id": "suggestion_2",
-      "question": "Another follow-up question?"
+      "question": "Another follow-up question?",
+      "category": "compare",
+      "confidence": 0.75
     }}
   ]
 }}"""
@@ -313,7 +328,9 @@ Return ONLY valid JSON:
 
         logger.info(f"[next_step_suggestion] Generated {len(suggestions)} suggestions:")
         for i, s in enumerate(suggestions):
-            logger.info(f"  {i+1}. {s.get('question', 'N/A')}")
+            category = s.get('category', 'uncategorized')
+            confidence = s.get('confidence', 'N/A')
+            logger.info(f"  {i+1}. [{category}] (conf={confidence}) {s.get('question', 'N/A')}")
 
         return {
             "next_suggestions": suggestions,

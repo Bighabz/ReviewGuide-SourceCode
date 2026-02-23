@@ -28,9 +28,24 @@ function getBackoffDelay(attempt: number): number {
   return backoff + jitter
 }
 
+// RFC §2.4 — Typed suggestions with category and click provenance
+export type SuggestionCategory =
+  | 'clarify'
+  | 'compare'
+  | 'refine_budget'
+  | 'refine_features'
+  | 'alternate_destination'
+  | 'deeper_research'
+
 export interface NextSuggestion {
   id: string
   question: string
+  /** RFC §2.4: suggestion category — used for sorting and label rendering */
+  category?: SuggestionCategory
+  /** RFC §2.4: LLM-estimated confidence 0.0–1.0 */
+  confidence?: number
+  /** RFC §2.4: tool gap that prompted this suggestion */
+  tool_gap?: string
 }
 
 export interface StreamChunk {

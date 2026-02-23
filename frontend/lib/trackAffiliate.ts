@@ -24,3 +24,24 @@ export function trackAffiliateClick(params: TrackClickParams) {
   // Open affiliate link in new tab
   window.open(params.url, '_blank', 'noopener,noreferrer')
 }
+
+// RFC §2.4 — General-purpose event tracker for non-affiliate interactions
+type TrackableEvent = 'suggestion_click' | string
+
+interface TrackEventPayload {
+  [key: string]: unknown
+}
+
+/**
+ * Fire-and-forget POST to track a named UI event (e.g., suggestion_click).
+ * Does not open any URL — pure telemetry.
+ */
+export function trackAffiliate(event: TrackableEvent, payload: TrackEventPayload): void {
+  fetch(`${API_URL}/v1/affiliate/event`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ event, ...payload }),
+  }).catch(() => {
+    // Silently ignore tracking failures — telemetry is best-effort
+  })
+}
