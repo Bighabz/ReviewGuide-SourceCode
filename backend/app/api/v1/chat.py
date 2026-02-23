@@ -23,6 +23,17 @@ from app.repositories.conversation_repository import ConversationRepository
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc, func
 from app.core.colored_logging import get_colored_logger
+from app.services.halt_state_manager import HaltStateManager
+from app.services.chat_history_manager import chat_history_manager
+
+
+async def _load_session_context(session_id: str):
+    """Load halt state and conversation history concurrently."""
+    halt_state_data, conversation_history = await asyncio.gather(
+        HaltStateManager.get_halt_state(session_id),
+        chat_history_manager.get_history(session_id),
+    )
+    return halt_state_data, conversation_history
 
 
 class DateTimeEncoder(json.JSONEncoder):
@@ -212,21 +223,15 @@ async def generate_chat_stream(
             "placeholder": True,
         })
 
-        # Check if we're resuming from a halt state first (before loading history)
-        # to avoid unnecessary database/Redis queries for new queries
-        from app.services.halt_state_manager import HaltStateManager
+        # Load halt state and conversation history concurrently (no data dependency).
+        # get_halt_state returns None when no halt exists, so it replaces the older
+        # check_halt_exists + load_halt_state two-step pattern.
+        halt_state_data, conversation_history = await _load_session_context(session_id)
 
-        halt_exists = await HaltStateManager.check_halt_exists(session_id)
-
-        # Load halt state if resuming
-        halt_state_data = None
-        conversation_history = []
+        halt_exists = halt_state_data is not None
         extended_search_confirmed = False  # Flag for consent resume flow
 
         if halt_exists:
-            # Load halt state from Redis using HaltStateManager
-            halt_state_data = await HaltStateManager.load_halt_state(session_id)
-
             # Check for consent_required halt (Tier 3-4 extended search)
             halt_reason = halt_state_data.get("halt_reason") if halt_state_data else None
             if halt_reason == "consent_required":
@@ -259,13 +264,7 @@ async def generate_chat_stream(
                     halt_state_data = None
                     halt_exists = False
 
-        # Load conversation history BEFORE workflow starts
-        # Note: User message is saved at end of safety_agent, not here
-        # ChatHistoryManager handles MAX_HISTORY_MESSAGES limit internally
-        from app.services.chat_history_manager import chat_history_manager
         logger.info(f"[ChatEndpoint] Loading conversation history for session {session_id}...")
-        conversation_history = await chat_history_manager.get_history(session_id)
-
         if conversation_history:
             logger.info(f"[ChatEndpoint] ✅ Loaded {len(conversation_history)} messages from conversation history for session {session_id}")
             # Log first and last message for debugging
