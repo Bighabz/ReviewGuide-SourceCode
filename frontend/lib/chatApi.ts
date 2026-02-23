@@ -28,6 +28,24 @@ function getBackoffDelay(attempt: number): number {
   return backoff + jitter
 }
 
+// RFC §2.5 — Content trust and explainability types
+
+export interface ProviderCoverage {
+  provider: string      // "ebay" | "amazon" | "perplexity" | "serpapi" | "amadeus" | "booking" | "viator"
+  status: 'ok' | 'partial' | 'unavailable' | 'timed_out'
+  result_count?: number
+}
+
+export interface ResponseMetadata {
+  source_count: number
+  provider_coverage: ProviderCoverage[]
+  confidence_score: number        // 0.0–1.0 aggregate
+  omitted_sections: string[]      // e.g. ["affiliate_links", "review_ranking"]
+  degraded: boolean
+  missing_sources: string[]       // provider keys that had no results
+  web_context_cache_age_s?: number | null
+}
+
 // RFC §2.4 — Typed suggestions with category and click provenance
 export type SuggestionCategory =
   | 'clarify'
@@ -77,6 +95,8 @@ export interface StreamChunk {
   completeness?: string  // done event: "full" | "degraded"
   // RFC §4.1 correlation
   request_id?: string    // done event: backend request_id for trace correlation
+  // RFC §2.5 content trust
+  response_metadata?: ResponseMetadata  // done event: provider coverage and confidence
 }
 
 // RFC §4.1 — Render milestone timestamps for p95 time-to-first-content calculation
@@ -337,6 +357,7 @@ export async function streamChat({
                     next_suggestions: chunk.next_suggestions,
                     completeness: chunk.completeness,
                     request_id: chunk.request_id,
+                    response_metadata: chunk.response_metadata,  // RFC §2.5 content trust
                   })
                 }
                 return

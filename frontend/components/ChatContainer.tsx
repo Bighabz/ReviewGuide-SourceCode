@@ -6,7 +6,7 @@ import ChatInput from './ChatInput'
 import ErrorBanner from './ErrorBanner'
 import BlockSkeleton from './BlockSkeleton'
 import MessageRecoveryUI from './MessageRecoveryUI'
-import { streamChat, fetchConversationHistory, NextSuggestion } from '@/lib/chatApi'
+import { streamChat, fetchConversationHistory, NextSuggestion, ResponseMetadata } from '@/lib/chatApi'
 import { SUGGESTION_CLICK_PREFIX } from '@/lib/utils'
 import { TRENDING_SEARCHES, UI_TEXT, CHAT_CONFIG } from '@/lib/constants'
 import { saveRecentSearch } from '@/lib/recentSearches'
@@ -46,6 +46,8 @@ export interface Message {
   interruptionReason?: 'network' | 'server_error' | 'timeout' | 'provider_failure'
   partialContent?: string
   originalQuery?: string
+  // RFC §2.5 — content trust and explainability
+  response_metadata?: ResponseMetadata
 }
 
 interface ChatContainerProps {
@@ -451,6 +453,7 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
           dispatchStream({ type: 'RECEIVE_DONE', data: data as any })
           // RFC §2.3: stream completed successfully — mark the message as full
           // RFC §2.4: attach next_suggestions to the message for chip rendering
+          // RFC §2.5: attach response_metadata for explainability panel
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === currentMessageIdRef.current
@@ -459,6 +462,9 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
                     completeness: 'full',
                     ...(data.next_suggestions && data.next_suggestions.length > 0
                       ? { next_suggestions: data.next_suggestions }
+                      : {}),
+                    ...(data.response_metadata
+                      ? { response_metadata: data.response_metadata }
                       : {}),
                   }
                 : msg

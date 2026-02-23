@@ -588,6 +588,70 @@ async def generate_chat_stream(
         if next_suggestions:
             logger.info(f"🔍 Found {len(next_suggestions)} next step suggestions to send")
 
+        # RFC §2.5 — Build ResponseMetadata for content trust / explainability UI.
+        # Derive metadata from what is already available in result_state without
+        # requiring new GraphState fields.  A richer implementation can replace
+        # this stub once plan_executor exposes per-provider timing data.
+        _errors: list = result_state.get("errors", []) or []
+        _provider_errors: list = result_state.get("provider_errors", []) or []
+        _tool_durations: dict = result_state.get("tool_durations", {}) or {}
+
+        # Determine which providers ran based on affiliate_products and travel data present
+        _affiliate_products: dict = result_state.get("affiliate_products", {}) or {}
+        _provider_coverage = []
+        for provider_key in ["amazon", "ebay"]:
+            items = _affiliate_products.get(provider_key, [])
+            _provider_coverage.append({
+                "provider": provider_key,
+                "status": "ok" if items else "unavailable",
+                "result_count": len(items) if items else 0,
+            })
+        if result_state.get("hotels"):
+            _provider_coverage.append({"provider": "booking", "status": "ok", "result_count": len(result_state["hotels"])})
+        if result_state.get("flights"):
+            _provider_coverage.append({"provider": "amadeus", "status": "ok", "result_count": len(result_state["flights"])})
+        if result_state.get("search_results"):
+            _provider_coverage.append({"provider": "perplexity", "status": "ok", "result_count": len(result_state["search_results"])})
+
+        # Mark any provider errors as timed_out / unavailable
+        for err in _provider_errors:
+            err_provider = err if isinstance(err, str) else err.get("provider", "")
+            for cov in _provider_coverage:
+                if cov["provider"] == err_provider:
+                    cov["status"] = "timed_out"
+                    break
+            else:
+                if err_provider:
+                    _provider_coverage.append({"provider": err_provider, "status": "timed_out"})
+
+        _missing_sources = [
+            p["provider"] for p in _provider_coverage if p["status"] in ("timed_out", "unavailable")
+            and p.get("result_count", 0) == 0
+        ]
+        _degraded = bool(_provider_errors) or bool(_errors and result_state.get("status") != "completed")
+
+        # confidence_score: 1.0 if all ok, 0.5 if some providers failed, 0.3 if critical (affiliate) failed
+        _affiliate_failed = any(
+            p["status"] in ("timed_out", "unavailable") for p in _provider_coverage
+            if p["provider"] in ("amazon", "ebay")
+        )
+        if _affiliate_failed or (_degraded and _provider_errors):
+            _confidence_score = 0.3
+        elif _missing_sources:
+            _confidence_score = 0.5
+        else:
+            _confidence_score = result_state.get("confidence_score", 1.0) or 1.0
+
+        _response_metadata = {
+            "source_count": len(result_state.get("citations", []) or []),
+            "provider_coverage": _provider_coverage,
+            "confidence_score": float(_confidence_score),
+            "omitted_sections": [],  # Populated by future tool-level tracking
+            "degraded": _degraded,
+            "missing_sources": _missing_sources,
+            "web_context_cache_age_s": None,
+        }
+
         final_done_payload = {
             "session_id": session_id,
             "request_id": request_id,  # RFC §4.1 correlation ID for frontend trace lookup
@@ -599,6 +663,7 @@ async def generate_chat_stream(
             "next_suggestions": next_suggestions,  # Follow-up questions from next_step_suggestion tool
             "user_id": user_id,
             "completeness": "full",  # RFC §1.8: degraded logic deferred to a later phase
+            "response_metadata": _response_metadata,  # RFC §2.5 content trust metadata
         }
 
         logger.info(f"🔍 DEBUG: Final chunk - has_followups: {followups_to_send is not None}")

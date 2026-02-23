@@ -8,6 +8,7 @@ import { NextSuggestion, SuggestionCategory } from '@/lib/chatApi'
 import { normalizeBlocks } from '@/lib/normalizeBlocks'
 import { UIBlocks } from '@/components/blocks/BlockRegistry'
 import MessageRecoveryUI from './MessageRecoveryUI'
+import { ExplainabilityPanel } from './ExplainabilityPanel'
 import { useState, useEffect, useMemo } from 'react'
 import { formatTimestamp, formatFullTimestamp, SUGGESTION_CLICK_PREFIX } from '@/lib/utils'
 import { trackAffiliate } from '@/lib/trackAffiliate'
@@ -286,6 +287,16 @@ export default function Message({ message }: MessageProps) {
                 <MessageRecoveryUI
                   completeness="degraded"
                 />
+              )}
+
+              {/* RFC §2.5: explainability panel — shown only when result quality is degraded
+                   or at least one provider returned no data.  Collapsed by default. */}
+              {message.response_metadata &&
+                (message.response_metadata.degraded ||
+                  message.response_metadata.missing_sources.length > 0) && (
+                  <ExplainabilityPanel
+                    metadata={message.response_metadata}
+                  />
               )}
 
               {/* Timestamp for assistant */}
