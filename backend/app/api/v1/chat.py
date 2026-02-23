@@ -27,7 +27,7 @@ from app.services.halt_state_manager import HaltStateManager
 from app.services.chat_history_manager import chat_history_manager
 
 
-async def _load_session_context(session_id: str):
+async def _load_session_context(session_id: str) -> tuple[dict | None, list]:
     """Load halt state and conversation history concurrently."""
     halt_state_data, conversation_history = await asyncio.gather(
         HaltStateManager.get_halt_state(session_id),

@@ -262,6 +262,14 @@ async def test_startup_io_calls_are_concurrent(monkeypatch):
     halt, history = await _load_session_context("test-session")
     elapsed = time.monotonic() - start
 
+    # Primary concurrency check: in a concurrent execution, history_start must appear
+    # before halt_end (i.e., both coroutines started before either finished)
+    assert "history_start" in call_order, f"history coroutine never started: {call_order}"
+    assert call_order.index("history_start") < call_order.index("halt_end"), (
+        f"Calls appear sequential — history did not start before halt finished. "
+        f"call_order={call_order}"
+    )
+
     # If concurrent: elapsed ≈ 0.05s. If sequential: elapsed ≈ 0.10s
     assert elapsed < 0.09, f"Calls appear sequential (took {elapsed:.3f}s)"
     assert halt == {}
