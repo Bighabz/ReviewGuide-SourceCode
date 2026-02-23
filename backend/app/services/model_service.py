@@ -31,12 +31,21 @@ _DEFAULT_MAX_TOKENS = 128000  # fallback for unknown models
 class ModelService:
     """Service for LLM interactions. All observability handled by Langfuse CallbackHandler."""
 
-    # Separate semaphores for streaming vs non-streaming to prevent head-of-line blocking
-    _streaming_semaphore: asyncio.Semaphore = asyncio.Semaphore(10)   # max 10 concurrent streaming calls
-    _sync_semaphore: asyncio.Semaphore = asyncio.Semaphore(25)        # max 25 concurrent non-streaming calls
+    # Type annotations only — no default assignment at class level.
+    # asyncio.Semaphore must not be instantiated at import time (before an
+    # event loop exists).  Each instance owns its own semaphores; because
+    # the application uses a single global ``model_service`` singleton the
+    # concurrency limits are still effectively process-wide.
+    _streaming_semaphore: asyncio.Semaphore
+    _sync_semaphore: asyncio.Semaphore
 
     def __init__(self):
         self._llm_cache: dict = {}
+        # Separate semaphores for streaming vs non-streaming to prevent
+        # head-of-line blocking.  Created here (not at class level) so that
+        # no Semaphore is instantiated before an event loop is running.
+        self._streaming_semaphore = asyncio.Semaphore(10)   # max 10 concurrent streaming calls
+        self._sync_semaphore = asyncio.Semaphore(25)        # max 25 concurrent non-streaming calls
 
     @property
     def _api_key_fingerprint(self) -> str:
@@ -68,7 +77,7 @@ class ModelService:
         - ``api_key_fingerprint``: invalidates the entry on key rotation.
         """
         model_default = _MODEL_DEFAULTS.get(model, _DEFAULT_MAX_TOKENS)
-        effective_max = max_tokens if (max_tokens and max_tokens < model_default) else None
+        effective_max = max_tokens if (max_tokens is not None and max_tokens > 0 and max_tokens < model_default) else None
         effective_temp = round(temperature, 1)
         return (model, effective_temp, effective_max, json_mode, stream, api_key_fingerprint)
 

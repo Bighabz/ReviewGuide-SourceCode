@@ -120,6 +120,31 @@ class TestCanonicalKeyMaxTokens:
         # key[2] is the effective_max slot
         assert key[2] == 512
 
+    def test_max_tokens_zero_collapses_to_none(self):
+        """max_tokens=0 is not a valid positive limit and must collapse to None (not pass the > 0 guard)."""
+        fp = _fingerprint("key")
+        key_zero = ModelService._canonical_key(
+            model="gpt-4o",
+            temperature=0.7,
+            max_tokens=0,
+            json_mode=False,
+            stream=False,
+            api_key_fingerprint=fp,
+        )
+        key_none = ModelService._canonical_key(
+            model="gpt-4o",
+            temperature=0.7,
+            max_tokens=None,
+            json_mode=False,
+            stream=False,
+            api_key_fingerprint=fp,
+        )
+        # key[2] is the effective_max slot — both must be None
+        assert key_zero[2] is None
+        assert key_zero == key_none, (
+            "max_tokens=0 must produce the same cache key as max_tokens=None"
+        )
+
 
 # ---------------------------------------------------------------------------
 # Test §2: temperature=0.70 and temperature=0.7 resolve to the same key
@@ -313,9 +338,8 @@ class TestSemaphores:
         svc = ModelService()
         assert svc._sync_semaphore._value == 25
 
-    def test_semaphores_are_class_level_shared(self):
-        """Two instances share the same semaphore objects (class-level attrs)."""
-        svc1 = ModelService()
-        svc2 = ModelService()
-        assert svc1._streaming_semaphore is svc2._streaming_semaphore
-        assert svc1._sync_semaphore is svc2._sync_semaphore
+    def test_semaphores_have_correct_limits(self):
+        """Each ModelService instance has semaphores with the correct capacity."""
+        svc = ModelService()
+        assert svc._streaming_semaphore._value == 10
+        assert svc._sync_semaphore._value == 25

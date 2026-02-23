@@ -6,7 +6,7 @@ Provides REST endpoints for admin dashboard:
 - Metrics (request volume, errors, business metrics, top queries)
 """
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from typing import Dict, Any, List, Optional
@@ -20,6 +20,7 @@ from langfuse import Langfuse
 from app.core.database import get_db
 from app.core.centralized_logger import get_logger
 from app.core.config import settings
+from app.core.dependencies import check_rate_limit
 from app.services.config_service import ConfigService
 from app.api.v1.admin_auth import get_current_admin_user
 
@@ -506,8 +507,9 @@ async def get_error_chart_data(
 
 @router.post("/internal/model-cache/invalidate")
 async def invalidate_model_cache(
-    reason: str = "manual",
+    reason: str = Query(default="manual", max_length=120),
     admin: dict = Depends(get_current_admin_user),
+    _rate_limit: None = Depends(check_rate_limit),
 ):
     """
     Invalidate the LLM instance cache on the model service.
