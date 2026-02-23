@@ -3,11 +3,12 @@
 import { User, Copy, Check, ArrowRight } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { motion } from 'framer-motion'
-import { Message as MessageType, NextSuggestion, SuggestionCategory } from './ChatContainer'
+import { Message as MessageType } from './ChatContainer'
+import { NextSuggestion, SuggestionCategory } from '@/lib/chatApi'
 import { normalizeBlocks } from '@/lib/normalizeBlocks'
 import { UIBlocks } from '@/components/blocks/BlockRegistry'
 import MessageRecoveryUI from './MessageRecoveryUI'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { formatTimestamp, formatFullTimestamp, SUGGESTION_CLICK_PREFIX } from '@/lib/utils'
 import { trackAffiliate } from '@/lib/trackAffiliate'
 
@@ -63,6 +64,12 @@ export default function Message({ message }: MessageProps) {
   const isUser = message.role === 'user'
   const [copied, setCopied] = useState(false)
   const [relativeTime, setRelativeTime] = useState(() => formatTimestamp(message.timestamp))
+
+  // RFC §2.4 — Memoize suggestion sort to avoid re-sorting on every render during streaming
+  const sortedSuggestions = useMemo(
+    () => sortSuggestions(message.next_suggestions ?? []),
+    [message.next_suggestions]
+  )
 
   // Update relative timestamp every minute
   useEffect(() => {
@@ -235,7 +242,7 @@ export default function Message({ message }: MessageProps) {
                   className="w-full mt-5 space-y-1.5"
                   data-testid="next-suggestions-container"
                 >
-                  {sortSuggestions(message.next_suggestions).map((suggestion, idx) => (
+                  {sortedSuggestions.map((suggestion, idx) => (
                     <button
                       key={suggestion.id}
                       data-testid={`suggestion-chip-${idx}`}

@@ -6,7 +6,7 @@ import ChatInput from './ChatInput'
 import ErrorBanner from './ErrorBanner'
 import BlockSkeleton from './BlockSkeleton'
 import MessageRecoveryUI from './MessageRecoveryUI'
-import { streamChat, fetchConversationHistory } from '@/lib/chatApi'
+import { streamChat, fetchConversationHistory, NextSuggestion } from '@/lib/chatApi'
 import { SUGGESTION_CLICK_PREFIX } from '@/lib/utils'
 import { TRENDING_SEARCHES, UI_TEXT, CHAT_CONFIG } from '@/lib/constants'
 import { saveRecentSearch } from '@/lib/recentSearches'
@@ -25,25 +25,9 @@ export interface StructuredFollowups {
   closing: string
 }
 
-// RFC §2.4 — Typed suggestions with category and click provenance
-export type SuggestionCategory =
-  | 'clarify'
-  | 'compare'
-  | 'refine_budget'
-  | 'refine_features'
-  | 'alternate_destination'
-  | 'deeper_research'
-
-export interface NextSuggestion {
-  id: string
-  question: string
-  /** RFC §2.4: suggestion category — used for sorting and label rendering */
-  category?: SuggestionCategory
-  /** RFC §2.4: LLM-estimated confidence 0.0–1.0 */
-  confidence?: number
-  /** RFC §2.4: tool gap that prompted this suggestion */
-  tool_gap?: string
-}
+// RFC §2.4 — SuggestionCategory and NextSuggestion are canonical in chatApi.ts
+// Re-export for consumers that import from ChatContainer
+export type { SuggestionCategory, NextSuggestion } from '@/lib/chatApi'
 
 export interface Message {
   id: string

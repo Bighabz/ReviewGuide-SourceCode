@@ -627,7 +627,7 @@ async def generate_chat_stream(
 
         # Fire-and-forget: save turn after stream is already done
         user_message_text = original_user_message
-        is_suggestion_click = original_user_message.startswith("[SUGGESTION_CLICK]")
+        is_suggestion_click = original_user_message.startswith("You chose:")
         user_metadata = {"is_suggestion_click": True} if is_suggestion_click else None
 
         if is_halted and followups_to_send and isinstance(followups_to_send, dict):

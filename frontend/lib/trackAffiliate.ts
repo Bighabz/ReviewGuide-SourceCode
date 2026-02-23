@@ -26,7 +26,7 @@ export function trackAffiliateClick(params: TrackClickParams) {
 }
 
 // RFC §2.4 — General-purpose event tracker for non-affiliate interactions
-type TrackableEvent = 'suggestion_click' | string
+type TrackableEvent = 'suggestion_click' | 'affiliate_click' | 'view'
 
 interface TrackEventPayload {
   [key: string]: unknown
@@ -40,7 +40,7 @@ export function trackAffiliate(event: TrackableEvent, payload: TrackEventPayload
   fetch(`${API_URL}/v1/affiliate/event`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ event, ...payload }),
+    body: JSON.stringify({ event, payload }),
   }).catch(() => {
     // Silently ignore tracking failures — telemetry is best-effort
   })

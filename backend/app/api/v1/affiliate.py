@@ -31,6 +31,22 @@ class ClickResponse(BaseModel):
     tracked: bool
 
 
+class EventRequest(BaseModel):
+    """General UI event tracking request"""
+    event: str = Field(..., max_length=100, description="Event name")
+    payload: dict = Field(default_factory=dict, description="Event payload")
+
+
+@router.post("/event")
+async def track_event(
+    request: EventRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Track a named UI event (e.g., suggestion_click). Logs for now; no DB write required."""
+    logger.info(f"[affiliate] event={request.event} payload={request.payload}")
+    return {"status": "ok"}
+
+
 @router.post("/click", response_model=ClickResponse, dependencies=[Depends(check_rate_limit)])
 async def track_click(request: ClickRequest, db: AsyncSession = Depends(get_db)):
     """Track an affiliate link click"""
