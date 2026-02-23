@@ -276,6 +276,7 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
         affiliate_products = _filter_relevant_products(affiliate_products_raw, user_message, category)
         comparison_table = state.get("comparison_table")
         review_data = state.get("review_data", {})  # product_name -> ReviewBundle dict from review_search
+        general_product_info = state.get("general_product_info", "")
 
         # Log provider info
         providers_with_data = list(affiliate_products.keys())
@@ -287,8 +288,20 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
 
         # Check if we have any data to display
         if not normalized_products and not affiliate_products and not review_data:
+            if general_product_info:
+                return {
+                    "assistant_text": general_product_info,
+                    "ui_blocks": [],
+                    "citations": [],
+                    "success": True
+                }
+            assistant_text = (
+                "I wasn't able to find current listings for that product. "
+                "Try searching with a broader term — for example, the product category "
+                "or brand name — and I'll pull up the best options available."
+            )
             return {
-                "assistant_text": "I couldn't find any products matching your criteria.",
+                "assistant_text": assistant_text,
                 "ui_blocks": [],
                 "citations": [],
                 "success": True
