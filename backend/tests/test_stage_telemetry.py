@@ -153,7 +153,7 @@ async def test_exception_in_coro_returns_fallback_and_fatal_error():
     assert result is fallback
     assert telemetry.error_class == "fatal"
     assert telemetry.timeout_hit is False
-    # degraded_mode may or may not be set by the exception path; error_class is the key signal
+    assert telemetry.degraded_mode is False  # fatal exceptions do not set degraded_mode; use error_class
 
 
 # ---------------------------------------------------------------------------

@@ -100,7 +100,7 @@ class GraphState(TypedDict):
     errors: Annotated[List[str], operator.add]
 
     # RFC §1.1 — Stage Telemetry (list of StageTelemetry.to_dict() records)
-    stage_telemetry: Optional[List[Dict[str, Any]]]
+    stage_telemetry: Annotated[List[Dict[str, Any]], operator.add]
 
     # Metadata
     metadata: Dict[str, Any]

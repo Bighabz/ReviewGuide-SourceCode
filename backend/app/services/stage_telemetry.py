@@ -116,6 +116,9 @@ async def run_stage_with_budget(
             " — using fallback result"
         )
 
+    except asyncio.CancelledError:
+        raise  # propagate cooperative cancellation; do not treat as "fatal"
+
     except Exception as exc:
         error_class = "fatal"
         logger.error(

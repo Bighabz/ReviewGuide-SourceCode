@@ -498,8 +498,10 @@ async def generate_chat_stream(
         # CancelledError is expected and swallowed here.
         try:
             await event_task
-        except (asyncio.CancelledError, Exception):
-            pass
+        except asyncio.CancelledError:
+            pass  # expected when hard cap cancels event_task inside _drain_event_loop
+        except Exception as exc:
+            logger.warning(f"[stage_telemetry] Background event consumer raised an unexpected error: {exc}")
 
         # RFC §1.1 — if the 60-second hard cap fired, terminate the stream immediately
         if sse_total_timeout_hit:

@@ -158,9 +158,7 @@ async def safety_node(state: GraphState) -> Dict[str, Any]:
         error_class_on_timeout="transient",
     )
 
-    # Append telemetry to state list
-    existing = state.get("stage_telemetry") or []
-    update["stage_telemetry"] = existing + [telemetry.to_dict()]
+    update["stage_telemetry"] = [telemetry.to_dict()]
 
     colored_logger.agent_title("SAFETY AGENT - OUTPUT", agent_name="SafetyAgent")
     colored_logger.agent_data({
@@ -237,9 +235,7 @@ async def intent_node(state: GraphState) -> Dict[str, Any]:
     followups = update.pop("_followups_for_log", [])
     missing_slots = [f["slot"] for f in followups if isinstance(f, dict) and "slot" in f]
 
-    # Append telemetry
-    existing = state.get("stage_telemetry") or []
-    update["stage_telemetry"] = existing + [telemetry.to_dict()]
+    update["stage_telemetry"] = [telemetry.to_dict()]
 
     colored_logger.agent_title("INTENT AGENT - OUTPUT", agent_name="IntentAgent")
     colored_logger.agent_data({
@@ -302,9 +298,7 @@ async def planner_node(state: GraphState) -> Dict[str, Any]:
         error_class_on_timeout="transient",
     )
 
-    # Append telemetry
-    existing = state.get("stage_telemetry") or []
-    update["stage_telemetry"] = existing + [telemetry.to_dict()]
+    update["stage_telemetry"] = [telemetry.to_dict()]
 
     plan = update.get("plan") or {}
     colored_logger.agent_title("PLANNER AGENT - OUTPUT", agent_name="PlannerAgent")
@@ -381,9 +375,7 @@ async def clarifier_node(state: GraphState) -> Dict[str, Any]:
     proceed = update.pop("_proceed", False)
     next_question = update.pop("_next_question", None)
 
-    # Append telemetry
-    existing = state.get("stage_telemetry") or []
-    update["stage_telemetry"] = existing + [telemetry.to_dict()]
+    update["stage_telemetry"] = [telemetry.to_dict()]
 
     colored_logger.agent_title("CLARIFIER AGENT - OUTPUT", agent_name="ClarifierAgent")
     colored_logger.agent_data({
@@ -464,9 +456,7 @@ async def plan_executor_node(state: GraphState) -> Dict[str, Any]:
         update["followups"] = followups
         update["followup_questions"] = questions
 
-    # Append telemetry
-    existing = state.get("stage_telemetry") or []
-    update["stage_telemetry"] = existing + [telemetry.to_dict()]
+    update["stage_telemetry"] = [telemetry.to_dict()]
 
     colored_logger.agent_title("PLAN EXECUTOR - OUTPUT", agent_name="PlanExecutor")
     colored_logger.agent_data({
