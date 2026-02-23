@@ -14,7 +14,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 import { ExplainabilityPanel } from '@/components/ExplainabilityPanel'
 import type { ResponseMetadata } from '@/lib/chatApi'
 
@@ -49,10 +49,21 @@ describe('RFC §2.5 — ExplainabilityPanel', () => {
   // component's internal rendering given metadata it receives.
 
   it('does NOT show the trigger when degraded is false and missing_sources is empty', () => {
+    // NOTE: The rendering guard lives in Message.tsx, not in ExplainabilityPanel itself.
+    // ExplainabilityPanel always renders its root when mounted; Message.tsx gates whether
+    // to mount it at all.  This test verifies the guard condition logic without touching
+    // the DOM — it is intentionally a pure-logic assertion.
     const meta = makeMetadata({ degraded: false, missing_sources: [] })
     // Simulate the Message.tsx guard: we check the condition ourselves
     const shouldRender = meta.degraded || meta.missing_sources.length > 0
     expect(shouldRender).toBe(false)
+  })
+
+  // Companion: when the panel IS mounted it always renders the trigger
+  it('renders the trigger button when mounted', () => {
+    const meta = makeMetadata({ degraded: true })
+    renderPanel(meta)
+    expect(screen.getByTestId('explainability-trigger')).toBeTruthy()
   })
 
   // ── Acceptance criteria 2: trigger shows when degraded: true ────────────────
@@ -110,8 +121,10 @@ describe('RFC §2.5 — ExplainabilityPanel', () => {
     })
     renderPanel(meta)
     fireEvent.click(screen.getByTestId('explainability-trigger'))
-    expect(screen.getByTestId('timed-out-providers')).toBeTruthy()
-    expect(screen.getByText(/eBay/)).toBeTruthy()
+    const container = screen.getByTestId('timed-out-providers')
+    expect(container).toBeTruthy()
+    // Scoped to the timed-out-providers container to avoid false positives from incidental text
+    expect(within(container).getByText(/eBay/)).toBeTruthy()
   })
 
   it('shows human-readable name "Amazon" for provider key "amazon" when timed_out', () => {
@@ -123,7 +136,9 @@ describe('RFC §2.5 — ExplainabilityPanel', () => {
     })
     renderPanel(meta)
     fireEvent.click(screen.getByTestId('explainability-trigger'))
-    expect(screen.getByText(/Amazon/)).toBeTruthy()
+    // Scoped to the timed-out-providers container to avoid false positives from incidental text
+    const container = screen.getByTestId('timed-out-providers')
+    expect(within(container).getByText(/Amazon/)).toBeTruthy()
   })
 
   it('shows human-readable name "Booking.com" for provider "booking"', () => {
@@ -135,7 +150,9 @@ describe('RFC §2.5 — ExplainabilityPanel', () => {
     })
     renderPanel(meta)
     fireEvent.click(screen.getByTestId('explainability-trigger'))
-    expect(screen.getByText(/Booking\.com/)).toBeTruthy()
+    // Scoped to the timed-out-providers container to avoid false positives from incidental text
+    const container = screen.getByTestId('timed-out-providers')
+    expect(within(container).getByText(/Booking\.com/)).toBeTruthy()
   })
 
   it('shows human-readable name "Flight Search" for provider "amadeus"', () => {
@@ -147,7 +164,9 @@ describe('RFC §2.5 — ExplainabilityPanel', () => {
     })
     renderPanel(meta)
     fireEvent.click(screen.getByTestId('explainability-trigger'))
-    expect(screen.getByText(/Flight Search/)).toBeTruthy()
+    // Scoped to the timed-out-providers container to avoid false positives from incidental text
+    const container = screen.getByTestId('timed-out-providers')
+    expect(within(container).getByText(/Flight Search/)).toBeTruthy()
   })
 
   it('falls back to the raw provider key when no display name is registered', () => {
@@ -159,7 +178,9 @@ describe('RFC §2.5 — ExplainabilityPanel', () => {
     })
     renderPanel(meta)
     fireEvent.click(screen.getByTestId('explainability-trigger'))
-    expect(screen.getByText(/unknown_provider_xyz/)).toBeTruthy()
+    // Scoped to the timed-out-providers container to avoid false positives from incidental text
+    const container = screen.getByTestId('timed-out-providers')
+    expect(within(container).getByText(/unknown_provider_xyz/)).toBeTruthy()
   })
 
   it('lists multiple timed-out providers separated by comma', () => {

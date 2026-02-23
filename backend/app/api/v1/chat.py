@@ -599,13 +599,18 @@ async def generate_chat_stream(
         # Determine which providers ran based on affiliate_products and travel data present
         _affiliate_products: dict = result_state.get("affiliate_products", {}) or {}
         _provider_coverage = []
-        for provider_key in ["amazon", "ebay"]:
-            items = _affiliate_products.get(provider_key, [])
-            _provider_coverage.append({
-                "provider": provider_key,
-                "status": "ok" if items else "unavailable",
-                "result_count": len(items) if items else 0,
-            })
+        # Only include amazon/ebay coverage when the intent was product — these providers
+        # are never queried for travel or general intents, so including them unconditionally
+        # would always report them as "unavailable" and wrongly degrade the confidence score.
+        _intent = result_state.get("intent", "")
+        if _intent == "product":
+            for provider_key in ["amazon", "ebay"]:
+                items = _affiliate_products.get(provider_key, [])
+                _provider_coverage.append({
+                    "provider": provider_key,
+                    "status": "ok" if items else "unavailable",
+                    "result_count": len(items) if items else 0,
+                })
         if result_state.get("hotels"):
             _provider_coverage.append({"provider": "booking", "status": "ok", "result_count": len(result_state["hotels"])})
         if result_state.get("flights"):
@@ -613,7 +618,10 @@ async def generate_chat_stream(
         if result_state.get("search_results"):
             _provider_coverage.append({"provider": "perplexity", "status": "ok", "result_count": len(result_state["search_results"])})
 
-        # Mark any provider errors as timed_out / unavailable
+        # Mark any provider errors as timed_out / unavailable.
+        # The inner for/else is intentional: the `else` branch runs only when the inner
+        # loop exhausted all items without hitting `break`, meaning no existing coverage
+        # entry matched this error provider — so we append a new timed_out entry.
         for err in _provider_errors:
             err_provider = err if isinstance(err, str) else err.get("provider", "")
             for cov in _provider_coverage:
@@ -621,6 +629,7 @@ async def generate_chat_stream(
                     cov["status"] = "timed_out"
                     break
             else:
+                # No existing coverage entry matched — add a new timed_out entry.
                 if err_provider:
                     _provider_coverage.append({"provider": err_provider, "status": "timed_out"})
 

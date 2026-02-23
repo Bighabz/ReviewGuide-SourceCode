@@ -293,7 +293,7 @@ export default function Message({ message }: MessageProps) {
                    or at least one provider returned no data.  Collapsed by default. */}
               {message.response_metadata &&
                 (message.response_metadata.degraded ||
-                  message.response_metadata.missing_sources.length > 0) && (
+                  (message.response_metadata.missing_sources ?? []).length > 0) && (
                   <ExplainabilityPanel
                     metadata={message.response_metadata}
                   />

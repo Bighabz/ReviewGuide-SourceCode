@@ -57,6 +57,7 @@ export function ExplainabilityPanel({ metadata }: ExplainabilityPanelProps) {
           className="flex items-center gap-1 text-[11px] transition-colors"
           style={{ color: 'var(--text-muted)' }}
           aria-expanded={isOpen}
+          aria-controls="explainability-detail-panel"
           data-testid="explainability-trigger"
         >
           <span style={{ color: 'var(--accent)' }}>ⓘ</span>
@@ -91,6 +92,7 @@ export function ExplainabilityPanel({ metadata }: ExplainabilityPanelProps) {
       {/* Collapsible detail panel */}
       {isOpen && (
         <div
+          id="explainability-detail-panel"
           className="mt-2 rounded-lg border p-3 text-[12px] space-y-1.5"
           style={{
             background: 'var(--surface)',
@@ -114,6 +116,7 @@ export function ExplainabilityPanel({ metadata }: ExplainabilityPanelProps) {
           )}
 
           {/* Missing source keys (providers with no results) */}
+          {/* When timed-out providers are shown, suppress the redundant missing-sources block */}
           {metadata.missing_sources.length > 0 && timedOutProviders.length === 0 && (
             <div data-testid="missing-sources">
               <span className="font-semibold" style={{ color: 'var(--text)' }}>
