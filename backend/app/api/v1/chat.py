@@ -401,15 +401,30 @@ async def generate_chat_stream(
         data_already_streamed = False  # Track if we already streamed any data (from stream_chunk_data)
 
         # RFC §1.1 — enforce 60-second hard limit on the entire SSE connection.
-        # We wrap the main drain loop in asyncio.wait_for so that no single
-        # request can hold the connection open beyond MAX_TOTAL_REQUEST_S.
+        # asyncio.wait_for cannot wrap an async generator, so the deadline is
+        # enforced inline inside _drain_event_loop on every iteration.
         from app.services.stage_telemetry import MAX_TOTAL_REQUEST_S
 
         async def _drain_event_loop():
-            """Drain the event queue until the workflow sentinel arrives."""
-            nonlocal result_state, last_node_name, data_already_streamed
+            """Drain the event queue until the workflow sentinel arrives or the 60-second hard cap fires."""
+            nonlocal result_state, last_node_name, data_already_streamed, sse_total_timeout_hit
+            # RFC §1.1 — enforce hard cap by checking elapsed time on every iteration.
+            # asyncio.wait_for cannot wrap an async generator directly, so the deadline
+            # is enforced inline: the check fires within one CHAT_EVENT_QUEUE_TIMEOUT
+            # tick of MAX_TOTAL_REQUEST_S.
+            deadline = stream_start_time + MAX_TOTAL_REQUEST_S
             # Main loop: check both citation buffer and event queue
             while True:
+                # RFC §1.1 — abort if the wall-clock deadline has passed
+                if time.time() >= deadline:
+                    sse_total_timeout_hit = True
+                    logger.error(
+                        f"[stage_telemetry] SSE total 60s hard limit exceeded for session {session_id}"
+                        " — cancelling background event consumer"
+                    )
+                    event_task.cancel()
+                    break
+
                 # Drain citation buffer (log only, don't stream to frontend)
                 while citation_buffer:
                     citation = citation_buffer.pop(0)
@@ -470,47 +485,21 @@ async def generate_chat_stream(
                             last_node_name = "planner"
 
         try:
-            # RFC §1.1 — hard 60-second cap on the entire stream
+            # RFC §1.1 — drain; the 60-second hard cap fires inside _drain_event_loop
+            # on every iteration, so this loop is always bounded by MAX_TOTAL_REQUEST_S
+            # plus at most one CHAT_EVENT_QUEUE_TIMEOUT tick.
             async for sse_chunk in _drain_event_loop():
                 yield sse_chunk
-            # asyncio.wait_for cannot wrap an async generator directly; instead
-            # we cancel the background event_task if the wall-clock overflows.
-            # The _drain_event_loop already yields chunks inline, so we apply
-            # the timeout around the background consumer task itself.
         except Exception:
             pass  # handled below
 
-        # RFC §1.1 — apply wall-clock cap: cancel the background task if still running
-        remaining = MAX_TOTAL_REQUEST_S - (time.time() - stream_start_time)
-        if remaining > 0 and not event_task.done():
-            try:
-                await asyncio.wait_for(asyncio.shield(event_task), timeout=remaining)
-            except asyncio.TimeoutError:
-                sse_total_timeout_hit = True
-                logger.error(
-                    f"[stage_telemetry] SSE total 60s hard limit exceeded for session {session_id}"
-                    " — cancelling background event consumer"
-                )
-                event_task.cancel()
-                try:
-                    await event_task
-                except (asyncio.CancelledError, Exception):
-                    pass
-        elif not event_task.done():
-            # Already over budget before we even checked
-            sse_total_timeout_hit = True
-            logger.error(
-                f"[stage_telemetry] SSE total 60s hard limit exceeded for session {session_id}"
-                " — cancelling background event consumer"
-            )
-            event_task.cancel()
-            try:
-                await event_task
-            except (asyncio.CancelledError, Exception):
-                pass
-        else:
-            # Task already finished — await cleanly to surface any exception
+        # RFC §1.1 — await background task to surface any exception.
+        # If the hard cap fired, event_task was already cancelled inside _drain_event_loop;
+        # CancelledError is expected and swallowed here.
+        try:
             await event_task
+        except (asyncio.CancelledError, Exception):
+            pass
 
         # RFC §1.1 — if the 60-second hard cap fired, terminate the stream immediately
         if sse_total_timeout_hit:
