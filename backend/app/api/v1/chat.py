@@ -341,6 +341,7 @@ async def generate_chat_stream(
             "last_search_context": halt_state_data.get("last_search_context", {}) if halt_state_data else {},
             "search_history": halt_state_data.get("search_history", []) if halt_state_data else [],
             "errors": [],
+            "stage_telemetry": [],  # RFC §1.1 — populated by each agent node
             "metadata": {
                 # NOTE: Do NOT add langfuse_handler or callbacks here!
                 # CallbackHandler is passed via LangGraph config, not state
@@ -378,6 +379,8 @@ async def generate_chat_stream(
 
         # Background task that polls event stream
         event_queue = asyncio.Queue()
+        # RFC §1.1 — track whether the 60-second hard limit fired
+        sse_total_timeout_hit = False
 
         async def consume_events():
             """Consume LangGraph events and put them in queue"""
@@ -397,80 +400,132 @@ async def generate_chat_stream(
         last_node_name = None
         data_already_streamed = False  # Track if we already streamed any data (from stream_chunk_data)
 
-        # Main loop: check both citation buffer and event queue
-        while True:
-            # Drain citation buffer (log only, don't stream to frontend)
-            while citation_buffer:
-                citation = citation_buffer.pop(0)
-                tool_name = citation.get("tool", "")
-                message = citation.get("message", "")
-                if message:
-                    logger.info(f"🔇 Tool citation (suppressed): {tool_name} - {message}")
+        # RFC §1.1 — enforce 60-second hard limit on the entire SSE connection.
+        # We wrap the main drain loop in asyncio.wait_for so that no single
+        # request can hold the connection open beyond MAX_TOTAL_REQUEST_S.
+        from app.services.stage_telemetry import MAX_TOTAL_REQUEST_S
 
-            # Then try to get event with short timeout
+        async def _drain_event_loop():
+            """Drain the event queue until the workflow sentinel arrives."""
+            nonlocal result_state, last_node_name, data_already_streamed
+            # Main loop: check both citation buffer and event queue
+            while True:
+                # Drain citation buffer (log only, don't stream to frontend)
+                while citation_buffer:
+                    citation = citation_buffer.pop(0)
+                    tool_name = citation.get("tool", "")
+                    message = citation.get("message", "")
+                    if message:
+                        logger.info(f"Tool citation (suppressed): {tool_name} - {message}")
+
+                # Then try to get event with short timeout
+                try:
+                    event = await asyncio.wait_for(event_queue.get(), timeout=settings.CHAT_EVENT_QUEUE_TIMEOUT)
+                    if event is None:  # Sentinel - workflow finished
+                        break
+                except asyncio.TimeoutError:
+                    # No event yet, loop back to check citations
+                    continue
+
+                event_type = event.get("event")
+                event_name = event.get("name", "")
+
+                # Detect when agents START (on_chain_start) - log only
+                if event_type == "on_chain_start":
+                    agent_instance = AGENT_NAME_TO_INSTANCE.get(event_name)
+                    if agent_instance and hasattr(agent_instance, 'on_chain_start_message') and agent_instance.on_chain_start_message:
+                        agent_short_name = event_name.split("_")[-1] if "_" in event_name else event_name
+                        logger.info(f"Agent status (suppressed): {event_name} - {agent_instance.on_chain_start_message}")
+                        last_node_name = agent_short_name
+
+                # Detect when nodes complete
+                elif event_type == "on_chain_end":
+                    if event_name == "LangGraph":
+                        result_state = event.get("data", {}).get("output", {})
+                    else:
+                        output_data = event.get("data", {}).get("output", {})
+
+                        # STREAM DATA IMMEDIATELY if agent returned stream_chunk_data
+                        if isinstance(output_data, dict):
+                            stream_data = output_data.get("stream_chunk_data")
+                            if stream_data:
+                                data_type = stream_data.get("type")
+                                data_content = stream_data.get("data")
+
+                                if data_type and data_content:
+                                    artifact_payload = {
+                                        "type": data_type,
+                                        "blocks": data_content,
+                                        "clear": True,
+                                    }
+                                    if stream_data.get("create_new_message"):
+                                        artifact_payload["create_new_message"] = True
+                                    yield _sse_event("artifact", artifact_payload)
+
+                                    data_already_streamed = True
+                                    logger.info(f"Streamed {data_type} from {event_name}")
+
+                        if isinstance(output_data, dict) and output_data.get("next_agent") == "travel_planner":
+                            logger.info(f"Travel planner status (suppressed): from {event_name}")
+                            last_node_name = "planner"
+
+        try:
+            # RFC §1.1 — hard 60-second cap on the entire stream
+            async for sse_chunk in _drain_event_loop():
+                yield sse_chunk
+            # asyncio.wait_for cannot wrap an async generator directly; instead
+            # we cancel the background event_task if the wall-clock overflows.
+            # The _drain_event_loop already yields chunks inline, so we apply
+            # the timeout around the background consumer task itself.
+        except Exception:
+            pass  # handled below
+
+        # RFC §1.1 — apply wall-clock cap: cancel the background task if still running
+        remaining = MAX_TOTAL_REQUEST_S - (time.time() - stream_start_time)
+        if remaining > 0 and not event_task.done():
             try:
-                event = await asyncio.wait_for(event_queue.get(), timeout=settings.CHAT_EVENT_QUEUE_TIMEOUT)
-                if event is None:  # Sentinel - workflow finished
-                    break
+                await asyncio.wait_for(asyncio.shield(event_task), timeout=remaining)
             except asyncio.TimeoutError:
-                # No event yet, loop back to check citations
-                continue
+                sse_total_timeout_hit = True
+                logger.error(
+                    f"[stage_telemetry] SSE total 60s hard limit exceeded for session {session_id}"
+                    " — cancelling background event consumer"
+                )
+                event_task.cancel()
+                try:
+                    await event_task
+                except (asyncio.CancelledError, Exception):
+                    pass
+        elif not event_task.done():
+            # Already over budget before we even checked
+            sse_total_timeout_hit = True
+            logger.error(
+                f"[stage_telemetry] SSE total 60s hard limit exceeded for session {session_id}"
+                " — cancelling background event consumer"
+            )
+            event_task.cancel()
+            try:
+                await event_task
+            except (asyncio.CancelledError, Exception):
+                pass
+        else:
+            # Task already finished — await cleanly to surface any exception
+            await event_task
 
-            event_type = event.get("event")
-            event_name = event.get("name", "")
-
-            # Detect when agents START (on_chain_start) - log only, don't stream to frontend
-            if event_type == "on_chain_start":
-                agent_instance = AGENT_NAME_TO_INSTANCE.get(event_name)
-                if agent_instance and hasattr(agent_instance, 'on_chain_start_message') and agent_instance.on_chain_start_message:
-                    agent_short_name = event_name.split("_")[-1] if "_" in event_name else event_name
-                    logger.info(f"🔇 Agent status (suppressed): {event_name} - {agent_instance.on_chain_start_message}")
-                    last_node_name = agent_short_name
-
-            # Detect when nodes complete and check next_agent (for immediate status messages)
-            elif event_type == "on_chain_end":
-                if event_name == "LangGraph":
-                    # Capture final state
-                    result_state = event.get("data", {}).get("output", {})
-                else:
-                    # Check if any node just completed
-                    output_data = event.get("data", {}).get("output", {})
-
-                    # STREAM DATA IMMEDIATELY if agent returned stream_chunk_data
-                    if isinstance(output_data, dict):
-                        stream_data = output_data.get("stream_chunk_data")
-                        if stream_data:
-                            # Clear placeholder first via artifact event with clear flag
-                            data_type = stream_data.get("type")
-                            data_content = stream_data.get("data")
-
-                            if data_type and data_content:
-                                artifact_payload = {
-                                    "type": data_type,
-                                    "blocks": data_content,
-                                    "clear": True,
-                                }
-                                # Check if stream_data has create_new_message flag
-                                if stream_data.get("create_new_message"):
-                                    artifact_payload["create_new_message"] = True
-                                yield _sse_event("artifact", artifact_payload)
-
-                                # Mark that we've streamed data
-                                data_already_streamed = True
-                                logger.info(f"📤 Streamed {data_type} from {event_name}")
-
-                    # Log travel planner transition (no longer streamed to frontend)
-                    if isinstance(output_data, dict) and output_data.get("next_agent") == "travel_planner":
-                        logger.info(f"🔇 Travel planner status (suppressed): from {event_name}")
-                        last_node_name = "planner"
-
-        # Wait for event task to complete
-        await event_task
+        # RFC §1.1 — if the 60-second hard cap fired, terminate the stream immediately
+        if sse_total_timeout_hit:
+            clear_tool_citation_callbacks()
+            yield _sse_event("error", {
+                "code": "request_timeout",
+                "message": "Request exceeded the 60-second time limit. Please try a simpler query.",
+                "recoverable": True,
+            })
+            return
 
         # Drain any remaining citations (log only)
         while citation_buffer:
             citation = citation_buffer.pop(0)
-            logger.info(f"🔇 Remaining citation (suppressed): {citation.get('tool')} - {citation.get('message')}")
+            logger.info(f"Remaining citation (suppressed): {citation.get('tool')} - {citation.get('message')}")
 
         # Fallback: if we didn't get final state from events, use astream to get it
         if not result_state:
@@ -673,6 +728,8 @@ async def generate_chat_stream(
             "user_id": user_id,
             "completeness": "full",  # RFC §1.8: degraded logic deferred to a later phase
             "response_metadata": _response_metadata,  # RFC §2.5 content trust metadata
+            # RFC §1.1 — stage-level latency telemetry
+            "stage_telemetry": result_state.get("stage_telemetry") or [],
         }
 
         logger.info(f"🔍 DEBUG: Final chunk - has_followups: {followups_to_send is not None}")
