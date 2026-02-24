@@ -40,10 +40,32 @@ def mock_db():
     """Mock database session"""
     with patch('app.core.database.get_db') as mock:
         session = MagicMock()
-        session.execute = AsyncMock()
+        # execute must be AsyncMock but its return_value must be a plain MagicMock
+        # so that result.scalars() / result.scalar_one_or_none() are synchronous
+        # calls — not AsyncMock calls that create unawaited coroutines.
+        session.execute = AsyncMock(
+            return_value=MagicMock(
+                scalars=MagicMock(
+                    return_value=MagicMock(all=MagicMock(return_value=[]))
+                ),
+                scalar_one_or_none=MagicMock(return_value=None),
+            )
+        )
         session.commit = AsyncMock()
         session.rollback = AsyncMock()
-        mock.return_value = session
+        session.flush = AsyncMock()
+        session.refresh = AsyncMock()
+        session.close = AsyncMock()
+        session.add = MagicMock()
+        session.__aenter__ = AsyncMock(return_value=session)
+        session.__aexit__ = AsyncMock(return_value=False)
+
+        # get_db is an async generator; make the mock yield session properly
+        # so that `await anext(get_db())` returns session (not an AsyncMock).
+        async def _async_gen():
+            yield session
+
+        mock.side_effect = _async_gen
         yield session
 
 
