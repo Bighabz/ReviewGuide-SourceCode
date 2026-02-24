@@ -59,9 +59,10 @@ function trackSuggestionClick(suggestion: NextSuggestion, messageId: string, ind
 
 interface MessageProps {
   message: MessageType
+  isLast?: boolean
 }
 
-export default function Message({ message }: MessageProps) {
+export default function Message({ message, isLast = false }: MessageProps) {
   const isUser = message.role === 'user'
   const [copied, setCopied] = useState(false)
   const [relativeTime, setRelativeTime] = useState(() => formatTimestamp(message.timestamp))
@@ -277,6 +278,13 @@ export default function Message({ message }: MessageProps) {
                     </button>
                   ))}
                 </div>
+              )}
+
+              {/* "or ask me anything" — only on the last completed assistant message with no chips */}
+              {isLast && message.content && !message.isThinking && !(message.next_suggestions?.length) && (
+                <p className="text-[13px] text-[var(--text-muted)] mt-3 leading-relaxed">
+                  or ask me anything
+                </p>
               )}
 
               {/* RFC §2.3: degraded completeness indicator — shown when partial content was preserved

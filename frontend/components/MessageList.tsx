@@ -103,8 +103,12 @@ export default function MessageList({ messages, isStreaming }: MessageListProps)
   return (
     <div ref={containerRef} className="flex-1 overflow-y-auto p-3 sm:p-6 relative">
       <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
-        {messages.map((message) => (
-          <Message key={message.id} message={message} />
+        {messages.map((message, idx) => (
+          <Message
+            key={message.id}
+            message={message}
+            isLast={idx === messages.length - 1}
+          />
         ))}
       </div>
 
