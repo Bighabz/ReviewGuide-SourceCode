@@ -53,6 +53,7 @@ async def product_comparison(state: Dict[str, Any]) -> Dict[str, Any]:
     from app.core.centralized_logger import get_logger
     from app.services.model_service import model_service
     from app.core.config import settings
+    from app.utils.date_utils import get_current_date_str
 
     logger = get_logger(__name__)
 
@@ -122,9 +123,14 @@ Use this exact structure:
 
 Return ONLY the HTML, nothing else."""
 
+        comparison_system_prefix = (
+            f"Today's date is {get_current_date_str()}.\n"
+            "If discussing specific products or models that may have been released after your training "
+            "cutoff, briefly acknowledge that you may not have the most current specifications or pricing.\n\n"
+        )
         html_response = await model_service.generate(
             messages=[
-                {"role": "system", "content": "You are a tech product expert. Generate accurate, well-formatted HTML comparison tables. Return only valid HTML with inline CSS."},
+                {"role": "system", "content": comparison_system_prefix + "You are a tech product expert. Generate accurate, well-formatted HTML comparison tables. Return only valid HTML with inline CSS."},
                 {"role": "user", "content": comparison_prompt}
             ],
             model=settings.COMPOSER_MODEL,
