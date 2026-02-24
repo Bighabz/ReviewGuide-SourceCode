@@ -96,14 +96,18 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
 
   // Cycling verb animation for welcome screen headline
   useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>
     const interval = setInterval(() => {
       setVerbVisible(false)
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         setVerbIndex(prev => (prev + 1) % CYCLING_VERBS.length)
         setVerbVisible(true)
       }, 300) // fade out then swap word then fade in
     }, 2500) // show each word for 2.5 seconds
-    return () => clearInterval(interval)
+    return () => {
+      clearInterval(interval)
+      clearTimeout(timeoutId)
+    }
   }, [])
 
   // Load from localStorage on mount and fetch from database if needed
