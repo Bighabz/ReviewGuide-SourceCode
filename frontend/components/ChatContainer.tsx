@@ -359,6 +359,7 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
     currentMessageIdRef.current = assistantMessageId
 
     // Stream response from API
+    try {
     await streamChat({
       message: messageToSend,
       sessionId: currentSessionId,
@@ -544,6 +545,11 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
         setReconnectAttempt(0)
       },
     })
+    } finally {
+      // If stream closed without a terminal event (no done, no error), interrupt immediately.
+      // With the STREAM_INTERRUPTED guard in place, this is a no-op when the stream completed normally.
+      dispatchStream({ type: 'STREAM_INTERRUPTED' })
+    }
   }
 
   // Handle retry button click

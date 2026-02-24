@@ -91,7 +91,16 @@ export function streamReducer(state: StreamState, action: StreamAction): StreamS
       return 'errored'
 
     case 'STREAM_INTERRUPTED':
-      return 'interrupted'
+      // Only interrupt from active states — don't overwrite terminal states
+      // (handles the watchdog firing late after a normally-completed stream)
+      if (
+        state === 'placeholder' ||
+        state === 'receiving_status' ||
+        state === 'receiving_content'
+      ) {
+        return 'interrupted'
+      }
+      return state
 
     case 'RESET':
       return 'idle'

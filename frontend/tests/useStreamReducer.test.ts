@@ -109,6 +109,22 @@ describe('streamReducer — state transitions', () => {
     expect(state).toBe('receiving_status')
   })
 
+  // STREAM_INTERRUPTED guard — only transitions from active states
+  describe('STREAM_INTERRUPTED guard', () => {
+    it('transitions to interrupted from active states', () => {
+      expect(streamReducer('placeholder', { type: 'STREAM_INTERRUPTED' })).toBe('interrupted')
+      expect(streamReducer('receiving_status', { type: 'STREAM_INTERRUPTED' })).toBe('interrupted')
+      expect(streamReducer('receiving_content', { type: 'STREAM_INTERRUPTED' })).toBe('interrupted')
+    })
+
+    it('is a no-op from terminal states (watchdog firing late must not overwrite)', () => {
+      expect(streamReducer('finalized', { type: 'STREAM_INTERRUPTED' })).toBe('finalized')
+      expect(streamReducer('errored', { type: 'STREAM_INTERRUPTED' })).toBe('errored')
+      expect(streamReducer('interrupted', { type: 'STREAM_INTERRUPTED' })).toBe('interrupted')
+      expect(streamReducer('idle', { type: 'STREAM_INTERRUPTED' })).toBe('idle')
+    })
+  })
+
   // RECEIVE_ARTIFACT is always a no-op
   it('keeps current state on RECEIVE_ARTIFACT', () => {
     const states: StreamState[] = [
