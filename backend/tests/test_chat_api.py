@@ -86,16 +86,17 @@ class TestChatStreamEndpoint:
         """Test that chat stream endpoint accepts valid message"""
         from app.main import app
 
-        # Mock the entire workflow to avoid LLM calls
-        with patch('app.api.v1.chat.run_workflow') as mock_workflow:
-            # Mock workflow to yield a simple response
-            async def mock_stream(*args, **kwargs):
-                yield {"token": "Hello", "done": False}
-                yield {"token": " world", "done": False}
-                yield {"done": True, "status": "completed"}
+        # Mock the LangGraph graph to avoid real LLM calls
+        mock_graph = MagicMock()
 
-            mock_workflow.return_value = mock_stream()
+        async def mock_astream_events(*args, **kwargs):
+            # Yield nothing — causes the endpoint to finish with an empty stream
+            return
+            yield  # make it an async generator
 
+        mock_graph.astream_events = mock_astream_events
+
+        with patch('app.api.v1.chat.graph', mock_graph):
             async with AsyncClient(
                 transport=ASGITransport(app=app),
                 base_url="http://test"
@@ -112,12 +113,16 @@ class TestChatStreamEndpoint:
         """Test that chat stream endpoint accepts session_id"""
         from app.main import app
 
-        with patch('app.api.v1.chat.run_workflow') as mock_workflow:
-            async def mock_stream(*args, **kwargs):
-                yield {"done": True, "status": "completed"}
+        # Mock the LangGraph graph to avoid real LLM calls
+        mock_graph = MagicMock()
 
-            mock_workflow.return_value = mock_stream()
+        async def mock_astream_events(*args, **kwargs):
+            return
+            yield  # make it an async generator
 
+        mock_graph.astream_events = mock_astream_events
+
+        with patch('app.api.v1.chat.graph', mock_graph):
             async with AsyncClient(
                 transport=ASGITransport(app=app),
                 base_url="http://test"
@@ -220,18 +225,46 @@ class TestRateLimiting:
     async def test_rate_limiter_blocks_excessive_requests(self):
         """Test that rate limiter blocks after limit exceeded"""
         from app.core.rate_limiter import RateLimiter
+        from fastapi import HTTPException
+        import app.core.config as config_module
 
-        # Create limiter with very low limit for testing
-        limiter = RateLimiter(max_requests=2, window_seconds=60)
+        # Build a mock Redis client for the rate limiter
+        mock_redis = MagicMock()
+        mock_redis.zremrangebyscore = AsyncMock(return_value=0)
+        mock_redis.expire = AsyncMock(return_value=True)
+        mock_redis.zadd = AsyncMock(return_value=1)
 
-        # Mock Redis operations
-        with patch.object(limiter, '_check_rate_limit') as mock_check:
-            # First two calls succeed
-            mock_check.side_effect = [True, True, False]
+        # Simulate: first two requests within limit, third exceeds limit
+        call_count = 0
 
-            assert await limiter.is_allowed("test-key") == True
-            assert await limiter.is_allowed("test-key") == True
-            assert await limiter.is_allowed("test-key") == False
+        async def mock_zcard(key):
+            nonlocal call_count
+            count = call_count
+            call_count += 1
+            return count  # 0, then 1 (below limit=2), then 2 (at limit)
+
+        mock_redis.zcard = mock_zcard
+
+        limiter = RateLimiter(redis_client=mock_redis)
+
+        # Temporarily set rate limit enabled and low limits for testing
+        original_enabled = config_module.settings.RATE_LIMIT_ENABLED
+        original_guest_requests = config_module.settings.RATE_LIMIT_GUEST_REQUESTS
+        try:
+            config_module.settings.RATE_LIMIT_ENABLED = True
+            config_module.settings.RATE_LIMIT_GUEST_REQUESTS = 2
+
+            # First two calls should pass (zcard returns 0, then 1)
+            await limiter.check_rate_limit("test-key", is_authenticated=False)
+            await limiter.check_rate_limit("test-key", is_authenticated=False)
+
+            # Third call should be blocked (zcard returns 2, which equals max_requests=2)
+            with pytest.raises(HTTPException) as exc_info:
+                await limiter.check_rate_limit("test-key", is_authenticated=False)
+            assert exc_info.value.status_code == 429
+        finally:
+            config_module.settings.RATE_LIMIT_ENABLED = original_enabled
+            config_module.settings.RATE_LIMIT_GUEST_REQUESTS = original_guest_requests
 
 
 @pytest.mark.asyncio
