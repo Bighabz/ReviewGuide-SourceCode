@@ -143,7 +143,7 @@ export default function ReviewSources({ data, title = 'What Reviewers Say' }: Re
                           loading="lazy"
                         />
                       )}
-                      {source.site_name}
+                      <span className="max-w-[90px] truncate">{source.site_name}</span>
                       <ExternalLink size={9} className="flex-shrink-0 opacity-60" />
                     </a>
                   ) : (
@@ -159,7 +159,7 @@ export default function ReviewSources({ data, title = 'What Reviewers Say' }: Re
                           loading="lazy"
                         />
                       )}
-                      {source.site_name}
+                      <span className="max-w-[90px] truncate">{source.site_name}</span>
                     </span>
                   )
                 ))}
