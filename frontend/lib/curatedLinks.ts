@@ -1,6 +1,12 @@
+export interface CuratedProduct {
+  asin: string
+  url: string
+}
+
 export interface CuratedTopic {
   title: string
-  links: string[]
+  description: string
+  products: CuratedProduct[]
 }
 
 export type CuratedCategory = Record<string, CuratedTopic[]>
@@ -9,287 +15,339 @@ export const curatedLinks: CuratedCategory = {
   electronics: [
     {
       title: 'Best Noise-Cancelling Headphones',
-      links: [
-        'https://amzn.to/4cg2c2g',
-        'https://amzn.to/46sYSNy',
-        'https://amzn.to/40hVQbz',
-        'https://amzn.to/4qWWrtW',
-        'https://amzn.to/4kZCHVl',
+      description:
+        'Block out the world and focus — our top picks for immersive sound and all-day comfort.',
+      products: [
+        { asin: 'B0C3HCD34R', url: 'https://amzn.to/4cg2c2g' },
+        { asin: 'B0CQXMXJC5', url: 'https://amzn.to/46sYSNy' },
+        { asin: 'B0C8PR4W22', url: 'https://amzn.to/40hVQbz' },
+        { asin: 'B0G64H1QX7', url: 'https://amzn.to/4qWWrtW' },
+        { asin: 'B0CCZ26B5V', url: 'https://amzn.to/4kZCHVl' },
       ],
     },
     {
       title: 'Top Laptops for Students in 2026',
-      links: [
-        'https://amzn.to/4tSpXE1',
-        'https://amzn.to/3OtNdIf',
-        'https://amzn.to/40srrqS',
-        'https://amzn.to/3ZTVpE2',
-        'https://amzn.to/4kUxiPj',
+      description:
+        'Reliable machines that handle lectures, code, and everything in between without breaking the bank.',
+      products: [
+        { asin: 'B0DV5R3Y6B', url: 'https://amzn.to/4tSpXE1' },
+        { asin: 'B0DY1ZSZGQ', url: 'https://amzn.to/3OtNdIf' },
+        { asin: 'B0GL1GHKNK', url: 'https://amzn.to/40srrqS' },
+        { asin: 'B0GGRBPMLD', url: 'https://amzn.to/3ZTVpE2' },
+        { asin: 'B0DZDC3WW5', url: 'https://amzn.to/4kUxiPj' },
       ],
     },
     {
       title: 'Best Budget Smartphones Under $400',
-      links: [
-        'https://amzn.to/40wHa8k',
-        'https://amzn.to/4baYypf',
-        'https://amzn.to/4s7D16v',
-        'https://amzn.to/4ucdsmS',
-        'https://amzn.to/4aAkUjS',
+      description:
+        'Flagship-level cameras and performance at a fraction of the price.',
+      products: [
+        { asin: 'B0DM1RCBHR', url: 'https://amzn.to/40wHa8k' },
+        { asin: 'B0FRG6XMSP', url: 'https://amzn.to/4baYypf' },
+        { asin: 'B0FRYBKRZP', url: 'https://amzn.to/4s7D16v' },
+        { asin: 'B0FTG3Z4YT', url: 'https://amzn.to/4ucdsmS' },
+        { asin: 'B09SM24S8C', url: 'https://amzn.to/4aAkUjS' },
       ],
     },
     {
       title: 'Best Bluetooth Speakers',
-      links: [
-        'https://amzn.to/40tnceG',
-        'https://amzn.to/4cW8fcm',
-        'https://amzn.to/3OE2Rkf',
-        'https://amzn.to/4aUTEeI',
-        'https://amzn.to/46ZowJS',
-        'https://amzn.to/4sflr0x',
+      description:
+        'From pool parties to park sessions — portable speakers that punch well above their size.',
+      products: [
+        { asin: 'B0CH9K2ZLF', url: 'https://amzn.to/40tnceG' },
+        { asin: 'B08X4YMTPM', url: 'https://amzn.to/4cW8fcm' },
+        { asin: 'B0FMK5C52K', url: 'https://amzn.to/3OE2Rkf' },
+        { asin: 'B094LS37Z4', url: 'https://amzn.to/4aUTEeI' },
+        { asin: 'B0DVSR7QM5', url: 'https://amzn.to/46ZowJS' },
+        { asin: 'B01MTB55WH', url: 'https://amzn.to/4sflr0x' },
       ],
     },
   ],
   'home-appliances': [
     {
       title: 'Best Robot Vacuums for Pet Hair',
-      links: [
-        'https://amzn.to/4kZU08C',
-        'https://amzn.to/3ZYKrNt',
-        'https://amzn.to/4cK6Jdq',
-        'https://amzn.to/4sxhxAv',
-        'https://amzn.to/46qmUst',
+      description:
+        'Hands-free cleaning that keeps up with shedding season — tested on real pet households.',
+      products: [
+        { asin: 'B0DHCJ571Z', url: 'https://amzn.to/4kZU08C' },
+        { asin: 'B0DWG3C3ZF', url: 'https://amzn.to/3ZYKrNt' },
+        { asin: 'B0FP2XWWSP', url: 'https://amzn.to/4cK6Jdq' },
+        { asin: 'B0FXGKW7ZK', url: 'https://amzn.to/4sxhxAv' },
+        { asin: 'B07R295MLS', url: 'https://amzn.to/46qmUst' },
       ],
     },
     {
       title: 'Best Compact Washing Machines',
-      links: [
-        'https://amzn.to/4u2A4Gq',
-        'https://amzn.to/4kXfNxK',
-        'https://amzn.to/4qRmimV',
-        'https://amzn.to/4siBCKJ',
-        'https://amzn.to/4sel4Dv',
+      description:
+        'Space-saving washers perfect for apartments, dorms, and small laundry rooms.',
+      products: [
+        { asin: 'B0DC6C34XF', url: 'https://amzn.to/4u2A4Gq' },
+        { asin: 'B0DGKYJCGR', url: 'https://amzn.to/4kXfNxK' },
+        { asin: 'B08B4L4CGG', url: 'https://amzn.to/4qRmimV' },
+        { asin: 'B0DFDRL7Q7', url: 'https://amzn.to/4siBCKJ' },
+        { asin: 'B09YLKMHLH', url: 'https://amzn.to/4sel4Dv' },
       ],
     },
     {
       title: 'Dyson vs Shark: Which Vacuum Wins?',
-      links: [
-        'https://amzn.to/4r3yGk3',
-        'https://amzn.to/4s43SQQ',
-        'https://amzn.to/4aC3lQt',
-        'https://amzn.to/46te6SN',
-        'https://amzn.to/4kZFii3',
+      description:
+        'We compared suction power, build quality, and value — here are the standouts from both brands.',
+      products: [
+        { asin: 'B09YS9N7H2', url: 'https://amzn.to/4r3yGk3' },
+        { asin: 'B0CT97D9R2', url: 'https://amzn.to/4s43SQQ' },
+        { asin: 'B0C2J7R8PY', url: 'https://amzn.to/4aC3lQt' },
+        { asin: 'B0FB59FN5M', url: 'https://amzn.to/46te6SN' },
+        { asin: 'B07S652B12', url: 'https://amzn.to/4kZFii3' },
       ],
     },
     {
       title: 'Best Espresso Machines Under $500',
-      links: [
-        'https://amzn.to/46NZBZZ',
-        'https://amzn.to/4bgoDlV',
-        'https://amzn.to/4kVjGTL',
-        'https://amzn.to/4rxiqbW',
-        'https://amzn.to/4b8KI6O',
+      description:
+        'Cafe-quality espresso at home without the barista price tag.',
+      products: [
+        { asin: 'B09X3WGJ3R', url: 'https://amzn.to/46NZBZZ' },
+        { asin: 'B0D53126XJ', url: 'https://amzn.to/4bgoDlV' },
+        { asin: 'B0GHRJDNWV', url: 'https://amzn.to/4kVjGTL' },
+        { asin: 'B0DP1WXVK8', url: 'https://amzn.to/4rxiqbW' },
+        { asin: 'B0FHKWCR2S', url: 'https://amzn.to/4b8KI6O' },
       ],
     },
   ],
   'health-wellness': [
     {
       title: 'Best Standing Desks for Back Pain',
-      links: [
-        'https://amzn.to/4rHjBWv',
-        'https://amzn.to/3ZTY3ts',
-        'https://amzn.to/3MTqx3r',
-        'https://amzn.to/3ZYlH84',
-        'https://amzn.to/3MIFHsr',
+      description:
+        'Ergonomic sit-stand desks that actually relieve lower back strain — tested by remote workers.',
+      products: [
+        { asin: 'B09RMD7R15', url: 'https://amzn.to/4rHjBWv' },
+        { asin: 'B0FSS4M57Z', url: 'https://amzn.to/3ZTY3ts' },
+        { asin: 'B0FJX2TWP3', url: 'https://amzn.to/3MTqx3r' },
+        { asin: 'B0FPC7XF5D', url: 'https://amzn.to/3ZYlH84' },
+        { asin: 'B0DQTTC37M', url: 'https://amzn.to/3MIFHsr' },
       ],
     },
     {
       title: 'Best Supplements for Energy and Focus',
-      links: [
-        'https://amzn.to/4aSaSto',
-        'https://amzn.to/4u2BIrA',
-        'https://amzn.to/3ZTq1FL',
-        'https://amzn.to/4cgr1el',
-        'https://amzn.to/4kXo0lz',
+      description:
+        'Science-backed picks to sharpen your focus and sustain energy without the crash.',
+      products: [
+        { asin: 'B09ZBC7DNT', url: 'https://amzn.to/4aSaSto' },
+        { asin: 'B0FSNYKYQ1', url: 'https://amzn.to/4u2BIrA' },
+        { asin: 'B0DF6YL2RD', url: 'https://amzn.to/3ZTq1FL' },
+        { asin: 'B00J547PAA', url: 'https://amzn.to/4cgr1el' },
+        { asin: 'B0DCGQJ1DX', url: 'https://amzn.to/4kXo0lz' },
       ],
     },
     {
       title: 'Theragun vs Hypervolt: Which Massage Gun Is Better?',
-      links: [
-        'https://amzn.to/4kZ7fX1',
-        'https://amzn.to/4l2yxMq',
-        'https://amzn.to/4tXXqNg',
-        'https://amzn.to/4qWfnsA',
-        'https://amzn.to/4l0t7kX',
+      description:
+        'Head-to-head comparison of the two biggest names in percussion therapy.',
+      products: [
+        { asin: 'B0CDHLKJ2H', url: 'https://amzn.to/4kZ7fX1' },
+        { asin: 'B0CDMX8QBZ', url: 'https://amzn.to/4l2yxMq' },
+        { asin: 'B09JB64T9Z', url: 'https://amzn.to/4tXXqNg' },
+        { asin: 'B0CNS894RH', url: 'https://amzn.to/4qWfnsA' },
+        { asin: 'B0FKCJNHWB', url: 'https://amzn.to/4l0t7kX' },
       ],
     },
     {
       title: 'Best Fitness Trackers Under $100',
-      links: [
-        'https://amzn.to/3ZXGdpy',
-        'https://amzn.to/4aRMcBb',
-        'https://amzn.to/4scnhiz',
-        'https://amzn.to/4tWNnb3',
-        'https://amzn.to/46u0M0j',
+      description:
+        'Accurate heart rate, sleep tracking, and step counts without the smartwatch price.',
+      products: [
+        { asin: 'B0G2BR4MJ7', url: 'https://amzn.to/3ZXGdpy' },
+        { asin: 'B0G8FBXBWD', url: 'https://amzn.to/4aRMcBb' },
+        { asin: 'B0F9PHLR2D', url: 'https://amzn.to/4scnhiz' },
+        { asin: 'B0F9PHLR2D', url: 'https://amzn.to/4tWNnb3' },
+        { asin: 'B0GMGTRSJR', url: 'https://amzn.to/46u0M0j' },
       ],
     },
     {
       title: 'Top-Rated Supplements for Weight Loss',
-      links: [
-        'https://amzn.to/4baXYIa',
-        'https://amzn.to/46OSVuD',
-        'https://amzn.to/3OM6Yuw',
-        'https://amzn.to/4s88HZr',
-        'https://amzn.to/3OBZXg0',
-        'https://amzn.to/4cPmL5G',
+      description:
+        'Popular weight management supplements with strong customer reviews and transparent ingredients.',
+      products: [
+        { asin: 'B08HHQWBBZ', url: 'https://amzn.to/4baXYIa' },
+        { asin: 'B0CD8PV49D', url: 'https://amzn.to/46OSVuD' },
+        { asin: 'B0F9YL3BWJ', url: 'https://amzn.to/3OM6Yuw' },
+        { asin: 'B07GNZNNFN', url: 'https://amzn.to/4s88HZr' },
+        { asin: 'B0897F2PG3', url: 'https://amzn.to/3OBZXg0' },
+        { asin: 'B0BKDM7JRG', url: 'https://amzn.to/4cPmL5G' },
       ],
     },
     {
       title: 'Best Supplements for Menopause Support',
-      links: [
-        'https://amzn.to/4sdlxpu',
-        'https://amzn.to/46P16aj',
-        'https://amzn.to/46uZPVx',
-        'https://amzn.to/4qY1JVW',
+      description:
+        'Targeted formulas for hot flashes, mood balance, and overall well-being during menopause.',
+      products: [
+        { asin: 'B008KPZMS2', url: 'https://amzn.to/4sdlxpu' },
+        { asin: 'B0DPXTNW68', url: 'https://amzn.to/46P16aj' },
+        { asin: 'B089V9WXYL', url: 'https://amzn.to/46uZPVx' },
+        { asin: 'B07N813336', url: 'https://amzn.to/4qY1JVW' },
       ],
     },
   ],
   'outdoor-fitness': [
     {
       title: 'Best Hiking Boots for Beginners',
-      links: [
-        'https://amzn.to/4aIxo7G',
-        'https://amzn.to/4aU6jP2',
-        'https://amzn.to/3MvKUUr',
-        'https://amzn.to/3OAEGDf',
-        'https://amzn.to/3P2NBNS',
+      description:
+        'Trail-ready boots with solid ankle support and waterproofing — no break-in period needed.',
+      products: [
+        { asin: 'B0G8J8KB4Y', url: 'https://amzn.to/4aIxo7G' },
+        { asin: 'B0CC8X9T96', url: 'https://amzn.to/4aU6jP2' },
+        { asin: 'B089Y3KJ76', url: 'https://amzn.to/3MvKUUr' },
+        { asin: 'B0987X1QZK', url: 'https://amzn.to/3OAEGDf' },
+        { asin: 'B0987XXZ75', url: 'https://amzn.to/3P2NBNS' },
       ],
     },
     {
       title: 'Best Shoes for Flat Feet',
-      links: [
-        'https://amzn.to/3P4MahS',
-        'https://amzn.to/3MvLcdZ',
-        'https://amzn.to/4si597f',
-        'https://amzn.to/47ebcRY',
-        'https://amzn.to/3ZYOMQL',
+      description:
+        'Arch support meets all-day comfort — footwear that keeps flat feet pain-free.',
+      products: [
+        { asin: 'B08QFSC1P6', url: 'https://amzn.to/3P4MahS' },
+        { asin: 'B0CZ7MGXT6', url: 'https://amzn.to/3MvLcdZ' },
+        { asin: 'B0CNWRQ6Y1', url: 'https://amzn.to/4si597f' },
+        { asin: 'B08H2GWTQP', url: 'https://amzn.to/47ebcRY' },
+        { asin: 'B09H3P9MXL', url: 'https://amzn.to/3ZYOMQL' },
       ],
     },
     {
       title: 'Garmin vs Apple Watch for Fitness',
-      links: [
-        'https://amzn.to/46rIc94',
-        'https://amzn.to/4tXZNQ5',
-        'https://amzn.to/4rFsj7D',
-        'https://amzn.to/4l6ws1R',
-        'https://amzn.to/4tWPfAB',
+      description:
+        'Which wearable tracks your workouts better? We break down GPS accuracy, battery life, and features.',
+      products: [
+        { asin: 'B092RCLKHN', url: 'https://amzn.to/46rIc94' },
+        { asin: 'B0GL9R2637', url: 'https://amzn.to/4tXZNQ5' },
+        { asin: 'B0BW288CHV', url: 'https://amzn.to/4rFsj7D' },
+        { asin: 'B0FQF5BZ8Z', url: 'https://amzn.to/4l6ws1R' },
+        { asin: 'B0FQFW7M9H', url: 'https://amzn.to/4tWPfAB' },
       ],
     },
     {
       title: 'Best Home Treadmills Under $1,000',
-      links: [
-        'https://amzn.to/4aC70hb',
-        'https://amzn.to/4siFxXX',
-        'https://amzn.to/46pe8uP',
-        'https://amzn.to/46VPrGw',
-        'https://amzn.to/4qX2ZJ2',
+      description:
+        'Foldable, quiet, and gym-quality — treadmills that fit your home and your budget.',
+      products: [
+        { asin: 'B0F64RQ7CT', url: 'https://amzn.to/4aC70hb' },
+        { asin: 'B0G8DVSVF4', url: 'https://amzn.to/4siFxXX' },
+        { asin: 'B0CZ9B8JSB', url: 'https://amzn.to/46pe8uP' },
+        { asin: 'B0CR6WB19J', url: 'https://amzn.to/46VPrGw' },
+        { asin: 'B0FP2N8GTL', url: 'https://amzn.to/4qX2ZJ2' },
       ],
     },
   ],
   'fashion-style': [
     {
       title: 'Best White Sneakers for Everyday Wear',
-      links: [
-        'https://amzn.to/3ZXKuJu',
-        'https://amzn.to/476uRmL',
-        'https://amzn.to/4cguOZg',
-        'https://amzn.to/4rE2h4J',
-        'https://amzn.to/4qX1Hh0',
+      description:
+        'Clean, versatile kicks that pair with everything from jeans to chinos.',
+      products: [
+        { asin: 'B0CH9G62F5', url: 'https://amzn.to/3ZXKuJu' },
+        { asin: 'B092Z1X1HD', url: 'https://amzn.to/476uRmL' },
+        { asin: 'B0D7QJFH38', url: 'https://amzn.to/4cguOZg' },
+        { asin: 'B093QJPCPB', url: 'https://amzn.to/4rE2h4J' },
+        { asin: 'B000OCQ134', url: 'https://amzn.to/4qX1Hh0' },
       ],
     },
     {
       title: "Best Affordable Jewelry That Won't Tarnish",
-      links: [
-        'https://amzn.to/3MKtN1c',
-        'https://amzn.to/4rHcIo2',
-        'https://amzn.to/46vziY9',
-        'https://amzn.to/4l6BoUr',
-        'https://amzn.to/4aXQ2Jb',
+      description:
+        'Gold-plated and stainless steel pieces that look expensive and last for years.',
+      products: [
+        { asin: 'B0D7HMQ1BS', url: 'https://amzn.to/3MKtN1c' },
+        { asin: 'B0FCY8GX7N', url: 'https://amzn.to/4rHcIo2' },
+        { asin: 'B09QMJRRR1', url: 'https://amzn.to/46vziY9' },
+        { asin: 'B0G2BYQ2BB', url: 'https://amzn.to/4l6BoUr' },
+        { asin: 'B0BRS255G2', url: 'https://amzn.to/4aXQ2Jb' },
       ],
     },
     {
       title: 'Best Streetwear Brands in 2026',
-      links: [
-        'https://amzn.to/3OyKi0U',
-        'https://amzn.to/3ZYtGly',
-        'https://amzn.to/40wRNYM',
-        'https://amzn.to/4shzrHk',
-        'https://amzn.to/4sezXWl',
+      description:
+        'Fresh drops and cult favorites — streetwear pieces that stand out without trying too hard.',
+      products: [
+        { asin: 'B0BGNZQHLR', url: 'https://amzn.to/3OyKi0U' },
+        { asin: 'B0CQR5P1SM', url: 'https://amzn.to/3ZYtGly' },
+        { asin: 'B0CY53RSRC', url: 'https://amzn.to/40wRNYM' },
+        { asin: 'B0CYC5HXZS', url: 'https://amzn.to/4shzrHk' },
+        { asin: 'B0DSC6ZXFG', url: 'https://amzn.to/4sezXWl' },
       ],
     },
     {
       title: 'Best Watches Under $500',
-      links: [
-        'https://amzn.to/4aN66gE',
-        'https://amzn.to/3N5VIsv',
-        'https://amzn.to/4qX2XAK',
-        'https://amzn.to/4aXQTJN',
-        'https://amzn.to/4qU4Tdh',
+      description:
+        'Automatic and quartz timepieces that punch way above their price point.',
+      products: [
+        { asin: 'B0FFTSCYCZ', url: 'https://amzn.to/4aN66gE' },
+        { asin: 'B07D1ZK5VG', url: 'https://amzn.to/3N5VIsv' },
+        { asin: 'B000820YBU', url: 'https://amzn.to/4qX2XAK' },
+        { asin: 'B00FZE1AZU', url: 'https://amzn.to/4aXQTJN' },
+        { asin: 'B09C1WSQFJ', url: 'https://amzn.to/4qU4Tdh' },
       ],
     },
   ],
   'smart-home': [
     {
       title: 'Best Alexa-Compatible Smart Home Gadgets',
-      links: [
-        'https://amzn.to/4l2GelM',
-        'https://amzn.to/4r3IWsz',
-        'https://amzn.to/3OPqRRr',
-        'https://amzn.to/46Y9EeO',
-        'https://amzn.to/4sg5N5d',
-        'https://amzn.to/4qTKyov',
-        'https://amzn.to/3P2VD9u',
+      description:
+        'Voice-controlled lights, locks, plugs, and more — everything works seamlessly with Alexa.',
+      products: [
+        { asin: 'B089DR29T6', url: 'https://amzn.to/4l2GelM' },
+        { asin: 'B07KRY43KN', url: 'https://amzn.to/4r3IWsz' },
+        { asin: 'B0BCR7M9KX', url: 'https://amzn.to/3OPqRRr' },
+        { asin: 'B0D14WP9TB', url: 'https://amzn.to/46Y9EeO' },
+        { asin: 'B0CHJBJLHN', url: 'https://amzn.to/4sg5N5d' },
+        { asin: 'B0FY6YZDVN', url: 'https://amzn.to/4qTKyov' },
+        { asin: 'B0C1ZFNNKV', url: 'https://amzn.to/3P2VD9u' },
       ],
     },
   ],
   'kids-toys': [
     {
       title: 'Hottest Toys of 2026',
-      links: [
-        'https://amzn.to/4u2gfis',
-        'https://amzn.to/4qX4iHM',
-        'https://amzn.to/4rzKtHH',
-        'https://amzn.to/3ZXSWZk',
-        'https://amzn.to/4cgFw1Y',
-        'https://amzn.to/4r3JVcf',
-        'https://amzn.to/4sdnEd0',
-        'https://amzn.to/3MwI5CB',
+      description:
+        'The most-wanted toys this year — from creative kits to action figures kids are obsessed with.',
+      products: [
+        { asin: 'B0BL6DCNGR', url: 'https://amzn.to/4u2gfis' },
+        { asin: 'B0FD44PTYN', url: 'https://amzn.to/4qX4iHM' },
+        { asin: 'B0DB5K3JF4', url: 'https://amzn.to/4rzKtHH' },
+        { asin: 'B0C9Q492PF', url: 'https://amzn.to/3ZXSWZk' },
+        { asin: 'B0DT44TSM2', url: 'https://amzn.to/4cgFw1Y' },
+        { asin: 'B0D9NQXCS1', url: 'https://amzn.to/4r3JVcf' },
+        { asin: 'B0D2JGYX3F', url: 'https://amzn.to/4sdnEd0' },
+        { asin: 'B07TT6664Z', url: 'https://amzn.to/3MwI5CB' },
       ],
     },
   ],
   baby: [
     {
       title: 'Baby Essentials Every New Parent Needs',
-      links: [
-        'https://amzn.to/40y4ZfW',
-        'https://amzn.to/46pFVLM',
-        'https://amzn.to/4kTSBjM',
-        'https://amzn.to/4kU8p68',
-        'https://amzn.to/4cOOKT6',
-        'https://amzn.to/4l08rtk',
-        'https://amzn.to/4qTLWHL',
+      description:
+        'The gear that makes the first year easier — from strollers to monitors to feeding supplies.',
+      products: [
+        { asin: 'B0DSMHJ2FF', url: 'https://amzn.to/40y4ZfW' },
+        { asin: 'B0FTSJQPWT', url: 'https://amzn.to/46pFVLM' },
+        { asin: 'B0CCTTHXVN', url: 'https://amzn.to/4kTSBjM' },
+        { asin: 'B0DR55SVHB', url: 'https://amzn.to/4kU8p68' },
+        { asin: 'B0CGRB23YM', url: 'https://amzn.to/4cOOKT6' },
+        { asin: 'B08769M234', url: 'https://amzn.to/4l08rtk' },
+        { asin: 'B08N4W4CFC', url: 'https://amzn.to/4qTLWHL' },
       ],
     },
   ],
   'big-tall': [
     {
       title: 'Best Big & Tall Clothing for Men',
-      links: [
-        'https://amzn.to/4cbMKnN',
-        'https://amzn.to/3MwIkO1',
-        'https://amzn.to/401kjl9',
-        'https://amzn.to/4bcefMY',
-        'https://amzn.to/4seDT9z',
-        'https://amzn.to/4aEwmLq',
+      description:
+        'Well-fitted basics and outerwear designed for bigger frames — no more settling for ill-fitting clothes.',
+      products: [
+        { asin: 'B0BFDR1MR7', url: 'https://amzn.to/4cbMKnN' },
+        { asin: 'B075ZZ7YGD', url: 'https://amzn.to/3MwIkO1' },
+        { asin: 'B07T9DC8GS', url: 'https://amzn.to/401kjl9' },
+        { asin: 'B0FBX6SK94', url: 'https://amzn.to/4bcefMY' },
+        { asin: 'B0FB11TX35', url: 'https://amzn.to/4seDT9z' },
+        { asin: 'B0C5NW3JXC', url: 'https://amzn.to/4aEwmLq' },
       ],
     },
   ],

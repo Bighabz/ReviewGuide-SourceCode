@@ -343,6 +343,15 @@ a, button, input, textarea, select {
   box-shadow: 0 8px 24px rgba(28, 25, 23, 0.08);
 }
 
+/* Hide scrollbar but keep scroll behavior */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* ═══════════════════════════════════════════
    NOISE TEXTURE OVERLAY (subtle grain)
    ═══════════════════════════════════════════ */
