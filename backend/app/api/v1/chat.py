@@ -362,20 +362,12 @@ async def generate_chat_stream(
 
         # Execute the workflow and stream intermediate states
         # Cost tracking is handled by langfuse_handler passed to graph.astream_events()
-        # Create a shared list for citations (mutable, accessible from both tasks)
+        # Citation logging handled per-instance by PlanExecutor (no global callbacks needed)
         citation_buffer = []
         workflow_running = True
 
-        # Create a queue for tool citations
-        from app.services.plan_executor import register_tool_citation_callback, clear_tool_citation_callbacks
-        tool_citation_queue = asyncio.Queue()
-
-        # Register callback that pushes citations to the buffer directly
-        async def citation_callback(citation):
-            citation_buffer.append(citation)
-            logger.info(f"📥 Citation added to buffer: {citation.get('tool')} - {citation.get('message')}")
-
-        register_tool_citation_callback(citation_callback)
+        # Event queue for streaming
+        from app.services.plan_executor import clear_tool_citation_callbacks
 
         # Background task that polls event stream
         event_queue = asyncio.Queue()

@@ -71,22 +71,23 @@ def _load_tool_registry() -> Dict[str, Any]:
 # Tool registry for direct execution (loaded once at module import)
 TOOL_REGISTRY = _load_tool_registry()
 
-# Global list for streaming tool citations in real-time (thread-safe with GIL)
+# DEPRECATED: Global callback functions kept for backward compatibility.
+# New code should use PlanExecutor instance methods instead.
 _tool_citation_callbacks: List = []
 
 
 def register_tool_citation_callback(callback):
-    """Register a callback function to be called when tool citations are emitted"""
+    """DEPRECATED: Use PlanExecutor.register_citation_callback() instead."""
     _tool_citation_callbacks.append(callback)
 
 
 def clear_tool_citation_callbacks():
-    """Clear all registered callbacks"""
+    """DEPRECATED: Use PlanExecutor.clear_citation_callbacks() instead."""
     _tool_citation_callbacks.clear()
 
 
 def get_tool_citation_callbacks():
-    """Get all registered callbacks"""
+    """DEPRECATED: Use PlanExecutor instance callbacks instead."""
     return _tool_citation_callbacks
 
 
@@ -97,12 +98,23 @@ class PlanExecutor:
     - Parallel execution within steps
     - Context management (args_from resolution)
     - Error handling and graceful degradation
+
+    IMPORTANT: Create a new instance per request to avoid cross-session state leaks.
     """
 
     def __init__(self):
         self.context: Dict[str, Any] = {}
         self.state: Dict[str, Any] = {}
         self.tool_citations: List[Dict[str, str]] = []  # Track tool citation messages
+        self._citation_callbacks: List = []  # Per-instance callbacks (session-isolated)
+
+    def register_citation_callback(self, callback):
+        """Register a citation callback scoped to this executor instance."""
+        self._citation_callbacks.append(callback)
+
+    def clear_citation_callbacks(self):
+        """Clear citation callbacks for this executor instance."""
+        self._citation_callbacks.clear()
 
     async def _call_tool_direct(self, tool_name: str, state: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -371,8 +383,8 @@ class PlanExecutor:
                 "data": citation
             }
 
-        # Call all registered callbacks for real-time streaming
-        callbacks = get_tool_citation_callbacks()
+        # Call per-instance callbacks (session-isolated) + legacy global callbacks
+        callbacks = self._citation_callbacks + get_tool_citation_callbacks()
         logger.info(f"🔍 DEBUG: Found {len(callbacks)} registered callbacks")
         for callback in callbacks:
             try:

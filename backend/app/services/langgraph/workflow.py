@@ -407,7 +407,10 @@ async def plan_executor_node(state: GraphState) -> Dict[str, Any]:
 
     async def _run_plan_executor(state: GraphState) -> Dict[str, Any]:
         """Inner coroutine wrapped by run_stage_with_budget."""
-        results = await plan_executor_instance.execute(plan, state)
+        # Create a fresh PlanExecutor per request to prevent cross-session state leaks.
+        # The old module-level singleton shared self.context/self.state across concurrent requests.
+        executor = PlanExecutor()
+        results = await executor.execute(plan, state)
         inner_update = {
             "assistant_text": results.get("assistant_text", ""),
             "ui_blocks": results.get("ui_blocks", []),
