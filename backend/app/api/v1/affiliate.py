@@ -5,7 +5,7 @@ Provides endpoint to track affiliate link clicks for analytics.
 """
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.centralized_logger import get_logger
@@ -66,3 +66,59 @@ async def track_click(request: ClickRequest, db: AsyncSession = Depends(get_db))
         logger.error(f"Failed to track affiliate click: {e}")
         await db.rollback()
         return ClickResponse(tracked=False)
+
+
+class CJSearchRequest(BaseModel):
+    keywords: str
+    advertiser_ids: Optional[str] = None
+    min_price: Optional[float] = None
+    max_price: Optional[float] = None
+    limit: int = 10
+
+
+class CJProductResponse(BaseModel):
+    title: str
+    price: float
+    currency: str
+    buy_url: str
+    merchant: str
+    image_url: Optional[str] = None
+    product_id: str = ""
+
+
+class CJSearchResponse(BaseModel):
+    results: List[CJProductResponse]
+    count: int
+
+
+@router.post("/cj/search", response_model=CJSearchResponse)
+async def cj_search(req: CJSearchRequest):
+    """Search CJ product catalog"""
+    from app.services.affiliate.manager import affiliate_manager
+
+    provider = affiliate_manager.get_provider("cj")
+    if not provider:
+        return CJSearchResponse(results=[], count=0)
+
+    products = await provider.search_products(
+        query=req.keywords,
+        min_price=req.min_price,
+        max_price=req.max_price,
+        limit=req.limit,
+        advertiser_ids=req.advertiser_ids,
+    )
+
+    results = [
+        CJProductResponse(
+            title=p.title,
+            price=p.price,
+            currency=p.currency,
+            buy_url=p.affiliate_link,
+            merchant=p.merchant,
+            image_url=p.image_url,
+            product_id=p.product_id,
+        )
+        for p in products
+    ]
+
+    return CJSearchResponse(results=results, count=len(results))
