@@ -63,6 +63,10 @@ _PROVIDER_INIT_MAP = {
         "country_code": settings.AMAZON_DEFAULT_COUNTRY,
         "associate_tag": settings.AMAZON_ASSOCIATE_TAG,
     },
+    "cj": lambda: {
+        "api_key": settings.CJ_API_KEY,
+        "website_id": settings.CJ_WEBSITE_ID,
+    },
 }
 
 
