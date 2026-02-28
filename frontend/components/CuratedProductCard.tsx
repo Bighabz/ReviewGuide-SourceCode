@@ -1,7 +1,7 @@
 'use client'
 
-import React, { useState } from 'react'
-import { ExternalLink, ImageOff } from 'lucide-react'
+import React from 'react'
+import { ExternalLink } from 'lucide-react'
 
 export interface CuratedProduct {
   asin: string
@@ -14,46 +14,6 @@ export interface CuratedTopicCardProps {
   description: string
   products: CuratedProduct[]
   onTitleClick?: (title: string) => void
-}
-
-function ProductThumbnail({ asin, url, label }: CuratedProduct) {
-  const [imgError, setImgError] = useState(false)
-  const imageUrl = `https://m.media-amazon.com/images/P/${asin}.01._SCLZZZZZZZ_SX220_.jpg`
-
-  return (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group/thumb flex flex-col items-center gap-1.5 min-w-0"
-      title={label || 'View on Amazon'}
-    >
-      <div className="relative w-[72px] h-[72px] sm:w-[80px] sm:h-[80px] rounded-lg border border-[var(--border)] bg-white overflow-hidden flex items-center justify-center group-hover/thumb:border-[var(--border-strong)] group-hover/thumb:shadow-sm transition-all">
-        {!imgError ? (
-          <img
-            src={imageUrl}
-            alt={label || 'Product'}
-            className="w-full h-full object-contain p-1.5 group-hover/thumb:scale-110 transition-transform duration-300"
-            loading="lazy"
-            onError={() => setImgError(true)}
-          />
-        ) : (
-          <div className="flex flex-col items-center justify-center text-[var(--text-muted)]">
-            <ImageOff size={18} strokeWidth={1.5} />
-          </div>
-        )}
-        <div className="absolute inset-0 bg-black/0 group-hover/thumb:bg-black/5 transition-colors rounded-lg" />
-        <div className="absolute bottom-1 right-1 opacity-0 group-hover/thumb:opacity-100 transition-opacity">
-          <ExternalLink size={10} className="text-[var(--text-muted)]" />
-        </div>
-      </div>
-      {label && (
-        <span className="text-[10px] text-[var(--text-muted)] group-hover/thumb:text-[var(--text-secondary)] transition-colors text-center leading-tight max-w-[80px] line-clamp-2">
-          {label}
-        </span>
-      )}
-    </a>
-  )
 }
 
 export default function CuratedProductCard({
@@ -79,11 +39,20 @@ export default function CuratedProductCard({
         </p>
       </div>
 
-      {/* Product thumbnails */}
+      {/* Product links */}
       <div className="px-4 pb-4">
-        <div className="flex gap-2.5 overflow-x-auto pb-1 -mx-0.5 px-0.5 scrollbar-hide">
+        <div className="flex flex-wrap gap-1.5">
           {products.map((product, idx) => (
-            <ProductThumbnail key={idx} {...product} />
+            <a
+              key={idx}
+              href={product.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-hover)] transition-all"
+            >
+              {product.label || `Option ${idx + 1}`}
+              <ExternalLink size={10} className="opacity-60" />
+            </a>
           ))}
         </div>
       </div>

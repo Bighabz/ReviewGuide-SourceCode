@@ -6,22 +6,7 @@ import { ExternalLink } from 'lucide-react'
 import ChatInput from '@/components/ChatInput'
 import { categories } from '@/lib/categoryConfig'
 import { curatedLinks } from '@/lib/curatedLinks'
-import CuratedProductCard from '@/components/CuratedProductCard'
 import { getRecentSearches, RecentSearch } from '@/lib/recentSearches'
-
-// Hand-picked topics surfaced on the main browse page
-const STAFF_PICK_SLUGS: [string, number][] = [
-  ['electronics', 0],       // Best Noise-Cancelling Headphones
-  ['home-appliances', 0],   // Best Robot Vacuums for Pet Hair
-  ['health-wellness', 2],   // Theragun vs Hypervolt
-  ['outdoor-fitness', 2],   // Garmin vs Apple Watch
-  ['fashion-style', 0],     // Best White Sneakers
-  ['kids-toys', 0],         // Hottest Toys of 2026
-]
-
-const staffPicks = STAFF_PICK_SLUGS
-  .map(([slug, idx]) => curatedLinks[slug]?.[idx])
-  .filter(Boolean)
 
 export default function BrowsePage() {
   const router = useRouter()
@@ -190,29 +175,6 @@ export default function BrowsePage() {
         </div>
       </section>
 
-      {/* Staff Picks — curated topics from select categories */}
-      <section className="px-4 sm:px-6 md:px-8 pb-10">
-        <div className="editorial-rule mb-8" />
-        <div className="flex items-center gap-3 mb-6">
-          <h2 className="font-serif text-2xl text-[var(--text)] tracking-tight">
-            Staff Picks
-          </h2>
-          <div className="flex-1 h-px bg-[var(--border)]" />
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {staffPicks.map((pick, idx) => (
-            <CuratedProductCard
-              key={idx}
-              title={pick.title}
-              description={pick.description}
-              products={pick.products}
-              onTitleClick={(title) =>
-                router.push(`/chat?q=${encodeURIComponent(title)}&new=1`)
-              }
-            />
-          ))}
-        </div>
-      </section>
     </div>
   )
 }
