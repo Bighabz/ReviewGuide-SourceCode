@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { ExternalLink } from 'lucide-react'
 import ChatInput from '@/components/ChatInput'
 import { categories } from '@/lib/categoryConfig'
-import { curatedLinks } from '@/lib/curatedLinks'
 import { getRecentSearches, RecentSearch } from '@/lib/recentSearches'
 
 export default function BrowsePage() {
@@ -158,18 +157,6 @@ export default function BrowsePage() {
                 ))}
               </div>
 
-              {/* Editor's picks indicator */}
-              {curatedLinks[category.slug] && curatedLinks[category.slug].length > 0 && (
-                <div className="px-4 pb-3">
-                  <a
-                    href={`/browse/${category.slug}`}
-                    className="inline-flex items-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--primary)] transition-colors"
-                  >
-                    <span className="w-1 h-1 rounded-full bg-[var(--primary)]" />
-                    {curatedLinks[category.slug].reduce((sum, t) => sum + t.products.length, 0)} editor&apos;s picks available
-                  </a>
-                </div>
-              )}
             </div>
           ))}
         </div>

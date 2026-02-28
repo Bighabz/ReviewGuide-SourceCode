@@ -5,8 +5,6 @@ import { useRouter, notFound } from 'next/navigation'
 import { ExternalLink, ArrowLeft } from 'lucide-react'
 import ChatInput from '@/components/ChatInput'
 import { categories } from '@/lib/categoryConfig'
-import { curatedLinks } from '@/lib/curatedLinks'
-import CuratedProductCard from '@/components/CuratedProductCard'
 import Link from 'next/link'
 
 export default function CategoryPage({ params }: { params: { category: string } }) {
@@ -15,8 +13,6 @@ export default function CategoryPage({ params }: { params: { category: string } 
   const [input, setInput] = useState('')
 
   if (!category) return notFound()
-
-  const topics = curatedLinks[category.slug] || []
 
   const handleSend = useCallback(() => {
     if (input.trim()) {
@@ -105,32 +101,6 @@ export default function CategoryPage({ params }: { params: { category: string } 
           ))}
         </div>
       </section>
-
-      {/* Editor's Picks */}
-      {topics.length > 0 && (
-        <section className="px-4 sm:px-6 md:px-8 pb-8">
-          <div className="flex items-center gap-3 mb-5">
-            <h2 className="font-serif text-xl text-[var(--text)] tracking-tight">
-              Editor&apos;s Picks
-            </h2>
-            <div className="flex-1 h-px bg-[var(--border)]" />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {topics.map((topic, tIdx) => (
-              <CuratedProductCard
-                key={tIdx}
-                title={topic.title}
-                description={topic.description}
-                products={topic.products}
-                onTitleClick={(title) =>
-                  router.push(`/chat?q=${encodeURIComponent(title)}&new=1`)
-                }
-              />
-            ))}
-          </div>
-        </section>
-      )}
 
       {/* Other categories */}
       <section className="px-4 sm:px-6 md:px-8 pb-8">
