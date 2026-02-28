@@ -106,9 +106,9 @@ export const UI_TEXT = {
 // Footer links
 export const FOOTER_LINKS = [
   { label: 'About', href: '#' },
-  { label: 'Privacy', href: '#' },
-  { label: 'Affiliate Disclosure', href: '#', desktopOnly: true },
-  { label: 'Contact', href: '#' },
+  { label: 'Privacy', href: '/privacy' },
+  { label: 'Affiliate Disclosure', href: '/affiliate-disclosure', desktopOnly: true },
+  { label: 'Contact', href: 'mailto:mike@reviewguide.ai' },
 ] as const
 
 // Featured Deals Categories
