@@ -5,6 +5,7 @@ import { useRouter, notFound } from 'next/navigation'
 import { ExternalLink, ArrowLeft } from 'lucide-react'
 import ChatInput from '@/components/ChatInput'
 import { categories } from '@/lib/categoryConfig'
+import { curatedLinks } from '@/lib/curatedLinks'
 import Link from 'next/link'
 
 export default function CategoryPage({ params }: { params: { category: string } }) {
@@ -13,6 +14,8 @@ export default function CategoryPage({ params }: { params: { category: string } 
   const [input, setInput] = useState('')
 
   if (!category) return notFound()
+
+  const topics = curatedLinks[category.slug] || []
 
   const handleSend = useCallback(() => {
     if (input.trim()) {
@@ -101,6 +104,58 @@ export default function CategoryPage({ params }: { params: { category: string } 
           ))}
         </div>
       </section>
+
+      {/* Editor's Picks */}
+      {topics.length > 0 && (
+        <section className="px-4 sm:px-6 md:px-8 pb-8">
+          <div className="flex items-center gap-3 mb-5">
+            <h2 className="font-serif text-xl text-[var(--text)] tracking-tight">
+              Editor&apos;s Picks
+            </h2>
+            <div className="flex-1 h-px bg-[var(--border)]" />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {topics.map((topic, tIdx) => (
+              <div
+                key={tIdx}
+                className="rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] p-4 shadow-card"
+              >
+                {/* Topic title — clicks to AI chat */}
+                <button
+                  onClick={() =>
+                    router.push(`/chat?q=${encodeURIComponent(topic.title)}&new=1`)
+                  }
+                  className="text-sm font-semibold text-[var(--text)] hover:text-[var(--primary)] transition-colors text-left mb-3"
+                >
+                  {topic.title}
+                </button>
+
+                {/* Amazon pick links */}
+                <div className="flex flex-wrap gap-2">
+                  {topic.links.map((link, lIdx) => (
+                    <a
+                      key={lIdx}
+                      href={link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-hover)] transition-all"
+                    >
+                      Pick {lIdx + 1}
+                      <ExternalLink size={10} />
+                    </a>
+                  ))}
+                </div>
+
+                {/* Amazon attribution */}
+                <p className="text-[10px] text-[var(--text-muted)] mt-2">
+                  Available on Amazon
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Other categories */}
       <section className="px-4 sm:px-6 md:px-8 pb-8">
