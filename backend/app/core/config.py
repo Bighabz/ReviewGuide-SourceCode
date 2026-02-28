@@ -84,7 +84,7 @@ class Settings(BaseSettings):
         description="Use Redis cache for history (true) or load directly from PostgreSQL (false)"
     )
     MAX_HISTORY_MESSAGES: int = Field(
-        default=10,
+        default=30,
         description="Maximum number of recent messages to load and send to LLM for context"
     )
     MAX_USER_HISTORY_FOR_SLOT_EXTRACTION: int = Field(
