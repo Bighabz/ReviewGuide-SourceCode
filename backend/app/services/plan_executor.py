@@ -182,9 +182,23 @@ class PlanExecutor:
         logger.info(f"📊 Execution order: {[step['id'] for step in sorted_steps]}")
 
         # Execute steps in order
+        _pending_suggestion_task = None
         for step_index, step in enumerate(sorted_steps, 1):
             step_id = step["id"]
+            tool_names = step.get("tools", [])
             logger.info(f"▶️  Step {step_index}/{len(sorted_steps)}: {step_id} - {step.get('description', '')}")
+
+            # Fire next_step_suggestion as a non-blocking background task
+            # SAFETY: only background it if it's the last step (avoids state race conditions)
+            if tool_names == ["next_step_suggestion"]:
+                if step_index < len(sorted_steps):
+                    logger.warning(f"⚠️  next_step_suggestion is not the final step — executing inline for safety")
+                else:
+                    logger.info(f"🔄 Launching next_step_suggestion as background task (non-blocking)")
+                    _pending_suggestion_task = asyncio.create_task(
+                        self._execute_step(step)
+                    )
+                    continue
 
             try:
                 # Execute this step (direct tool calls, no MCP client needed)
@@ -204,8 +218,25 @@ class PlanExecutor:
                     # Store error in context
                     self.context[f"{step_id}.error"] = str(e)
 
-        # Extract final results from context
+        # Extract final results from context (without waiting for suggestions)
         results = self._extract_results()
+
+        # Await pending suggestion task with a short timeout — don't block main response
+        if _pending_suggestion_task is not None:
+            try:
+                await asyncio.wait_for(_pending_suggestion_task, timeout=2.0)
+                # Task completed — suggestions are now in self.context, re-extract them
+                for key, value in self.context.items():
+                    if "next_step_suggestion" in key and isinstance(value, dict):
+                        results["next_suggestions"] = value.get("next_suggestions", [])
+                        logger.info(f"✅ next_step_suggestion resolved within timeout")
+                        break
+            except asyncio.TimeoutError:
+                logger.info(f"⏱️  next_step_suggestion timed out after 2s — skipping suggestions")
+                results["next_suggestions"] = []
+            except Exception as e:
+                logger.warning(f"⚠️  next_step_suggestion failed: {e}")
+                results["next_suggestions"] = []
 
         logger.info(f"🎉 Plan execution completed")
 

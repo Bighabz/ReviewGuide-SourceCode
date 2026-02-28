@@ -566,12 +566,15 @@ Example: {{"tools": ["product_search"]}} - this will auto-add normalize, affilia
 
     def _get_product_plan_for_complexity(self, complexity: str) -> Dict[str, Any]:
         """Return execution plan template based on query complexity class."""
+        # product_extractor is only needed for comparisons (to parse "X vs Y") and factoids.
+        # For recommendations/deep_research, product_search already resolves products.
+        needs_extractor = complexity in ("factoid", "comparison")
         if complexity == "factoid":
             plan = self._create_minimal_product_plan()
         elif complexity in ("comparison", "recommendation"):
-            plan = self._create_standard_product_plan()
+            plan = self._create_standard_product_plan(include_extractor=needs_extractor)
         else:  # deep_research
-            plan = self._create_fast_path_product_plan()
+            plan = self._create_fast_path_product_plan(include_extractor=False)
         return self._ensure_next_step_suggestion(plan)
 
     def _create_minimal_product_plan(self) -> Dict[str, Any]:
@@ -588,79 +591,59 @@ Example: {{"tools": ["product_search"]}} - this will auto-add normalize, affilia
             ]
         }
 
-    def _create_standard_product_plan(self) -> Dict[str, Any]:
+    def _create_standard_product_plan(self, include_extractor: bool = True) -> Dict[str, Any]:
         """
         Standard plan for comparison and recommendation queries.
-        Pipeline: extractor → [product_search ∥ evidence] → normalize → affiliate → compose → suggestions
+        Pipeline: [extractor →] [product_search ∥ evidence] → normalize → affiliate → compose → suggestions
         Skips review_search and ranking (faster).
         """
-        return {
-            "steps": [
-                {"id": "step_1", "tools": ["product_extractor"], "parallel": False},
-                {"id": "step_2", "tools": ["product_search", "product_evidence"], "parallel": True},
-                {"id": "step_3", "tools": ["product_normalize"], "parallel": False},
-                {"id": "step_4", "tools": ["product_affiliate"], "parallel": False},
-                {"id": "step_5", "tools": ["product_compose"], "parallel": False},
-            ]
-        }
+        steps = []
+        step_num = 1
+        if include_extractor:
+            steps.append({"id": f"step_{step_num}", "tools": ["product_extractor"], "parallel": False})
+            step_num += 1
+        steps.extend([
+            {"id": f"step_{step_num}", "tools": ["product_search", "product_evidence"], "parallel": True},
+            {"id": f"step_{step_num + 1}", "tools": ["product_normalize"], "parallel": False},
+            {"id": f"step_{step_num + 2}", "tools": ["product_affiliate"], "parallel": False},
+            {"id": f"step_{step_num + 3}", "tools": ["product_compose"], "parallel": False},
+        ])
+        return {"steps": steps}
 
-    def _create_fast_path_product_plan(self) -> Dict[str, Any]:
+    def _create_fast_path_product_plan(self, include_extractor: bool = True) -> Dict[str, Any]:
         """
         Hardcoded optimal execution plan for product intent.
         Bypasses the LLM Planner entirely to save ~1.5s latency.
 
         Pipeline:
-          Step 1: product_extractor (extract explicit names)
-          Step 2: product_search + product_evidence (PARALLEL - both I/O bound)
-          Step 3: review_search (needs product_search output)
-          Step 4: product_normalize (merges search + evidence + ranking)
-          Step 5: product_affiliate (needs normalized products)
-          Step 6: product_ranking (needs affiliate data)
-          Step 7: product_compose (final assembly, tool_order 800)
+          [Step 1: product_extractor (only for comparisons)]
+          Step N: product_search + product_evidence (PARALLEL - both I/O bound)
+          Step N+1: review_search (needs product_search output)
+          Step N+2: product_normalize (merges search + evidence + ranking)
+          Step N+3: product_affiliate (needs normalized products)
+          Step N+4: product_ranking (needs affiliate data)
+          Step N+5: product_compose (final assembly, tool_order 800)
           next_step_suggestion appended by _get_product_plan_for_complexity
 
         Returns:
             Execution plan dict with parallel step 2
         """
-        return {
-            "steps": [
-                {
-                    "id": "step_1",
-                    "tools": ["product_extractor"],
-                    "parallel": False
-                },
-                {
-                    "id": "step_2",
-                    "tools": ["product_search", "product_evidence"],
-                    "parallel": True  # Both read product_names, no dependency on each other
-                },
-                {
-                    "id": "step_3",
-                    "tools": ["review_search"],
-                    "parallel": False
-                },
-                {
-                    "id": "step_4",
-                    "tools": ["product_normalize"],
-                    "parallel": False
-                },
-                {
-                    "id": "step_5",
-                    "tools": ["product_affiliate"],
-                    "parallel": False
-                },
-                {
-                    "id": "step_6",
-                    "tools": ["product_ranking"],
-                    "parallel": False
-                },
-                {
-                    "id": "step_7",
-                    "tools": ["product_compose"],
-                    "parallel": False
-                },
-            ]
-        }
+        steps = []
+        step_num = 1
+
+        if include_extractor:
+            steps.append({"id": f"step_{step_num}", "tools": ["product_extractor"], "parallel": False})
+            step_num += 1
+
+        steps.extend([
+            {"id": f"step_{step_num}", "tools": ["product_search", "product_evidence"], "parallel": True},
+            {"id": f"step_{step_num + 1}", "tools": ["review_search"], "parallel": False},
+            {"id": f"step_{step_num + 2}", "tools": ["product_normalize"], "parallel": False},
+            {"id": f"step_{step_num + 3}", "tools": ["product_affiliate"], "parallel": False},
+            {"id": f"step_{step_num + 4}", "tools": ["product_ranking"], "parallel": False},
+            {"id": f"step_{step_num + 5}", "tools": ["product_compose"], "parallel": False},
+        ])
+        return {"steps": steps}
 
     def _create_manual_plan_for_intro(self) -> Dict[str, Any]:
         """

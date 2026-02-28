@@ -445,11 +445,26 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
             )
 
         # --- Review consensus (one per product) + opener ---
+        # Cap LLM consensus to top 3 products by quality_score to reduce fanout latency
+        MAX_CONSENSUS_PRODUCTS = 3
+        _template_consensus = {}  # Pre-computed consensus for lower-ranked products
         review_bundles = {}  # product_name -> bundle (for assembly later)
         if review_data:
-            for product_name, bundle in review_data.items():
-                if not bundle.get("sources"):
-                    continue
+            # Separate products with sources from those without
+            products_with_sources = [
+                (name, bundle) for name, bundle in review_data.items()
+                if bundle.get("sources")
+            ]
+            # Sort by quality_score descending
+            products_with_sources.sort(
+                key=lambda kv: kv[1].get("quality_score", 0),
+                reverse=True
+            )
+            top_products = products_with_sources[:MAX_CONSENSUS_PRODUCTS]
+            remaining_products = products_with_sources[MAX_CONSENSUS_PRODUCTS:]
+
+            # Full LLM consensus for top products
+            for product_name, bundle in top_products:
                 review_bundles[product_name] = bundle
                 source_snippets = "\n".join([
                     f"- {s.get('site_name', 'Review')}: {s.get('snippet', '')}"
@@ -464,6 +479,20 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
                     temperature=0.5,
                     max_tokens=220,
                     agent_name="review_consensus"
+                )
+
+            # Deterministic template for remaining products (no LLM call)
+            # These get injected into result_map after the asyncio.gather below
+            _template_consensus = {}
+            for product_name, bundle in remaining_products:
+                review_bundles[product_name] = bundle
+                rating = bundle.get("avg_rating", "N/A")
+                total = bundle.get("total_reviews", 0)
+                top_source = bundle.get("sources", [{}])[0].get("site_name", "reviewers")
+                _template_consensus[f'consensus:{product_name}'] = (
+                    f"Rated {rating}/5 across {total} reviews. "
+                    f"{top_source} highlights this as a solid option in its category. "
+                    f"See the full reviews for detailed pros and cons."
                 )
 
             # Opener (only depends on user_message, independent of consensus)
@@ -546,6 +575,10 @@ Products to describe:
             logger.info(f"[product_compose] Parallel LLM batch: {len(task_keys)} calls ({', '.join(task_keys)})")
         else:
             result_map = {}
+
+        # Inject pre-computed template consensus for lower-ranked products
+        if _template_consensus:
+            result_map.update(_template_consensus)
 
         # Helper to safely extract a string result
         def _get_result(key: str, fallback: str = "") -> str:

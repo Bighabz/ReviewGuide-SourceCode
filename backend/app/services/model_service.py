@@ -102,6 +102,8 @@ class ModelService:
                 "model": model,
                 "openai_api_key": settings.OPENAI_API_KEY,
                 "streaming": stream,
+                "request_timeout": 12,    # Hard cap: no single LLM call waits > 12s
+                "max_retries": 1,         # One retry on transient failure (12s × 2 = 24s worst case, fits 15s tool timeout on first attempt)
             }
             # o3 models don't support temperature parameter
             if not model.startswith("o3"):

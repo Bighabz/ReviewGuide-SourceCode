@@ -5,12 +5,18 @@ Responsibilities:
 - Determine if general queries need web search
 """
 from app.core.centralized_logger import get_logger
+import hashlib
 import json
-from typing import Dict, Any
+import time
+from typing import Dict, Any, Tuple
 from ..schemas.graph_state import GraphState
 from .base_agent import BaseAgent
 
 logger = get_logger(__name__)
+
+# Intent classification cache: key -> (result_dict, timestamp)
+_intent_cache: Dict[str, Tuple[Dict, float]] = {}
+_INTENT_CACHE_TTL = 300  # 5 minutes
 
 
 class IntentAgent(BaseAgent):
@@ -61,6 +67,20 @@ class IntentAgent(BaseAgent):
 
     async def _quick_intent_classification(self, text: str, conversation_history: list = None, last_search_context: dict = None) -> Dict[str, Any]:
         """Call 1: Quick intent classification only (lightweight, ~1-2s)"""
+        global _intent_cache
+
+        # Cache check — only for standalone messages (no conversation context that would change intent)
+        has_context = bool(conversation_history) or bool(last_search_context and last_search_context.get("category"))
+        if not has_context:
+            cache_key = hashlib.md5(text.strip().lower().encode()).hexdigest()
+            now = time.time()
+            if cache_key in _intent_cache:
+                cached_result, cached_at = _intent_cache[cache_key]
+                if now - cached_at < _INTENT_CACHE_TTL:
+                    logger.info(f"[Intent Agent] Cache HIT for: {text[:50]}")
+                    return cached_result
+        else:
+            cache_key = None
 
         # Build context hint from last search if available
         context_hint = ""
@@ -134,7 +154,16 @@ Return ONLY valid JSON:
             logger.info(f"{BLUE}[CALL 1] Intent detected: {intent}{RESET}")
             logger.info(f"{BLUE}{'=' * 80}{RESET}")
 
-            return {"intent": intent}
+            # Store in cache (only standalone messages without context)
+            intent_result = {"intent": intent}
+            if cache_key is not None:
+                _intent_cache[cache_key] = (intent_result, time.time())
+                # Periodic cleanup to prevent memory leak
+                if len(_intent_cache) > 10000:
+                    cutoff = time.time() - _INTENT_CACHE_TTL
+                    _intent_cache = {k: v for k, v in _intent_cache.items() if v[1] > cutoff}
+
+            return intent_result
 
         except Exception as e:
             logger.error(f"[CALL 1] Quick intent classification error: {str(e)}")
