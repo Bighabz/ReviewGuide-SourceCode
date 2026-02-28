@@ -41,8 +41,6 @@ export function ExplainabilityPanel({ metadata }: ExplainabilityPanelProps) {
   const timedOutProviders = metadata.provider_coverage.filter(
     (p) => p.status === 'timed_out'
   )
-  const showLowConfidence = metadata.confidence_score < 0.6
-
   return (
     <div
       className="mt-3 border-t pt-2"
@@ -73,20 +71,6 @@ export function ExplainabilityPanel({ metadata }: ExplainabilityPanelProps) {
           </span>
         </button>
 
-        {/* Low confidence badge — shown regardless of open/closed state */}
-        {showLowConfidence && (
-          <span
-            className="text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border"
-            style={{
-              color: 'var(--accent)',
-              borderColor: 'var(--accent)',
-              background: 'color-mix(in srgb, var(--accent) 8%, transparent)',
-            }}
-            data-testid="low-confidence-badge"
-          >
-            Low confidence
-          </span>
-        )}
       </div>
 
       {/* Collapsible detail panel */}
@@ -140,14 +124,6 @@ export function ExplainabilityPanel({ metadata }: ExplainabilityPanelProps) {
             </div>
           )}
 
-          {/* Confidence score indicator */}
-          <div
-            className="text-[11px] pt-0.5"
-            style={{ color: 'var(--text-muted)' }}
-            data-testid="confidence-score"
-          >
-            Confidence: {Math.round(metadata.confidence_score * 100)}%
-          </div>
         </div>
       )}
     </div>
