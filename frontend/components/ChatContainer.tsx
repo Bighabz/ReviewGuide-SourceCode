@@ -833,7 +833,7 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
               backdropFilter: 'blur(12px)'
             }}
           >
-            <div id="chat-input-container" className="mx-auto px-2 sm:px-0" style={{ maxWidth: '780px' }}>
+            <div id="chat-input-container" className="mx-auto px-2 sm:px-0 max-w-full" style={{ maxWidth: '780px' }}>
               <ChatInput
                 value={input}
                 onChange={setInput}

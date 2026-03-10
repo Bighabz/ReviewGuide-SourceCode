@@ -199,6 +199,14 @@ body {
   letter-spacing: -0.011em;
 }
 
+/* Mobile overflow prevention */
+#message-container,
+.comparison-html-container,
+.prose {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
 /* Editorial Typography */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-instrument), Georgia, serif;

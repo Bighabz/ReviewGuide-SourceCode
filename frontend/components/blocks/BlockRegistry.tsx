@@ -78,7 +78,7 @@ const BLOCK_RENDERERS: Record<string, BlockRenderer> = {
         })
         return (
             <div
-                className="comparison-html-container rounded-xl overflow-hidden shadow-card border border-[var(--border)]"
+                className="comparison-html-container rounded-xl overflow-x-auto shadow-card border border-[var(--border)] max-w-full"
                 style={{ background: 'var(--surface)' }}
                 dangerouslySetInnerHTML={{ __html: html }}
             />
