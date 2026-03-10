@@ -77,7 +77,7 @@ export default function ChatInput({
 
         {/* Send Button */}
         <motion.button
-          onClick={onSend}
+          onClick={() => onSend()}
           disabled={disabled || !hasValue}
           className="absolute right-3 bottom-3 rounded-xl w-9 h-9 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed"
           style={{
