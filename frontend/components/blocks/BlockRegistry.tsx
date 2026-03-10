@@ -98,7 +98,12 @@ const BLOCK_RENDERERS: Record<string, BlockRenderer> = {
         <ReviewSources data={(b.data as any) ?? { products: [] }} title={b.title} />
     ),
     price_comparison: (b) => (
-        <PriceComparison items={(b.data as any[]) ?? []} title={b.title} />
+        <div>
+            <PriceComparison items={(b.data as any[]) ?? []} title={b.title} />
+            <p className="text-xs text-[var(--text-muted)] mt-3 px-1">
+                Disclosure: We may earn commissions from qualifying purchases.
+            </p>
+        </div>
     ),
     conclusion: (b) => (
         <div className="mt-4 px-3 sm:px-4 py-3 rounded-2xl rounded-tl-md bg-[var(--surface-elevated)] border border-[var(--border)] text-[14px] sm:text-[15px] leading-relaxed text-[var(--text)]">

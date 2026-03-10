@@ -151,6 +151,9 @@ export default function ProductCards({ products }: ProductCardsProps) {
           </div>
         )
       })}
+      <p className="text-xs text-[var(--text-muted)] mt-3 px-1">
+        Disclosure: We may earn commissions from qualifying purchases.
+      </p>
     </div>
   )
 }
