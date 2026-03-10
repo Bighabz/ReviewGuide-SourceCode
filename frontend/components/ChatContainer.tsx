@@ -713,10 +713,14 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
       {messages.length === 0 && (
         <div id="welcome-screen" className="flex-1 overflow-y-auto">
           <div className="flex flex-col items-center justify-center px-4 lg:pr-28 pt-14 sm:pt-16 pb-10 sm:pb-16">
-              <img
-                src="/images/ezgif-7b66ba24abcfdab0.gif"
-                alt="ReviewGuide.Ai"
+              <video
+                src="/images/animated_logo.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
                 className="h-32 sm:h-44 md:h-56 w-auto mb-4"
+                aria-label="ReviewGuide.Ai"
               />
               <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl text-center text-[var(--text)] leading-tight tracking-tight">
                 Smart shopping,{' '}

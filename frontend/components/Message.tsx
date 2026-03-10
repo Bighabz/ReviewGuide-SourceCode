@@ -122,7 +122,7 @@ export default function Message({ message, isLast = false }: MessageProps) {
           <div className="flex-shrink-0 mt-0.5">
             <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-[var(--primary)] shadow-sm">
               <img
-                src="/images/ezgif-7b66ba24abcfdab0.gif"
+                src="/images/8f4c1971-a5b0-474e-9fb1-698e76324f0b.png"
                 alt="AI"
                 className="w-4 h-4 rounded"
               />
