@@ -592,56 +592,11 @@ Products to describe:
                 return fallback
             return val.strip()
 
-        # ── Phase 4: Assemble results ──
+        # ── Phase 4: Assemble blog-style article ──
 
-        # Concierge text (non-review path)
-        if 'concierge' in result_map:
-            assistant_text = _get_result('concierge', fallback="Here's what I found for you.")
-
-        # Review sources block
         ui_blocks = []
-        if review_data and review_bundles:
-            review_products = []
-            for product_name, bundle in review_bundles.items():
-                consensus = _get_result(f'consensus:{product_name}')
-                review_products.append({
-                    "name": product_name,
-                    "avg_rating": bundle.get("avg_rating", 0),
-                    "total_reviews": bundle.get("total_reviews", 0),
-                    "consensus": consensus,
-                    "editorial_label": editorial_labels.get(product_name),
-                    "sources": [
-                        {
-                            "site_name": s.get("site_name", ""),
-                            "url": s.get("url", ""),
-                            "title": s.get("title", ""),
-                            "snippet": s.get("snippet", ""),
-                            "rating": s.get("rating"),
-                            "favicon_url": s.get("favicon_url", ""),
-                            "date": s.get("date"),
-                        }
-                        for s in bundle.get("sources", [])[:6]
-                    ],
-                })
 
-            if review_products:
-                ui_blocks.append({
-                    "type": "review_sources",
-                    "title": "What Reviewers Say",
-                    "data": {"products": review_products}
-                })
-
-                # Build assistant_text from opener + per-product highlights
-                assistant_text = _get_result('opener')
-                if assistant_text:
-                    assistant_text += "\n\n"
-                for rp in review_products[:3]:
-                    if rp["consensus"]:
-                        assistant_text += f"**{rp['name']}** — {rp['consensus']}\n\n"
-
-                logger.info(f"[product_compose] Added review_sources block with {len(review_products)} products")
-
-        # Comparison HTML block
+        # Comparison HTML block (keep as structured UI)
         if comparison_html:
             ui_blocks.append({
                 "type": "comparison_html",
@@ -653,7 +608,7 @@ Products to describe:
             })
             logger.info(f"[product_compose] Added comparison HTML block ({len(comparison_html)} chars)")
 
-        # Apply descriptions to products
+        # Apply descriptions to products (keep existing logic)
         if 'descriptions' in result_map:
             desc_raw = _get_result('descriptions')
             if desc_raw:
@@ -667,10 +622,11 @@ Products to describe:
                 except (json.JSONDecodeError, Exception) as desc_error:
                     logger.warning(f"[product_compose] Failed to parse descriptions: {desc_error}")
 
-        # Cross-retailer price comparison — tag products with best price badges
+        # Cross-retailer price comparison (keep as structured UI block)
         price_comparisons = _find_price_comparisons(products_by_provider) if len(products_by_provider) >= 2 else {}
         if price_comparisons:
             logger.info(f"[product_compose] Found {len(price_comparisons)} cross-retailer price comparisons")
+            # Tag products with best_price badges
             for provider_name, data in products_by_provider.items():
                 for product in data["products"]:
                     title = product.get("title", "")
@@ -683,8 +639,7 @@ Products to describe:
                                     product["compared_retailer"] = comp_data["other_prices"][0]["retailer"].title()
                             break
 
-        # Build unified price comparison block
-        if price_comparisons:
+            # Build price comparison UI block
             comparison_items = []
             for comp_key, comp_data in price_comparisons.items():
                 offers = []
@@ -717,25 +672,132 @@ Products to describe:
                 })
                 logger.info(f"[product_compose] Added price_comparison block with {len(comparison_items)} products")
 
-        # Add provider carousel blocks
-        for provider_name, data in products_by_provider.items():
-            ui_blocks.append({
-                "type": data["config"]["type"],
-                "title": data["config"]["title"],
-                "data": data["products"]
-            })
-            logger.info(f"[product_compose] Added {len(data['products'])} {provider_name} products to UI")
+        # ── Build blog-style assistant_text ──
 
-        # Conclusion block
-        conclusion_text = _get_result(
-            'conclusion',
-            f"Showing {num_products} results across {num_providers} retailer{'s' if num_providers != 1 else ''} — prices and availability may vary."
-        )
-        ui_blocks.append({
-            "type": "conclusion",
-            "data": {"text": conclusion_text}
-        })
-        logger.info(f"[product_compose] Added conclusion block: {conclusion_text[:80]}")
+        if review_data and review_bundles:
+            # REVIEW PATH: Full blog article with review consensus
+
+            # Blog opener
+            opener = _get_result('opener', '')
+            article_parts = []
+            if opener:
+                article_parts.append(opener)
+
+            # Numbered product sections
+            for idx, (product_name, bundle) in enumerate(review_bundles.items(), 1):
+                consensus = _get_result(f'consensus:{product_name}', '')
+                label = editorial_labels.get(product_name, '')
+
+                # Build section heading
+                heading = f"## {idx}. {product_name}"
+                if label:
+                    heading += f" — *{label}*"
+                article_parts.append(heading)
+
+                # Rating line
+                avg_rating = bundle.get("avg_rating", 0)
+                total_reviews = bundle.get("total_reviews", 0)
+                if avg_rating > 0:
+                    article_parts.append(f"**{avg_rating}/5** from {total_reviews:,} reviews")
+
+                # Consensus / mini-review
+                if consensus:
+                    article_parts.append(consensus)
+
+                # Price and affiliate link
+                # Find best offer for this product from products_with_offers
+                product_offer = next(
+                    (p for p in products_with_offers if p.get("name") == product_name and p.get("best_offer")),
+                    None
+                )
+                if product_offer and product_offer.get("best_offer"):
+                    offer = product_offer["best_offer"]
+                    price = offer.get("price", 0)
+                    merchant = offer.get("merchant", "")
+                    url = offer.get("url", "")
+                    currency = offer.get("currency", "USD")
+                    if price > 0 and url:
+                        price_str = f"${price:.2f}" if currency == "USD" else f"{currency} {price:.2f}"
+                        article_parts.append(f"**{price_str}** — [Check price on {merchant} →]({url})")
+                    elif url:
+                        article_parts.append(f"[Check price on {merchant} →]({url})")
+                else:
+                    # Try to find from all_products_for_desc by fuzzy match
+                    for p in all_products_for_desc:
+                        if _fuzzy_product_match(product_name, p.get("title", "")):
+                            url = p.get("url", "")
+                            price = p.get("price", 0)
+                            merchant = p.get("merchant", "")
+                            if url:
+                                if price > 0:
+                                    article_parts.append(f"**${price:.2f}** — [Check price on {merchant} →]({url})")
+                                else:
+                                    article_parts.append(f"[Check price on {merchant} →]({url})")
+                            break
+
+            # Conclusion / verdict
+            conclusion = _get_result('conclusion', '')
+            if conclusion:
+                article_parts.append("## Our Verdict")
+                article_parts.append(conclusion)
+
+            assistant_text = "\n\n".join(article_parts)
+            logger.info(f"[product_compose] Built blog article (review path) with {len(review_bundles)} products, {len(assistant_text)} chars")
+
+        elif 'concierge' in result_map:
+            # CONCIERGE PATH: No review data, just affiliate products
+            concierge = _get_result('concierge', "Here's what I found for you.")
+            article_parts = [concierge]
+
+            # List products with descriptions and affiliate links
+            seen_products = set()
+            product_idx = 0
+            for provider_name, data in products_by_provider.items():
+                for product in data["products"]:
+                    title = product.get("title", "")
+                    if title in seen_products or product_idx >= 8:
+                        continue
+                    seen_products.add(title)
+                    product_idx += 1
+
+                    price = product.get("price", 0)
+                    merchant = product.get("merchant", provider_name.title())
+                    url = product.get("url", "")
+                    description = product.get("description", "")
+                    rating = product.get("rating")
+
+                    # Section heading
+                    heading = f"### {product_idx}. {title}"
+                    article_parts.append(heading)
+
+                    # Description
+                    if description:
+                        article_parts.append(description)
+
+                    # Rating
+                    if rating:
+                        article_parts.append(f"**{rating}/5** stars")
+
+                    # Price + link
+                    if price > 0 and url:
+                        article_parts.append(f"**${price:.2f}** — [Check price on {merchant} →]({url})")
+                    elif url:
+                        article_parts.append(f"[View on {merchant} →]({url})")
+
+            # Conclusion
+            conclusion = _get_result('conclusion', '')
+            if conclusion:
+                article_parts.append("---")
+                article_parts.append(conclusion)
+
+            assistant_text = "\n\n".join(article_parts)
+            logger.info(f"[product_compose] Built blog article (concierge path) with {product_idx} products, {len(assistant_text)} chars")
+
+        else:
+            # Fallback
+            if not assistant_text:
+                assistant_text = "Here's what I found for you."
+            logger.info(f"[product_compose] Using fallback assistant_text ({len(assistant_text)} chars)")
 
         # Create citations
         citations = [p["url"] for p in normalized_products if p.get("url")][:5]
