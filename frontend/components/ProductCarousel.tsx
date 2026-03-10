@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { ChevronLeft, ChevronRight, ExternalLink, Star } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { ChevronLeft, ChevronRight, Star } from 'lucide-react'
 import FunPlaceholder from './ui/FunPlaceholder'
 import { motion } from 'framer-motion'
 import { trackAffiliateClick } from '@/lib/trackAffiliate'
@@ -173,10 +173,10 @@ export default function ProductCarousel({ items, title }: ProductCarouselProps) 
                   <ProductImage item={item} />
 
                   {/* Content */}
-                  <div className="p-4 space-y-2">
+                  <div className="p-4 sm:p-5 space-y-2.5">
                     {/* Merchant + Best Price badge */}
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
                         {item.merchant}
                       </span>
                       {item.best_price && (
@@ -186,8 +186,8 @@ export default function ProductCarousel({ items, title }: ProductCarouselProps) 
                       )}
                     </div>
 
-                    {/* Title */}
-                    <h4 className="text-sm font-semibold text-[var(--text)] line-clamp-2 leading-snug group-hover:text-[var(--primary)] transition-colors">
+                    {/* Title — serif */}
+                    <h4 className="font-serif text-base font-semibold text-[var(--text)] line-clamp-2 leading-snug group-hover:text-[var(--primary)] transition-colors">
                       {item.title}
                     </h4>
 
@@ -202,17 +202,10 @@ export default function ProductCarousel({ items, title }: ProductCarouselProps) 
                       </div>
                     )}
 
-                    {/* Description */}
-                    {item.description && (
-                      <p className="text-sm text-[var(--text-secondary)] line-clamp-2 leading-relaxed">
-                        {item.description}
-                      </p>
-                    )}
-
                     {/* Price + CTA */}
-                    <div className="flex items-center justify-between pt-2 border-t border-[var(--border)]">
+                    <div className="flex items-center justify-between pt-2.5 border-t border-[var(--border)]">
                       <div>
-                        <span className="text-lg font-bold text-[var(--text)]">
+                        <span className="text-lg font-bold font-serif text-[var(--text)]">
                           {item.currency === 'USD' ? '$' : item.currency}{' '}
                           {item.price?.toFixed(2) ?? 'N/A'}
                         </span>
@@ -223,8 +216,7 @@ export default function ProductCarousel({ items, title }: ProductCarouselProps) 
                         )}
                       </div>
                       <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--primary)] group-hover:text-[var(--primary-hover)]">
-                        View Deal
-                        <ExternalLink size={12} />
+                        View on {item.merchant} &rarr;
                       </span>
                     </div>
                   </div>

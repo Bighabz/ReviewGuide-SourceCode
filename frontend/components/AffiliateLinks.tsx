@@ -34,50 +34,43 @@ export default function AffiliateLinks({ productName, affiliateLinks, rank }: Af
         </h3>
       </div>
 
-      {/* Affiliate Links Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      {/* Where to Buy — editorial heading */}
+      <h4 className="text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] mb-3">
+        Where to buy
+      </h4>
+
+      <div className="space-y-2">
         {affiliateLinks.map((link, idx) => (
           <a
             key={idx}
             href={link.affiliate_link}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex flex-col p-3 border border-[var(--border)] rounded-xl bg-[var(--surface)] hover:bg-[var(--surface-hover)] transition-colors group"
+            className="flex items-center justify-between p-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-hover)] hover:border-[var(--primary)]/30 transition-all group/link"
           >
-            {/* Merchant and Rating */}
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-[var(--text-secondary)] uppercase">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] shrink-0">
                 {link.merchant}
               </span>
               {link.rating && (
                 <div className="flex items-center gap-1">
-                  <Star size={12} fill="currentColor" className="text-[var(--text)]" />
-                  <span className="text-xs font-medium text-[var(--text)]">{link.rating}</span>
+                  <Star size={12} fill="currentColor" className="text-amber-500" />
+                  <span className="text-xs text-[var(--text-muted)]">{link.rating}</span>
                 </div>
               )}
+              {link.review_count && link.review_count > 0 && (
+                <span className="text-xs text-[var(--text-muted)]">
+                  ({link.review_count.toLocaleString()} reviews)
+                </span>
+              )}
             </div>
-
-            {/* Product Title */}
-            <p className="text-sm text-[var(--text)] mb-2 line-clamp-2">
-              {link.title}
-            </p>
-
-            {/* Price */}
-            <p className="text-lg font-semibold text-[var(--text)] mb-1">
-              {link.currency} {link.price.toFixed(2)}
-            </p>
-
-            {/* Review Count */}
-            {link.review_count && link.review_count > 0 && (
-              <p className="text-xs text-[var(--text-muted)] mb-2">
-                {link.review_count.toLocaleString()} reviews
-              </p>
-            )}
-
-            {/* External Link */}
-            <div className="flex items-center gap-1 text-xs text-[var(--text-secondary)] group-hover:text-[var(--text)] mt-auto pt-2 border-t border-[var(--border)]">
-              <span>View on {link.merchant}</span>
-              <ExternalLink size={12} />
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="text-base font-bold font-serif text-[var(--text)]">
+                {link.currency} {link.price.toFixed(2)}
+              </span>
+              <span className="text-xs font-medium text-[var(--primary)] group-hover/link:text-[var(--primary-hover)] flex items-center gap-1">
+                View <ExternalLink size={12} />
+              </span>
             </div>
           </a>
         ))}

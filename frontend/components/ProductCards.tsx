@@ -1,7 +1,5 @@
 'use client'
 
-import { Check, X, ExternalLink } from 'lucide-react'
-
 interface ProductCard {
   // Old format fields
   rank?: number
@@ -57,94 +55,75 @@ export default function ProductCards({ products }: ProductCardsProps) {
         return (
           <div
             key={product.id || product.rank || index}
-            className="group relative bg-[var(--card-bg)] border border-[var(--border)] rounded-xl overflow-hidden hover:shadow-md transition-all duration-300"
+            className="group bg-[var(--surface-elevated)] border border-[var(--border)] rounded-xl overflow-hidden hover:shadow-md transition-all duration-300"
           >
-            <div className="p-4 sm:p-5">
-              {/* Product Header */}
-              <div className="flex justify-between items-start gap-4 mb-3">
+            <div className="p-5 sm:p-6">
+              {/* Editorial heading */}
+              <div className="flex items-start justify-between gap-4 mb-2">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-[var(--primary)] text-white text-xs font-bold shadow-sm">
-                      {displayRank}
-                    </span>
-                    {displayMerchant && (
-                      <span className="text-[10px] uppercase font-bold tracking-wider text-[var(--text-secondary)] border border-[var(--border)] px-1.5 py-0.5 rounded bg-[var(--surface)]">
-                        {displayMerchant}
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="font-heading text-lg font-semibold text-[var(--text)] leading-snug group-hover:text-[var(--primary)] transition-colors">
-                    <a href={displayLink} target="_blank" rel="noopener noreferrer" className="hover:underline decoration-2 decoration-[var(--primary)] underline-offset-2">
+                  <h3 className="font-serif text-xl font-semibold text-[var(--text)] leading-snug tracking-tight">
+                    <span className="text-[var(--primary)]">{displayRank}.</span>{' '}
+                    <a href={displayLink} target="_blank" rel="noopener noreferrer" className="hover:underline decoration-1 underline-offset-4">
                       {displayTitle}
                     </a>
                   </h3>
+                  {/* Badges as editorial labels */}
+                  <div className="flex items-center gap-2 mt-1.5">
+                    {product.badges?.map((badge, bIdx) => (
+                      <span key={bIdx} className="text-xs font-semibold text-[var(--accent)] italic">
+                        {badge}
+                      </span>
+                    ))}
+                    {displayMerchant && (
+                      <span className="text-[10px] uppercase font-medium tracking-wider text-[var(--text-muted)]">
+                        via {displayMerchant}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 {displayPrice !== undefined && (
                   <div className="text-right shrink-0">
-                    <p className="text-lg font-bold text-[var(--text)] font-heading">
-                      {displayCurrency} {displayPrice.toFixed(2)}
+                    <p className="text-xl font-bold text-[var(--text)] font-serif">
+                      ${displayPrice.toFixed(2)}
                     </p>
                   </div>
                 )}
               </div>
 
-              {/* Specs */}
-              {product.specs && product.specs.length > 0 && (
-                <ul className="mb-4 flex flex-wrap gap-2">
-                  {product.specs.map((spec, idx) => (
-                    <li key={idx} className="text-xs font-medium px-2 py-1 bg-[var(--surface)] border border-[var(--border)] rounded-md text-[var(--text-secondary)]">
-                      {spec}
-                    </li>
-                  ))}
-                </ul>
+              {/* Snippet / description */}
+              {product.snippet && (
+                <p className="text-sm text-[var(--text-secondary)] leading-relaxed mt-3 mb-4">
+                  {product.snippet}
+                </p>
               )}
 
-              {/* Pros & Cons Grid */}
+              {/* Pros & cons as flowing text */}
               {(displayPros.length > 0 || displayCons.length > 0) && (
-                <div className="grid sm:grid-cols-2 gap-4 mb-4 p-3 rounded-lg bg-[var(--surface)]/50 border border-[var(--border)]/50">
+                <div className="mt-3 mb-4 space-y-2 text-sm leading-relaxed">
                   {displayPros.length > 0 && (
-                    <div>
-                      <p className="text-[10px] font-bold text-green-600 mb-2 uppercase tracking-wide flex items-center gap-1">
-                        <Check size={12} strokeWidth={3} /> Pros
-                      </p>
-                      <ul className="space-y-1.5">
-                        {displayPros.map((pro, idx) => (
-                          <li key={idx} className="text-sm text-[var(--text)] flex items-start gap-2 leading-relaxed">
-                            <span className="w-1 h-1 rounded-full bg-green-500 mt-2 shrink-0" />
-                            <span className="opacity-90">{pro}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                    <p className="text-[var(--text)]">
+                      <span className="font-semibold text-green-600">What we like:</span>{' '}
+                      {displayPros.join('. ')}.
+                    </p>
                   )}
-
                   {displayCons.length > 0 && (
-                    <div className={`${displayPros.length > 0 ? 'border-t sm:border-t-0 sm:border-l border-[var(--border)] pt-3 sm:pt-0 sm:pl-4' : ''}`}>
-                      <p className="text-[10px] font-bold text-red-500 mb-2 uppercase tracking-wide flex items-center gap-1">
-                        <X size={12} strokeWidth={3} /> Cons
-                      </p>
-                      <ul className="space-y-1.5">
-                        {displayCons.map((con, idx) => (
-                          <li key={idx} className="text-sm text-[var(--text)] flex items-start gap-2 leading-relaxed">
-                            <span className="w-1 h-1 rounded-full bg-red-400 mt-2 shrink-0" />
-                            <span className="opacity-90">{con}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                    <p className="text-[var(--text)]">
+                      <span className="font-semibold text-red-500">Watch out for:</span>{' '}
+                      {displayCons.join('. ')}.
+                    </p>
                   )}
                 </div>
               )}
 
-              {/* Footer Action */}
-              <div className="flex justify-end pt-2">
+              {/* CTA */}
+              <div className="flex justify-start pt-3 border-t border-[var(--border)]">
                 <a
                   href={displayLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-5 py-2 bg-[var(--primary)] text-white text-sm font-medium rounded-full hover:bg-[var(--primary-hover)] hover:shadow-md hover:-translate-y-0.5 transition-all"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-[var(--primary)] hover:text-[var(--primary-hover)] transition-colors"
                 >
-                  View Deal <ExternalLink size={14} strokeWidth={2.5} />
+                  Check price{displayMerchant ? ` on ${displayMerchant}` : ''} &rarr;
                 </a>
               </div>
             </div>
