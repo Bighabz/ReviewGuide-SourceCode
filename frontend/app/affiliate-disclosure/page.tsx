@@ -21,27 +21,19 @@ export default function AffiliateDisclosurePage() {
 
       <div className="space-y-6">
         <p className="text-[var(--text-secondary)] leading-relaxed">
-          ReviewGuide.ai participates in affiliate marketing programs, which means we may
-          earn commissions on purchases made through links on this website.
-        </p>
-
-        <p className="text-[var(--text-secondary)] leading-relaxed">
-          As an Amazon Associate, we earn from qualifying purchases. We may also participate
-          in other affiliate programs with retailers and service providers.
+          ReviewGuide.ai participates in various affiliate marketing programs.
+          This means we may earn a commission when users purchase products through
+          links on our website, at no additional cost to you.
         </p>
 
         <p className="text-[var(--text-secondary)] leading-relaxed font-medium text-[var(--text)]">
-          These commissions come at no additional cost to you.
+          As an Amazon Associate, we earn from qualifying purchases.
         </p>
 
         <p className="text-[var(--text-secondary)] leading-relaxed">
-          Our editorial content, product summaries, and analysis are generated independently
-          and are not influenced by affiliate relationships. Compensation does not impact
-          our evaluation methodology.
-        </p>
-
-        <p className="text-[var(--text-secondary)] leading-relaxed">
-          Users should assume that any outbound product link may be an affiliate link.
+          Our product summaries and recommendations are generated independently
+          to help users make informed decisions. Affiliate partnerships do not
+          influence our analysis, opinions, or product evaluations.
         </p>
 
         <div className="border-t border-[var(--border)] pt-6 mt-8">
