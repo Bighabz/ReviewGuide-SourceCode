@@ -522,14 +522,14 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
                     for msg in recent_messages if msg.get('content')
                 ])
 
-            desc_system = """Generate personalized 15-20 word descriptions for each product.
+            desc_system = """Generate factual 15-25 word descriptions for each product.
 
-IMPORTANT RULES:
-1. If user mentioned a pet name (like "Max", "Bella"), reference it: "Your dog Max would love this because..."
-2. If user mentioned a person (girlfriend, baby, mom), personalize: "Perfect gift for your girlfriend..."
-3. If no specific context, ask a follow-up question in the description: "Great choice! What breed is your dog?"
-4. Vary your descriptions - don't repeat the same pattern
-5. Be warm and conversational, not generic
+RULES:
+1. Focus on what makes each product stand out — key features, best use case, who it's ideal for
+2. ONLY reference personal details (names, pets, family) if they appear in the conversation context. NEVER invent or assume personal details.
+3. If no personal context exists, write objectively about the product's strengths
+4. Vary your descriptions — don't repeat the same pattern
+5. Be warm and informative, like a knowledgeable friend
 
 Return JSON: {"descriptions": ["desc1", "desc2", ...]}"""
 
@@ -565,6 +565,62 @@ Products to describe:
                 max_tokens=80,
                 agent_name="product_conclusion"
             )
+
+        # --- Blog article composition ---
+        # Gather all data the blog writer needs
+        blog_data_parts = []
+        blog_data_parts.append(f"User asked: \"{user_message}\"")
+
+        # Products with reviews
+        if review_bundles:
+            for pname, bundle in review_bundles.items():
+                label_str = f" ({editorial_labels[pname]})" if pname in editorial_labels else ""
+                rating = bundle.get("avg_rating", 0)
+                total = bundle.get("total_reviews", 0)
+                # Find price/merchant
+                p_offer = next((p for p in products_with_offers if p.get("name") == pname and p.get("best_offer")), None)
+                price_str = ""
+                merchant_str = ""
+                link_str = ""
+                if p_offer and p_offer.get("best_offer"):
+                    o = p_offer["best_offer"]
+                    price_str = f"${o.get('price', 0):.2f}" if o.get("price") else ""
+                    merchant_str = o.get("merchant", "")
+                    link_str = o.get("url", "")
+                blog_data_parts.append(f"Product: {pname}{label_str} | Rating: {rating}/5 ({total} reviews) | Price: {price_str} on {merchant_str} | Link: {link_str}")
+        elif products_by_provider:
+            for prov, data in products_by_provider.items():
+                for prod in data["products"][:5]:
+                    t = prod.get("title", "")
+                    pr = prod.get("price", 0)
+                    m = prod.get("merchant", prov.title())
+                    u = prod.get("url", "")
+                    r = prod.get("rating", "")
+                    blog_data_parts.append(f"Product: {t} | Price: ${pr:.2f} on {m} | Rating: {r}/5 | Link: {u}")
+
+        blog_data = "\n".join(blog_data_parts)
+
+        llm_tasks['blog_article'] = model_service.generate(
+            messages=[
+                {"role": "system", "content": """You are an expert product journalist writing a blog-style review article. Write in a warm, authoritative voice — like a Wirecutter or The Verge review.
+
+FORMAT REQUIREMENTS:
+- Start with a 2-3 sentence intro addressing what the user is looking for
+- For each product, write a ## heading with the product name and editorial label (if any) in italics
+- Under each heading, write 2-4 sentences of natural prose reviewing the product — strengths, caveats, who it's for
+- Include the price and a markdown link: [Check price on Merchant →](url)
+- End with a ## Our Verdict section (2 sentences with your recommendation)
+- Write naturally — vary sentence structure, don't be formulaic
+- NEVER invent features or specs not in the data
+- NEVER mention personal details unless the user provided them
+- Keep the total response under 500 words"""},
+                {"role": "user", "content": blog_data}
+            ],
+            model=settings.COMPOSER_MODEL,
+            temperature=0.7,
+            max_tokens=800,
+            agent_name="blog_article_composer"
+        )
 
         # ── Phase 3: Fire all LLM calls in parallel ──
 
@@ -674,38 +730,25 @@ Products to describe:
 
         # ── Build blog-style assistant_text ──
 
-        if review_data and review_bundles:
-            # REVIEW PATH: Full blog article with review consensus
-
-            # Blog opener
+        blog_article = _get_result('blog_article', '')
+        if blog_article:
+            assistant_text = blog_article
+            logger.info(f"[product_compose] LLM blog article: {len(assistant_text)} chars")
+        elif review_data and review_bundles:
+            # Fallback: template assembly (same as current code)
             opener = _get_result('opener', '')
             article_parts = []
             if opener:
                 article_parts.append(opener)
-
-            # Numbered product sections
             for idx, (product_name, bundle) in enumerate(review_bundles.items(), 1):
                 consensus = _get_result(f'consensus:{product_name}', '')
                 label = editorial_labels.get(product_name, '')
-
-                # Build section heading
                 heading = f"## {idx}. {product_name}"
                 if label:
                     heading += f" — *{label}*"
                 article_parts.append(heading)
-
-                # Rating line
-                avg_rating = bundle.get("avg_rating", 0)
-                total_reviews = bundle.get("total_reviews", 0)
-                if avg_rating > 0:
-                    article_parts.append(f"**{avg_rating}/5** from {total_reviews:,} reviews")
-
-                # Consensus / mini-review
                 if consensus:
                     article_parts.append(consensus)
-
-                # Price and affiliate link
-                # Find best offer for this product from products_with_offers
                 product_offer = next(
                     (p for p in products_with_offers if p.get("name") == product_name and p.get("best_offer")),
                     None
@@ -715,41 +758,16 @@ Products to describe:
                     price = offer.get("price", 0)
                     merchant = offer.get("merchant", "")
                     url = offer.get("url", "")
-                    currency = offer.get("currency", "USD")
                     if price > 0 and url:
-                        price_str = f"${price:.2f}" if currency == "USD" else f"{currency} {price:.2f}"
-                        article_parts.append(f"**{price_str}** — [Check price on {merchant} →]({url})")
-                    elif url:
-                        article_parts.append(f"[Check price on {merchant} →]({url})")
-                else:
-                    # Try to find from all_products_for_desc by fuzzy match
-                    for p in all_products_for_desc:
-                        if _fuzzy_product_match(product_name, p.get("title", "")):
-                            url = p.get("url", "")
-                            price = p.get("price", 0)
-                            merchant = p.get("merchant", "")
-                            if url:
-                                if price > 0:
-                                    article_parts.append(f"**${price:.2f}** — [Check price on {merchant} →]({url})")
-                                else:
-                                    article_parts.append(f"[Check price on {merchant} →]({url})")
-                            break
-
-            # Conclusion / verdict
+                        article_parts.append(f"**${price:.2f}** — [Check price on {merchant} →]({url})")
             conclusion = _get_result('conclusion', '')
             if conclusion:
                 article_parts.append("## Our Verdict")
                 article_parts.append(conclusion)
-
             assistant_text = "\n\n".join(article_parts)
-            logger.info(f"[product_compose] Built blog article (review path) with {len(review_bundles)} products, {len(assistant_text)} chars")
-
         elif 'concierge' in result_map:
-            # CONCIERGE PATH: No review data, just affiliate products
             concierge = _get_result('concierge', "Here's what I found for you.")
             article_parts = [concierge]
-
-            # List products with descriptions and affiliate links
             seen_products = set()
             product_idx = 0
             for provider_name, data in products_by_provider.items():
@@ -759,45 +777,30 @@ Products to describe:
                         continue
                     seen_products.add(title)
                     product_idx += 1
-
                     price = product.get("price", 0)
                     merchant = product.get("merchant", provider_name.title())
                     url = product.get("url", "")
                     description = product.get("description", "")
-                    rating = product.get("rating")
-
-                    # Section heading
                     heading = f"### {product_idx}. {title}"
                     article_parts.append(heading)
-
-                    # Description
+                    # Product image
+                    image_url = product.get("image_url", "")
+                    if image_url:
+                        article_parts.append(f"![{title}]({image_url})")
                     if description:
                         article_parts.append(description)
-
-                    # Rating
-                    if rating:
-                        article_parts.append(f"**{rating}/5** stars")
-
-                    # Price + link
                     if price > 0 and url:
                         article_parts.append(f"**${price:.2f}** — [Check price on {merchant} →]({url})")
                     elif url:
                         article_parts.append(f"[View on {merchant} →]({url})")
-
-            # Conclusion
             conclusion = _get_result('conclusion', '')
             if conclusion:
                 article_parts.append("---")
                 article_parts.append(conclusion)
-
             assistant_text = "\n\n".join(article_parts)
-            logger.info(f"[product_compose] Built blog article (concierge path) with {product_idx} products, {len(assistant_text)} chars")
-
         else:
-            # Fallback
             if not assistant_text:
                 assistant_text = "Here's what I found for you."
-            logger.info(f"[product_compose] Using fallback assistant_text ({len(assistant_text)} chars)")
 
         # Create citations
         citations = [p["url"] for p in normalized_products if p.get("url")][:5]

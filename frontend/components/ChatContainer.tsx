@@ -720,6 +720,7 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
                 muted
                 playsInline
                 className="h-32 sm:h-44 md:h-56 w-auto mb-4"
+                style={{ mixBlendMode: 'multiply' }}
                 aria-label="ReviewGuide.Ai"
               />
               <h1 className="font-serif text-2xl sm:text-3xl md:text-4xl text-center text-[var(--text)] leading-tight tracking-tight">
