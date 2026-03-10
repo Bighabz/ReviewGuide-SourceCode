@@ -842,12 +842,6 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
                 placeholder={UI_TEXT.PLACEHOLDER_TEXT}
               />
 
-              {/* Minimal footer */}
-              <div id="footer" className="mt-3 sm:mt-4 text-center">
-                <div className="text-[10px] sm:text-xs mb-2 text-[var(--text-muted)] opacity-80">
-                  ReviewGuide.ai may earn from qualifying purchases. AI results should be verified.
-                </div>
-              </div>
             </div>
           </div>
         </>

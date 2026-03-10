@@ -1,3 +1,4 @@
+import Footer from '@/components/Footer'
 import type { Metadata, Viewport } from 'next'
 import { DM_Sans, Instrument_Serif } from 'next/font/google'
 import './globals.css'
@@ -40,7 +41,12 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${dmSans.variable} ${instrumentSerif.variable} font-sans`} suppressHydrationWarning>{children}</body>
+      <body className={`${dmSans.variable} ${instrumentSerif.variable} font-sans`} suppressHydrationWarning>
+        <div className="flex flex-col min-h-screen">
+          <div className="flex-1">{children}</div>
+          <Footer />
+        </div>
+      </body>
     </html>
   )
 }
