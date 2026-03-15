@@ -570,33 +570,53 @@ Products to describe:
         # Gather all data the blog writer needs
         blog_data_parts = []
         blog_data_parts.append(f"User asked: \"{user_message}\"")
+        blog_product_names = []  # Track which products are in the blog (for price comparison filtering)
 
-        # Products with reviews
+        # Products with reviews (use fuzzy matching for offer lookup)
         if review_bundles:
             for pname, bundle in review_bundles.items():
                 label_str = f" ({editorial_labels[pname]})" if pname in editorial_labels else ""
                 rating = bundle.get("avg_rating", 0)
                 total = bundle.get("total_reviews", 0)
-                # Find price/merchant
-                p_offer = next((p for p in products_with_offers if p.get("name") == pname and p.get("best_offer")), None)
+                # Find price/merchant using fuzzy match (not exact) to handle name variations
+                p_offer = next(
+                    (p for p in products_with_offers
+                     if _fuzzy_product_match(p.get("name", ""), pname) and p.get("best_offer")),
+                    None
+                )
                 price_str = ""
                 merchant_str = ""
                 link_str = ""
+                image_str = ""
                 if p_offer and p_offer.get("best_offer"):
                     o = p_offer["best_offer"]
                     price_str = f"${o.get('price', 0):.2f}" if o.get("price") else ""
                     merchant_str = o.get("merchant", "")
                     link_str = o.get("url", "")
-                blog_data_parts.append(f"Product: {pname}{label_str} | Rating: {rating}/5 ({total} reviews) | Price: {price_str} on {merchant_str} | Link: {link_str}")
-        elif products_by_provider:
+                    image_str = o.get("image_url", "")
+                blog_data_parts.append(f"Product: {pname}{label_str} | Rating: {rating}/5 ({total} reviews) | Price: {price_str} on {merchant_str} | Link: {link_str} | Image: {image_str}")
+                blog_product_names.append(pname)
+
+        # Also add affiliate-only products NOT already covered by review_bundles
+        # This ensures blog + price comparison table show the same product set
+        if products_by_provider:
             for prov, data in products_by_provider.items():
                 for prod in data["products"][:5]:
                     t = prod.get("title", "")
+                    # Skip if already covered by a review_bundle product (fuzzy match)
+                    already_covered = any(
+                        _fuzzy_product_match(t, bname, threshold=0.5)
+                        for bname in blog_product_names
+                    )
+                    if already_covered:
+                        continue
                     pr = prod.get("price", 0)
                     m = prod.get("merchant", prov.title())
                     u = prod.get("url", "")
                     r = prod.get("rating", "")
-                    blog_data_parts.append(f"Product: {t} | Price: ${pr:.2f} on {m} | Rating: {r}/5 | Link: {u}")
+                    img = prod.get("image_url", "")
+                    blog_data_parts.append(f"Product: {t} | Price: ${pr:.2f} on {m} | Rating: {r}/5 | Link: {u} | Image: {img}")
+                    blog_product_names.append(t)
 
         blog_data = "\n".join(blog_data_parts)
 
@@ -679,7 +699,14 @@ FORMAT REQUIREMENTS:
                     logger.warning(f"[product_compose] Failed to parse descriptions: {desc_error}")
 
         # Cross-retailer price comparison (keep as structured UI block)
-        price_comparisons = _find_price_comparisons(products_by_provider) if len(products_by_provider) >= 2 else {}
+        # Filter to only products that appear in the blog article
+        price_comparisons_raw = _find_price_comparisons(products_by_provider) if len(products_by_provider) >= 2 else {}
+        price_comparisons = {}
+        for comp_key, comp_data in price_comparisons_raw.items():
+            if any(_fuzzy_product_match(comp_key, bname, threshold=0.4) for bname in blog_product_names):
+                price_comparisons[comp_key] = comp_data
+            else:
+                logger.debug(f"[product_compose] Filtered price comparison '{comp_key}' — not in blog article")
         if price_comparisons:
             logger.info(f"[product_compose] Found {len(price_comparisons)} cross-retailer price comparisons")
             # Tag products with best_price badges
@@ -750,7 +777,8 @@ FORMAT REQUIREMENTS:
                 if consensus:
                     article_parts.append(consensus)
                 product_offer = next(
-                    (p for p in products_with_offers if p.get("name") == product_name and p.get("best_offer")),
+                    (p for p in products_with_offers
+                     if _fuzzy_product_match(p.get("name", ""), product_name) and p.get("best_offer")),
                     None
                 )
                 if product_offer and product_offer.get("best_offer"):
