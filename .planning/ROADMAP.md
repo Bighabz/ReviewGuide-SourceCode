@@ -2,7 +2,7 @@
 
 ## Overview
 
-ReviewGuide.ai is a working product with a broken core experience. The roadmap moves in three layers: first, fix what's visibly broken so every response is trustworthy (phases 1-3, parallelizable); second, secure Amazon's future before the hard API shutdown deadline and add the catch-all affiliate monetization layer (phases 4-6); third, upgrade the conversational UX to match the industry standard and expand the provider network (phases 7-10). Phases 1-3 can run in parallel. Phases 5-6 are gated on Skimlinks publisher approval — apply immediately.
+ReviewGuide.ai is a working product with critical performance and data coverage issues. The roadmap moves in four layers: first, fix the 90-second response time that kills engagement (phase 1); second, fix broken features so every response is trustworthy (phases 2-4, parallelizable); third, secure Amazon's future before the hard API shutdown and add catch-all affiliate monetization (phases 5-7); fourth, upgrade conversational UX and expand providers (phases 8-11). Phases 2-4 can run in parallel. Phases 6-7 are gated on Skimlinks publisher approval — apply immediately.
 
 ## Phases
 
@@ -12,22 +12,35 @@ ReviewGuide.ai is a working product with a broken core experience. The roadmap m
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Fix Review Source Links** - Restore clickable review citations in blog-style responses
-- [ ] **Phase 2: Serper Shopping Provider** - Add multi-retailer product search with images as a new affiliate provider
-- [ ] **Phase 3: Browse Page Fixes** - Fix broken amzn.to links and truncated affiliate URL on browse pages
-- [ ] **Phase 4: Amazon Creators API Migration** - Migrate Amazon provider from PA-API v5 to Creators API before May 15, 2026 deadline
-- [ ] **Phase 5: Skimlinks Link Wrapper** - Implement server-side affiliate monetization for non-Amazon, non-eBay product URLs
-- [ ] **Phase 6: Skimlinks Middleware + Editor's Picks** - Wire Skimlinks as post-processing middleware and re-enable curated content on browse pages
-- [ ] **Phase 7: Clarifier Suggestion Chips** - Add tappable suggestion chips to clarifier agent responses
-- [ ] **Phase 8: Top Pick Block + Help Me Decide** - Add editorial top pick UI block and comparison intent detection
-- [ ] **Phase 9: Impact.com Provider** - Integrate Impact.com affiliate catalog for keyword product search
-- [ ] **Phase 10: Viator + CJ Expansion** - Add Viator activity provider and apply to high-value CJ advertisers
+- [ ] **Phase 1: Response Time Optimization** - Cut product query response time from ~90s to under 30s
+- [ ] **Phase 2: Fix Review Source Links** - Restore clickable review citations in blog-style responses
+- [ ] **Phase 3: Serper Shopping Provider** - Add multi-retailer product search with images as a new affiliate provider
+- [ ] **Phase 4: Browse Page Fixes** - Fix broken amzn.to links and truncated affiliate URL on browse pages
+- [ ] **Phase 5: Amazon Creators API Migration** - Migrate Amazon provider from PA-API v5 to Creators API before May 15, 2026 deadline
+- [ ] **Phase 6: Skimlinks Link Wrapper** - Implement server-side affiliate monetization for non-Amazon, non-eBay product URLs
+- [ ] **Phase 7: Skimlinks Middleware + Editor's Picks** - Wire Skimlinks as post-processing middleware and re-enable curated content on browse pages
+- [ ] **Phase 8: Clarifier Suggestion Chips** - Add tappable suggestion chips to clarifier agent responses
+- [ ] **Phase 9: Top Pick Block + Help Me Decide** - Add editorial top pick UI block and comparison intent detection
+- [ ] **Phase 10: Impact.com Provider** - Integrate Impact.com affiliate catalog for keyword product search
+- [ ] **Phase 11: Viator + CJ Expansion** - Add Viator activity provider and apply to high-value CJ advertisers
 
 ## Phase Details
 
-### Phase 1: Fix Review Source Links
+### Phase 1: Response Time Optimization
+**Goal**: Product query responses return in under 30 seconds (currently ~90s)
+**Depends on**: Nothing (independent, highest priority)
+**Requirements**: PERF-01, PERF-02, PERF-03, PERF-04, PERF-05
+**Success Criteria** (what must be TRUE):
+  1. A product query (e.g. "best noise cancelling headphones") returns a complete response in under 30 seconds measured end-to-end
+  2. Affiliate product searches within each provider use asyncio.gather (not sequential for loop)
+  3. review_search queries a maximum of 3 products (not 5) with a per-product timeout
+  4. product_compose fires 3-4 LLM calls maximum (blog article deferred or lazy-loaded, description+conclusion combined)
+  5. No regressions in response quality — products, prices, review summaries, and affiliate links still appear
+**Plans**: TBD
+
+### Phase 2: Fix Review Source Links
 **Goal**: Blog-style responses attribute sources with working links to Wirecutter, Tom's Guide, Reddit, and other review sites
-**Depends on**: Nothing (independent bug fix)
+**Depends on**: Nothing (independent bug fix; can run in parallel with phases 3-4)
 **Requirements**: FIX-01
 **Success Criteria** (what must be TRUE):
   1. A product response includes named source links (e.g. "Wirecutter", "Tom's Guide") that are clickable
@@ -36,9 +49,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. At least two sources are cited per product response when review data is available
 **Plans**: TBD
 
-### Phase 2: Serper Shopping Provider
+### Phase 3: Serper Shopping Provider
 **Goal**: Product search returns results from multiple retailers with product images, prices, and merchant names — not eBay alone
-**Depends on**: Nothing (independent, can run in parallel with phases 1 and 3)
+**Depends on**: Nothing (independent, can run in parallel with phases 2 and 4)
 **Requirements**: FIX-02, FIX-03, SRCH-01, SRCH-02, SRCH-03
 **Success Criteria** (what must be TRUE):
   1. A product query returns results from at least two different retailers (e.g. Best Buy and Walmart, not just eBay)
@@ -48,9 +61,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   5. The Serper shopping provider requires no new API credentials (reuses existing SERPER_API_KEY)
 **Plans**: TBD
 
-### Phase 3: Browse Page Fixes
+### Phase 4: Browse Page Fixes
 **Goal**: All affiliate links on browse category pages resolve correctly with no broken or truncated URLs
-**Depends on**: Nothing (independent, can run in parallel with phases 1 and 2)
+**Depends on**: Nothing (independent, can run in parallel with phases 2 and 3)
 **Requirements**: FIX-04, FIX-05
 **Success Criteria** (what must be TRUE):
   1. amzn.to links on browse pages open to the correct Amazon product page when clicked
@@ -58,7 +71,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. No 404 or redirect errors appear in the browser console when clicking curated affiliate links
 **Plans**: TBD
 
-### Phase 4: Amazon Creators API Migration
+### Phase 5: Amazon Creators API Migration
 **Goal**: Amazon product search continues working after May 15, 2026 using the Creators API with OAuth2 authentication
 **Depends on**: Nothing (independent; schedule before May 15, 2026 deadline)
 **Requirements**: AMZN-01, AMZN-02, AMZN-03, AMZN-04
@@ -70,9 +83,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   5. Amazon integration is live on Railway before May 15, 2026
 **Plans**: TBD
 
-### Phase 5: Skimlinks Link Wrapper
+### Phase 6: Skimlinks Link Wrapper
 **Goal**: Product URLs from Serper Shopping and other non-Amazon, non-eBay sources are monetized via Skimlinks affiliate tracking
-**Depends on**: Phase 2 (Serper Shopping provides the unaffiliated URLs that Skimlinks will monetize); Skimlinks publisher approval (external dependency — apply immediately)
+**Depends on**: Phase 3 (Serper Shopping provides the unaffiliated URLs that Skimlinks will monetize); Skimlinks publisher approval (external dependency — apply immediately)
 **Requirements**: AFFL-01, AFFL-02, AFFL-03
 **Success Criteria** (what must be TRUE):
   1. A Serper Shopping result for a merchant in the Skimlinks network (e.g. Best Buy, Walmart) generates a go.redirectingat.com wrapped URL
@@ -81,9 +94,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. The Skimlinks link wrapper can be disabled via SKIMLINKS_API_ENABLED=false without breaking product search
 **Plans**: TBD
 
-### Phase 6: Skimlinks Middleware + Editor's Picks
+### Phase 7: Skimlinks Middleware + Editor's Picks
 **Goal**: Skimlinks post-processing runs automatically on all provider results, and Editor's Picks with product images are visible on browse category pages
-**Depends on**: Phase 5 (Skimlinks link wrapper must be implemented and approved before middleware can run)
+**Depends on**: Phase 6 (Skimlinks link wrapper must be implemented and approved before middleware can run)
 **Requirements**: AFFL-04, AFFL-05
 **Success Criteria** (what must be TRUE):
   1. Any product URL returned by any provider is wrapped by Skimlinks if the merchant domain is in the cache — without any change to the provider itself
@@ -92,9 +105,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. The curatedLinks.ts data is used to populate Editor's Picks without requiring a new data source
 **Plans**: TBD
 
-### Phase 7: Clarifier Suggestion Chips
+### Phase 8: Clarifier Suggestion Chips
 **Goal**: Clarifying questions arrive with tappable chip options so users can answer in one tap instead of typing
-**Depends on**: Phases 1 and 2 (clarifier UX improvements are most valuable when product responses behind them are working and multi-retailer)
+**Depends on**: Phases 2 and 3 (clarifier UX improvements are most valuable when product responses behind them are working and multi-retailer)
 **Requirements**: UX-01, UX-02
 **Success Criteria** (what must be TRUE):
   1. A clarifier agent response includes 2-4 suggestion chips below the prose question
@@ -103,9 +116,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. The clarifier_chips field is present in GraphState with a default value so LangGraph channels do not crash on existing sessions
 **Plans**: TBD
 
-### Phase 8: Top Pick Block + Help Me Decide
+### Phase 9: Top Pick Block + Help Me Decide
 **Goal**: Product responses lead with a single opinionated editorial recommendation, product counts are capped at 5, and comparison intent triggers a comparison table automatically
-**Depends on**: Phases 1 and 2 (editorial top pick requires reliable multi-retailer results and review source attribution to be meaningful)
+**Depends on**: Phases 2 and 3 (editorial top pick requires reliable multi-retailer results and review source attribution to be meaningful)
 **Requirements**: UX-03, UX-04, UX-05
 **Success Criteria** (what must be TRUE):
   1. A product response displays a "Top Pick" block above the product carousel containing: product name, headline reason (one sentence), who it's for, and who should look elsewhere
@@ -114,9 +127,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. The top_pick ui_block type is rendered correctly in Message.tsx without modifying the existing ui_blocks dispatch logic
 **Plans**: TBD
 
-### Phase 9: Impact.com Provider
+### Phase 10: Impact.com Provider
 **Goal**: Impact.com affiliate catalog is available as a product search provider, adding higher-commission direct brand relationships
-**Depends on**: Nothing (independent; can run alongside phases 7-8)
+**Depends on**: Nothing (independent; can run alongside phases 8-9)
 **Requirements**: PROV-01
 **Success Criteria** (what must be TRUE):
   1. A product query returns Impact.com catalog results alongside eBay and Serper Shopping results
@@ -125,7 +138,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. The provider can be disabled via IMPACT_API_ENABLED=false without affecting other providers
 **Plans**: TBD
 
-### Phase 10: Viator + CJ Expansion
+### Phase 11: Viator + CJ Expansion
 **Goal**: Viator activity search is available for travel queries, and CJ advertiser coverage is expanded to include major retail brands
 **Depends on**: Nothing (independent; Viator is code work, CJ expansion is a business action with no code change)
 **Requirements**: PROV-02, PROV-03
@@ -139,17 +152,18 @@ Decimal phases appear between their surrounding integers in numeric order.
 ## Progress
 
 **Execution Order:**
-Phases 1, 2, 3 can execute in parallel. Phase 4 executes independently but must complete before May 15, 2026. Phases 5-6 are sequential and depend on Skimlinks publisher approval. Phases 7-8 follow phases 1-2. Phases 9-10 are independent.
+Phase 1 executes first (performance is the top priority). Phases 2, 3, 4 can execute in parallel after Phase 1. Phase 5 executes independently but must complete before May 15, 2026. Phases 6-7 are sequential and depend on Skimlinks publisher approval. Phases 8-9 follow phases 2-3. Phases 10-11 are independent.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Fix Review Source Links | 0/TBD | Not started | - |
-| 2. Serper Shopping Provider | 0/TBD | Not started | - |
-| 3. Browse Page Fixes | 0/TBD | Not started | - |
-| 4. Amazon Creators API Migration | 0/TBD | Not started | - |
-| 5. Skimlinks Link Wrapper | 0/TBD | Not started | - |
-| 6. Skimlinks Middleware + Editor's Picks | 0/TBD | Not started | - |
-| 7. Clarifier Suggestion Chips | 0/TBD | Not started | - |
-| 8. Top Pick Block + Help Me Decide | 0/TBD | Not started | - |
-| 9. Impact.com Provider | 0/TBD | Not started | - |
-| 10. Viator + CJ Expansion | 0/TBD | Not started | - |
+| 1. Response Time Optimization | 0/TBD | Not started | - |
+| 2. Fix Review Source Links | 0/TBD | Not started | - |
+| 3. Serper Shopping Provider | 0/TBD | Not started | - |
+| 4. Browse Page Fixes | 0/TBD | Not started | - |
+| 5. Amazon Creators API Migration | 0/TBD | Not started | - |
+| 6. Skimlinks Link Wrapper | 0/TBD | Not started | - |
+| 7. Skimlinks Middleware + Editor's Picks | 0/TBD | Not started | - |
+| 8. Clarifier Suggestion Chips | 0/TBD | Not started | - |
+| 9. Top Pick Block + Help Me Decide | 0/TBD | Not started | - |
+| 10. Impact.com Provider | 0/TBD | Not started | - |
+| 11. Viator + CJ Expansion | 0/TBD | Not started | - |

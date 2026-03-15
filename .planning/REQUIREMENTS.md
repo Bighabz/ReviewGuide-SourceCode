@@ -5,6 +5,14 @@
 
 ## v1 Requirements
 
+### Performance
+
+- [ ] **PERF-01**: Response time for product queries reduced from ~90s to under 30s
+- [ ] **PERF-02**: Affiliate product searches parallelized within each provider (asyncio.gather instead of sequential for loop)
+- [ ] **PERF-03**: Review search limited to top 3 products (down from 5) with per-product timeout
+- [ ] **PERF-04**: product_compose LLM calls reduced from 7 to 3-4 (defer blog article, combine description+conclusion)
+- [ ] **PERF-05**: Review search and affiliate search run in parallel where data dependencies allow
+
 ### Bug Fixes
 
 - [ ] **FIX-01**: Blog-style responses include clickable review source links (Wirecutter, Tom's Guide, Reddit, etc.)
@@ -90,37 +98,42 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FIX-01 | Phase 1 | Pending |
-| FIX-02 | Phase 2 | Pending |
-| FIX-03 | Phase 2 | Pending |
-| FIX-04 | Phase 3 | Pending |
-| FIX-05 | Phase 3 | Pending |
-| SRCH-01 | Phase 2 | Pending |
-| SRCH-02 | Phase 2 | Pending |
-| SRCH-03 | Phase 2 | Pending |
-| AMZN-01 | Phase 4 | Pending |
-| AMZN-02 | Phase 4 | Pending |
-| AMZN-03 | Phase 4 | Pending |
-| AMZN-04 | Phase 4 | Pending |
-| AFFL-01 | Phase 5 | Pending |
-| AFFL-02 | Phase 5 | Pending |
-| AFFL-03 | Phase 5 | Pending |
-| AFFL-04 | Phase 6 | Pending |
-| AFFL-05 | Phase 6 | Pending |
-| UX-01 | Phase 7 | Pending |
-| UX-02 | Phase 7 | Pending |
-| UX-03 | Phase 8 | Pending |
-| UX-04 | Phase 8 | Pending |
-| UX-05 | Phase 8 | Pending |
-| PROV-01 | Phase 9 | Pending |
-| PROV-02 | Phase 10 | Pending |
-| PROV-03 | Phase 10 | Pending |
+| PERF-01 | Phase 1 | Pending |
+| PERF-02 | Phase 1 | Pending |
+| PERF-03 | Phase 1 | Pending |
+| PERF-04 | Phase 1 | Pending |
+| PERF-05 | Phase 1 | Pending |
+| FIX-01 | Phase 2 | Pending |
+| FIX-02 | Phase 3 | Pending |
+| FIX-03 | Phase 3 | Pending |
+| FIX-04 | Phase 4 | Pending |
+| FIX-05 | Phase 4 | Pending |
+| SRCH-01 | Phase 3 | Pending |
+| SRCH-02 | Phase 3 | Pending |
+| SRCH-03 | Phase 3 | Pending |
+| AMZN-01 | Phase 5 | Pending |
+| AMZN-02 | Phase 5 | Pending |
+| AMZN-03 | Phase 5 | Pending |
+| AMZN-04 | Phase 5 | Pending |
+| AFFL-01 | Phase 6 | Pending |
+| AFFL-02 | Phase 6 | Pending |
+| AFFL-03 | Phase 6 | Pending |
+| AFFL-04 | Phase 7 | Pending |
+| AFFL-05 | Phase 7 | Pending |
+| UX-01 | Phase 8 | Pending |
+| UX-02 | Phase 8 | Pending |
+| UX-03 | Phase 9 | Pending |
+| UX-04 | Phase 9 | Pending |
+| UX-05 | Phase 9 | Pending |
+| PROV-01 | Phase 10 | Pending |
+| PROV-02 | Phase 11 | Pending |
+| PROV-03 | Phase 11 | Pending |
 
 **Coverage:**
-- v1 requirements: 25 total
-- Mapped to phases: 25
+- v1 requirements: 30 total
+- Mapped to phases: 30
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-15*
-*Last updated: 2026-03-15 after initial definition*
+*Last updated: 2026-03-15 after adding PERF requirements*
