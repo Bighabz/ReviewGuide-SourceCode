@@ -12,7 +12,7 @@ ReviewGuide.ai is a working product with critical performance and data coverage 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Response Time Optimization** - Cut product query response time from ~90s to under 30s
+- [ ] **Phase 1: Response Experience Overhaul** - True token streaming, progressive product cards, parallelized backend, blog narrative with buy links
 - [ ] **Phase 2: Fix Review Source Links** - Restore clickable review citations in blog-style responses
 - [ ] **Phase 3: Serper Shopping Provider** - Add multi-retailer product search with images as a new affiliate provider
 - [ ] **Phase 4: Browse Page Fixes** - Fix broken amzn.to links and truncated affiliate URL on browse pages
@@ -26,16 +26,19 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 ## Phase Details
 
-### Phase 1: Response Time Optimization
-**Goal**: Product query responses return in under 30 seconds (currently ~90s)
+### Phase 1: Response Experience Overhaul
+**Goal**: Users see product cards within 5 seconds and a streaming blog narrative with buy links — not a 90-second "Thinking..." wall. True token streaming from OpenAI, progressive UI, parallelized backend.
 **Depends on**: Nothing (independent, highest priority)
-**Requirements**: PERF-01, PERF-02, PERF-03, PERF-04, PERF-05
+**Requirements**: RX-01, RX-02, RX-03, RX-04, RX-05, RX-06, RX-07, RX-08
 **Success Criteria** (what must be TRUE):
-  1. A product query (e.g. "best noise cancelling headphones") returns a complete response in under 30 seconds measured end-to-end
-  2. Affiliate product searches within each provider use asyncio.gather (not sequential for loop)
-  3. review_search queries a maximum of 3 products (not 5) with a per-product timeout
-  4. product_compose fires 3-4 LLM calls maximum (blog article deferred or lazy-loaded, description+conclusion combined)
-  5. No regressions in response quality — products, prices, review summaries, and affiliate links still appear
+  1. Product cards appear in the chat within 5 seconds of sending a query (via stream_chunk_data SSE artifacts)
+  2. Blog narrative text streams token-by-token — user sees words appearing in real-time, not a batch dump after 90s
+  3. Blog text includes inline affiliate links as clickable markdown (e.g. "[Check price on Amazon →](url)")
+  4. Affiliate product searches within each provider use asyncio.gather (not sequential for loop)
+  5. review_search queries a maximum of 3 products (not 5) with a per-product timeout
+  6. Review search and affiliate search run in parallel where data dependencies allow
+  7. product_compose eliminates redundant LLM calls — no more than 4 concurrent calls
+  8. No regressions in response quality — products, prices, review summaries, and affiliate links still appear
 **Plans**: TBD
 
 ### Phase 2: Fix Review Source Links
@@ -156,7 +159,7 @@ Phase 1 executes first (performance is the top priority). Phases 2, 3, 4 can exe
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Response Time Optimization | 0/TBD | Not started | - |
+| 1. Response Experience Overhaul | 0/TBD | Not started | - |
 | 2. Fix Review Source Links | 0/TBD | Not started | - |
 | 3. Serper Shopping Provider | 0/TBD | Not started | - |
 | 4. Browse Page Fixes | 0/TBD | Not started | - |

@@ -5,11 +5,11 @@
 See: .planning/PROJECT.md (updated 2026-03-15)
 
 **Core value:** Conversational product discovery that searches live reviews and returns blog-style editorial responses with cross-retailer affiliate links.
-**Current focus:** Phase 1 — Response Time Optimization
+**Current focus:** Phase 1 — Response Experience Overhaul
 
 ## Current Position
 
-Phase: 1 of 11 (Response Time Optimization)
+Phase: 1 of 11 (Response Experience Overhaul)
 Plan: 0 of TBD in current phase
 Status: Ready to plan
 Last activity: 2026-03-15 — Roadmap updated; 30 requirements mapped to 11 phases (added PERF-01 through PERF-05)

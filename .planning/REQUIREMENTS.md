@@ -5,13 +5,16 @@
 
 ## v1 Requirements
 
-### Performance
+### Response Experience
 
-- [ ] **PERF-01**: Response time for product queries reduced from ~90s to under 30s
-- [ ] **PERF-02**: Affiliate product searches parallelized within each provider (asyncio.gather instead of sequential for loop)
-- [ ] **PERF-03**: Review search limited to top 3 products (down from 5) with per-product timeout
-- [ ] **PERF-04**: product_compose LLM calls reduced from 7 to 3-4 (defer blog article, combine description+conclusion)
-- [ ] **PERF-05**: Review search and affiliate search run in parallel where data dependencies allow
+- [ ] **RX-01**: First visible content (product cards) appears within 5 seconds of sending a query
+- [ ] **RX-02**: Blog narrative streams token-by-token from OpenAI via SSE (not batch-then-chunk)
+- [ ] **RX-03**: Affiliate product searches parallelized within each provider (asyncio.gather instead of sequential for loop)
+- [ ] **RX-04**: Review search limited to top 3 products (down from 5) with per-product timeout
+- [ ] **RX-05**: Review search and affiliate search run in parallel where data dependencies allow
+- [ ] **RX-06**: product_compose eliminates redundant LLM calls (combine where possible, remove unnecessary ones)
+- [ ] **RX-07**: Blog-style response includes inline affiliate buy links as markdown (e.g. "Check price on Amazon →")
+- [ ] **RX-08**: Product cards render above blog narrative, arriving progressively via stream_chunk_data
 
 ### Bug Fixes
 
@@ -98,11 +101,14 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PERF-01 | Phase 1 | Pending |
-| PERF-02 | Phase 1 | Pending |
-| PERF-03 | Phase 1 | Pending |
-| PERF-04 | Phase 1 | Pending |
-| PERF-05 | Phase 1 | Pending |
+| RX-01 | Phase 1 | Pending |
+| RX-02 | Phase 1 | Pending |
+| RX-03 | Phase 1 | Pending |
+| RX-04 | Phase 1 | Pending |
+| RX-05 | Phase 1 | Pending |
+| RX-06 | Phase 1 | Pending |
+| RX-07 | Phase 1 | Pending |
+| RX-08 | Phase 1 | Pending |
 | FIX-01 | Phase 2 | Pending |
 | FIX-02 | Phase 3 | Pending |
 | FIX-03 | Phase 3 | Pending |
@@ -130,8 +136,8 @@
 | PROV-03 | Phase 11 | Pending |
 
 **Coverage:**
-- v1 requirements: 30 total
-- Mapped to phases: 30
+- v1 requirements: 33 total
+- Mapped to phases: 33
 - Unmapped: 0
 
 ---
