@@ -57,7 +57,9 @@ ACCESSORY_KEYWORDS = {
     "screen protector", "screw", "screws", "hinge", "hinges",
     "bracket", "bezel", "replacement part", "repair", "tool kit",
     "rubber feet", "battery", "fan", "heatsink", "power cord",
-    "cord", "dongle", "hub", "dock",
+    "cord", "dongle", "hub", "dock", "replacement filter",
+    "logic board", "motherboard", "replacement", "refurbished part",
+    "spare part", "hepa filter", "filter cartridge",
 }
 
 
@@ -327,24 +329,28 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
             product_copy = product.copy()
             product_name = product.get('name', '')
 
-            # Find matching affiliate links by product name from any provider
-            matching_affiliate = next(
-                (a for a in all_affiliate_groups if _fuzzy_product_match(product_name, a.get("product_name", ""))),
-                None
-            )
+            # Find matching affiliate links from ALL providers
+            all_offers_for_product = []
+            for a in all_affiliate_groups:
+                if _fuzzy_product_match(product_name, a.get("product_name", "")) and a.get("offers"):
+                    provider = a.get("provider", "")
+                    offer = a["offers"][0]
+                    all_offers_for_product.append({
+                        "merchant": offer.get("merchant", provider.title()),
+                        "price": offer.get("price", 0),
+                        "currency": offer.get("currency", "USD"),
+                        "url": offer.get("url", ""),
+                        "image_url": offer.get("image_url", ""),
+                        "rating": offer.get("rating"),
+                        "review_count": offer.get("review_count"),
+                        "source": provider
+                    })
 
-            if matching_affiliate and matching_affiliate.get("offers"):
-                best_offer = matching_affiliate["offers"][0]  # First/best offer
-                product_copy["best_offer"] = {
-                    "merchant": best_offer.get("merchant", ""),
-                    "price": best_offer.get("price", 0),
-                    "currency": best_offer.get("currency", "USD"),
-                    "url": best_offer.get("url", ""),
-                    "image_url": best_offer.get("image_url", ""),
-                    "rating": best_offer.get("rating"),
-                    "review_count": best_offer.get("review_count"),
-                    "source": matching_affiliate.get("provider", "")
-                }
+            if all_offers_for_product:
+                # Best offer = first with a real price, or just first
+                priced = [o for o in all_offers_for_product if o.get("price", 0) > 0]
+                product_copy["best_offer"] = priced[0] if priced else all_offers_for_product[0]
+                product_copy["all_offers"] = all_offers_for_product
 
             products_with_offers.append(product_copy)
 
@@ -587,16 +593,28 @@ Products to describe:
                      if _fuzzy_product_match(p.get("name", ""), pname) and p.get("best_offer")),
                     None
                 )
-                price_str = ""
-                merchant_str = ""
-                link_str = ""
+                # Collect buy links from ALL providers for this product
+                buy_links_str = ""
                 image_str = ""
-                if p_offer and p_offer.get("best_offer"):
-                    o = p_offer["best_offer"]
-                    price_str = f"${o.get('price', 0):.2f}" if o.get("price") else ""
-                    merchant_str = o.get("merchant", "")
-                    link_str = o.get("url", "")
-                    image_str = o.get("image_url", "")
+                if p_offer:
+                    all_offers = p_offer.get("all_offers", [])
+                    if not all_offers and p_offer.get("best_offer"):
+                        all_offers = [p_offer["best_offer"]]
+                    link_parts = []
+                    for o in all_offers:
+                        price = o.get("price", 0)
+                        merchant = o.get("merchant", "")
+                        url = o.get("url", "")
+                        if url:
+                            if price > 0:
+                                link_parts.append(f"${price:.2f} on {merchant}: {url}")
+                            else:
+                                link_parts.append(f"{merchant}: {url}")
+                        if not image_str and o.get("image_url"):
+                            image_str = o["image_url"]
+                    if link_parts:
+                        buy_links_str = " | Buy: " + " ; ".join(link_parts)
+
                 # Build review source references and excerpts
                 source_refs = ""
                 review_excerpts = ""
@@ -618,12 +636,13 @@ Products to describe:
                     if excerpt_parts:
                         review_excerpts = "\n" + "\n".join(excerpt_parts)
 
-                blog_data_parts.append(f"Product: {pname}{label_str} | Rating: {rating}/5 ({total} reviews) | Price: {price_str} on {merchant_str} | Link: {link_str} | Image: {image_str}{source_refs}{review_excerpts}")
+                blog_data_parts.append(f"Product: {pname}{label_str} | Rating: {rating}/5 ({total} reviews){buy_links_str} | Image: {image_str}{source_refs}{review_excerpts}")
                 blog_product_names.append(pname)
 
         # Also add affiliate-only products NOT already covered by review_bundles
-        # This ensures blog + price comparison table show the same product set
+        # Group by product title across providers so each product gets all buy links
         if products_by_provider:
+            seen_titles = set()
             for prov, data in products_by_provider.items():
                 for prod in data["products"][:5]:
                     t = prod.get("title", "")
@@ -632,14 +651,29 @@ Products to describe:
                         _fuzzy_product_match(t, bname, threshold=0.5)
                         for bname in blog_product_names
                     )
-                    if already_covered:
+                    if already_covered or t in seen_titles:
                         continue
-                    pr = prod.get("price", 0)
-                    m = prod.get("merchant", prov.title())
-                    u = prod.get("url", "")
+                    seen_titles.add(t)
+                    # Gather links from ALL providers for this product
+                    link_parts = []
+                    img = ""
+                    for p2, d2 in products_by_provider.items():
+                        for pr2 in d2["products"]:
+                            if _fuzzy_product_match(t, pr2.get("title", ""), threshold=0.5):
+                                price = pr2.get("price", 0)
+                                merchant = pr2.get("merchant", p2.title())
+                                url = pr2.get("url", "")
+                                if url:
+                                    if price > 0:
+                                        link_parts.append(f"${price:.2f} on {merchant}: {url}")
+                                    else:
+                                        link_parts.append(f"{merchant}: {url}")
+                                if not img and pr2.get("image_url"):
+                                    img = pr2["image_url"]
+                                break
+                    buy_str = " | Buy: " + " ; ".join(link_parts) if link_parts else ""
                     r = prod.get("rating", "")
-                    img = prod.get("image_url", "")
-                    blog_data_parts.append(f"Product: {t} | Price: ${pr:.2f} on {m} | Rating: {r}/5 | Link: {u} | Image: {img}")
+                    blog_data_parts.append(f"Product: {t} | Rating: {r}/5{buy_str} | Image: {img}")
                     blog_product_names.append(t)
 
         blog_data = "\n".join(blog_data_parts)
@@ -651,10 +685,10 @@ Products to describe:
 FORMAT REQUIREMENTS:
 - Start with a 2-3 sentence intro addressing what the user is looking for
 - For each product, write a ## heading with the product name and editorial label (if any) in italics
-- After each ## heading, include the product image as: ![Product Name](image_url)
-- Write 3-5 sentences of natural prose reviewing the product — reference specific reviewer insights from the excerpts provided (e.g., "Wirecutter highlights its noise cancellation" or "RTINGS notes the bass response is above average")
+- After each ## heading, include the product image as: ![Product Name](image_url) — ONLY if an image URL is provided
+- Write 3-5 sentences of natural prose reviewing the product — reference specific reviewer insights from the excerpts provided (e.g., "Wirecutter highlights its noise cancellation" or "[RTINGS](url) notes the bass response is above average")
 - Include 1-2 inline review source citations as markdown links where relevant
-- Include a price line with buy link: **$XX.XX** — [Check price on Merchant →](url)
+- Include buy links for EVERY retailer provided in the data. Format each as: [Check price on Merchant →](url). If multiple retailers are listed (e.g., eBay AND Amazon), include BOTH links on separate lines
 - End with a ## Our Verdict section (2 sentences with your recommendation)
 - Write naturally — vary sentence structure, don't be formulaic
 - NEVER invent features or specs not in the data
@@ -807,13 +841,19 @@ FORMAT REQUIREMENTS:
                      if _fuzzy_product_match(p.get("name", ""), product_name) and p.get("best_offer")),
                     None
                 )
-                if product_offer and product_offer.get("best_offer"):
-                    offer = product_offer["best_offer"]
-                    price = offer.get("price", 0)
-                    merchant = offer.get("merchant", "")
-                    url = offer.get("url", "")
-                    if price > 0 and url:
-                        article_parts.append(f"**${price:.2f}** — [Check price on {merchant} →]({url})")
+                if product_offer:
+                    all_offers = product_offer.get("all_offers", [])
+                    if not all_offers and product_offer.get("best_offer"):
+                        all_offers = [product_offer["best_offer"]]
+                    for offer in all_offers:
+                        price = offer.get("price", 0)
+                        merchant = offer.get("merchant", "")
+                        url = offer.get("url", "")
+                        if url:
+                            if price > 0:
+                                article_parts.append(f"**${price:.2f}** — [Check price on {merchant} →]({url})")
+                            else:
+                                article_parts.append(f"[Check price on {merchant} →]({url})")
             conclusion = _get_result('conclusion', '')
             if conclusion:
                 article_parts.append("## Our Verdict")
