@@ -209,19 +209,28 @@ _REVIEW_STATE_WITH_DATA = {
 @pytest.fixture
 def capturing_model_service():
     """
-    Patch model_service.generate (at the app.services.model_service module level)
-    to capture all call kwargs and return plausible strings so the tool can
-    complete without error.
+    Patch model_service at the product_compose module level to capture all call
+    kwargs and return plausible strings so the tool can complete without error.
 
-    product_compose does `from app.services.model_service import model_service`
-    inside the function body, so we patch at the source module, not the tool module.
+    product_compose now caches `model_service` as a module-level attribute, so we
+    patch at `mcp_server.tools.product_compose.model_service`.
+
+    When stream=True (blog_article path), fake_generate returns an async generator
+    so the `async for token in blog_gen` loop in product_compose works correctly.
     """
     captured_calls = []
+
+    async def _blog_gen():
+        """Async generator mimicking model_service streaming output."""
+        yield "## Sony WH-1000XM5\nGreat headphones.\n\n## Our Verdict\nBuy the Sony."
 
     async def fake_generate(**kwargs):
         captured_calls.append(kwargs)
         agent_name = kwargs.get("agent_name", "")
+        stream = kwargs.get("stream", False)
         if agent_name == "blog_article_composer":
+            if stream:
+                return _blog_gen()
             return "## Sony WH-1000XM5\nGreat headphones.\n\n## Our Verdict\nBuy the Sony."
         if agent_name == "review_consensus":
             return "Excellent product praised by experts."
@@ -232,7 +241,7 @@ def capturing_model_service():
     fake_service = MagicMock()
     fake_service.generate = fake_generate
 
-    with patch("app.services.model_service.model_service", fake_service):
+    with patch("mcp_server.tools.product_compose.model_service", fake_service):
         yield fake_service, captured_calls
 
 

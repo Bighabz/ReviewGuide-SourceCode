@@ -111,10 +111,18 @@ async def test_blog_article_uses_model_service_stream():
     """
     captured_calls = []
 
+    async def _blog_gen():
+        """Async generator mimicking model_service streaming output."""
+        for token in ["## Sony WH-1000XM5\n", "Great headphones.\n\n", "## Our Verdict\n", "Buy the Sony."]:
+            yield token
+
     async def fake_generate(**kwargs):
         captured_calls.append(kwargs)
         agent_name = kwargs.get("agent_name", "")
+        stream = kwargs.get("stream", False)
         if agent_name == "blog_article_composer":
+            if stream:
+                return _blog_gen()  # Return async generator for streaming path
             return "## Sony WH-1000XM5\nGreat headphones.\n\n## Our Verdict\nBuy the Sony."
         if agent_name == "review_consensus":
             return "Excellent product praised by experts."

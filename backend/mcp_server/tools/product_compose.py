@@ -17,6 +17,12 @@ backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__
 if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
+# Module-level reference so tests can patch mcp_server.tools.product_compose.model_service
+try:
+    from app.services.model_service import model_service
+except Exception:
+    model_service = None  # type: ignore[assignment]
+
 # Tool contract for planner
 TOOL_CONTRACT = {
     "name": "product_compose",
@@ -259,7 +265,6 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     # Import here to avoid settings validation at module load
     from app.core.centralized_logger import get_logger
-    from app.services.model_service import model_service
     from app.core.config import settings
 
     logger = get_logger(__name__)
@@ -607,9 +612,9 @@ Products to describe:
 
         blog_data = "\n".join(blog_data_parts)
 
-        llm_tasks['blog_article'] = model_service.generate(
-            messages=[
-                {"role": "system", "content": """You are an expert product journalist writing a blog-style review article. Write in a warm, authoritative voice — like a Wirecutter or The Verge review.
+        # Build blog article messages (used in Phase 3b streaming call)
+        _blog_messages = [
+            {"role": "system", "content": """You are an expert product journalist writing a blog-style review article. Write in a warm, authoritative voice — like a Wirecutter or The Verge review.
 
 FORMAT REQUIREMENTS:
 - Start with a warm 1-2 sentence intro addressing what the user is looking for (their budget, use case, or features mentioned in their query)
@@ -622,15 +627,12 @@ FORMAT REQUIREMENTS:
 - NEVER invent features or specs not in the data
 - NEVER mention personal details unless the user provided them
 - Keep the total response under 500 words"""},
-                {"role": "user", "content": blog_data}
-            ],
-            model=settings.COMPOSER_MODEL,
-            temperature=0.7,
-            max_tokens=800,
-            agent_name="blog_article_composer"
-        )
+            {"role": "user", "content": blog_data}
+        ]
+        # blog_article is always streamed (tokens forwarded to callbacks if registered)
+        # DO NOT add to llm_tasks — handled separately in Phase 3b
 
-        # ── Phase 3: Fire all LLM calls in parallel ──
+        # ── Phase 3: Fire non-blog LLM calls in parallel ──
 
         task_keys = list(llm_tasks.keys())
         if task_keys:
@@ -639,6 +641,42 @@ FORMAT REQUIREMENTS:
             logger.info(f"[product_compose] Parallel LLM batch: {len(task_keys)} calls ({', '.join(task_keys)})")
         else:
             result_map = {}
+
+        # ── Phase 3b: Stream blog_article tokens (always streamed; callbacks forwarded if registered) ──
+        try:
+            from app.services.plan_executor import get_token_callbacks
+            _token_cbs = get_token_callbacks()
+            blog_gen = await model_service.generate(
+                messages=_blog_messages,
+                model=settings.COMPOSER_MODEL,
+                temperature=0.7,
+                max_tokens=800,
+                stream=True,
+                agent_name="blog_article_composer"
+            )
+            blog_tokens = []
+            if hasattr(blog_gen, "__aiter__"):
+                # Real streaming path: async generator
+                async for token in blog_gen:
+                    if token:
+                        blog_tokens.append(token)
+                        if _token_cbs:
+                            for cb in _token_cbs:
+                                try:
+                                    if asyncio.iscoroutinefunction(cb):
+                                        await cb(token)
+                                    else:
+                                        cb(token)
+                                except Exception as cb_err:
+                                    logger.warning(f"[product_compose] Token callback error: {cb_err}")
+                result_map['blog_article'] = "".join(blog_tokens)
+            else:
+                # Fallback: generate returned a string (e.g. in tests or non-streaming fallback)
+                result_map['blog_article'] = blog_gen if isinstance(blog_gen, str) else ""
+            logger.info(f"[product_compose] Blog article: {len(result_map.get('blog_article', ''))} chars")
+        except Exception as blog_err:
+            logger.error(f"[product_compose] Blog article generation failed: {blog_err}")
+            result_map['blog_article'] = ""
 
         # Inject pre-computed template consensus for lower-ranked products
         if _template_consensus:
