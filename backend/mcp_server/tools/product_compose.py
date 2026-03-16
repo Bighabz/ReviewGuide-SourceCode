@@ -495,20 +495,6 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
                     f"See the full reviews for detailed pros and cons."
                 )
 
-            # Opener (only depends on user_message, independent of consensus)
-            # Only queue if we actually have bundles with sources
-            if review_bundles:
-                llm_tasks['opener'] = model_service.generate(
-                    messages=[
-                        {"role": "system", "content": "Write a warm 1-2 sentence intro for product review results. Reference what the user asked for — their budget, use case, or features. Sound like a knowledgeable friend, not a search engine. NEVER mention source counts, number of reviews, or 'trusted sources'. Never describe your process. Respond immediately in a conversational tone. Max 30 words."},
-                        {"role": "user", "content": f'User asked: "{user_message}"'}
-                    ],
-                    model=settings.COMPOSER_MODEL,
-                    temperature=0.7,
-                    max_tokens=60,
-                    agent_name="product_opener"
-                )
-
         # --- Personalized product descriptions ---
         if all_products_for_desc:
             products_to_describe = all_products_for_desc[:15]
@@ -551,19 +537,6 @@ Products to describe:
                 max_tokens=600,
                 response_format={"type": "json_object"},
                 agent_name="product_compose_descriptions"
-            )
-
-        # --- Conclusion ---
-        if products_by_provider:
-            llm_tasks['conclusion'] = model_service.generate(
-                messages=[
-                    {"role": "system", "content": "You are a helpful shopping assistant. Write 2 sentences: first, briefly interpret what was found (mention count and price range if evident), then ask a natural follow-up question to help narrow down. Be warm and conversational — like a knowledgeable friend. Never describe your process. Do NOT use markdown. Max 50 words total."},
-                    {"role": "user", "content": f'User asked: "{user_message}"\nFound {num_products} products from {", ".join(products_by_provider.keys())}. Write a 2-sentence response: what was found + a follow-up question to narrow things down.'}
-                ],
-                model=settings.COMPOSER_MODEL,
-                temperature=0.7,
-                max_tokens=80,
-                agent_name="product_conclusion"
             )
 
         # --- Blog article composition ---
@@ -625,11 +598,12 @@ Products to describe:
                 {"role": "system", "content": """You are an expert product journalist writing a blog-style review article. Write in a warm, authoritative voice — like a Wirecutter or The Verge review.
 
 FORMAT REQUIREMENTS:
-- Start with a 2-3 sentence intro addressing what the user is looking for
+- Start with a warm 1-2 sentence intro addressing what the user is looking for (their budget, use case, or features mentioned in their query)
 - For each product, write a ## heading with the product name and editorial label (if any) in italics
 - Under each heading, write 2-4 sentences of natural prose reviewing the product — strengths, caveats, who it's for
-- Include the price and a markdown link: [Check price on Merchant →](url)
-- End with a ## Our Verdict section (2 sentences with your recommendation)
+- Include the price and a markdown buy link: [Check price on Merchant →](url)
+- If review source links are provided in the data (after "| Reviews:"), include 1-2 inline citations in natural prose using the format: [Wirecutter](url) or [Tom's Guide](url). Only link to sources explicitly listed in the data — never invent URLs
+- End with a ## Our Verdict section: 2 sentences with your opinionated top recommendation and who should look elsewhere
 - Write naturally — vary sentence structure, don't be formulaic
 - NEVER invent features or specs not in the data
 - NEVER mention personal details unless the user provided them
@@ -762,11 +736,8 @@ FORMAT REQUIREMENTS:
             assistant_text = blog_article
             logger.info(f"[product_compose] LLM blog article: {len(assistant_text)} chars")
         elif review_data and review_bundles:
-            # Fallback: template assembly (same as current code)
-            opener = _get_result('opener', '')
+            # Fallback: template assembly (used only if blog_article LLM call fails)
             article_parts = []
-            if opener:
-                article_parts.append(opener)
             for idx, (product_name, bundle) in enumerate(review_bundles.items(), 1):
                 consensus = _get_result(f'consensus:{product_name}', '')
                 label = editorial_labels.get(product_name, '')
@@ -788,10 +759,6 @@ FORMAT REQUIREMENTS:
                     url = offer.get("url", "")
                     if price > 0 and url:
                         article_parts.append(f"**${price:.2f}** — [Check price on {merchant} →]({url})")
-            conclusion = _get_result('conclusion', '')
-            if conclusion:
-                article_parts.append("## Our Verdict")
-                article_parts.append(conclusion)
             assistant_text = "\n\n".join(article_parts)
         elif 'concierge' in result_map:
             concierge = _get_result('concierge', "Here's what I found for you.")
@@ -821,10 +788,6 @@ FORMAT REQUIREMENTS:
                         article_parts.append(f"**${price:.2f}** — [Check price on {merchant} →]({url})")
                     elif url:
                         article_parts.append(f"[View on {merchant} →]({url})")
-            conclusion = _get_result('conclusion', '')
-            if conclusion:
-                article_parts.append("---")
-                article_parts.append(conclusion)
             assistant_text = "\n\n".join(article_parts)
         else:
             if not assistant_text:
