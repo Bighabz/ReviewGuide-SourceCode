@@ -466,6 +466,11 @@ class PlanExecutor:
         """
         Emit artifact data to all registered callbacks (instance + global).
         Called immediately after a tool that produces ui_blocks completes.
+
+        NOTE: asyncio.sleep(0) was intentionally removed. Yielding to the event loop
+        from within graph.astream_events() execution via a side-channel callback caused
+        the drain loop in chat.py to yield SSE mid-workflow, which broke the sequential
+        consumption model and caused the 60s SSE cap to fire. See sse-stream-hang.md.
         """
         logger.info(f"Emitting artifact: type={artifact_data.get('type')}, blocks={len(artifact_data.get('blocks', []))}")
         all_callbacks = self._artifact_callbacks + get_artifact_callbacks()
@@ -477,7 +482,6 @@ class PlanExecutor:
                     callback(artifact_data)
             except Exception as e:
                 logger.error(f"Error calling artifact callback: {e}", exc_info=True)
-        await asyncio.sleep(0)  # yield control to event loop
 
     def _make_serializable(self, obj: Any) -> Any:
         """

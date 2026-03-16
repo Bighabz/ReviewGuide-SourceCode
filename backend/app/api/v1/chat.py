@@ -369,9 +369,7 @@ async def generate_chat_stream(
         # Event queue for streaming
         from app.services.plan_executor import (
             clear_tool_citation_callbacks,
-            register_artifact_callback,   # module-level registry from Plan 04 Task 1
             clear_artifact_callbacks,      # clears artifact callbacks after workflow
-            register_token_callback,       # module-level token streaming registry (Plan 05)
             clear_token_callbacks,         # clears token callbacks after workflow
         )
 
@@ -390,31 +388,14 @@ async def generate_chat_stream(
                 workflow_running = False
                 await event_queue.put(None)  # Sentinel value
 
-        # Register artifact callback to stream product cards mid-workflow (RX-01, RX-08)
-        # The callback writes a synthetic event to event_queue so the SSE drain loop picks it up immediately
-        _artifact_event_queue = event_queue  # Capture reference for use in closure
-
-        async def _on_artifact(artifact_data: dict):
-            """Called by PlanExecutor when a tool produces streamable artifact data."""
-            sse_payload = {
-                "type": artifact_data.get("type", "ui_blocks"),
-                "blocks": artifact_data.get("blocks", []),
-                "clear": True,
-            }
-            synthetic_event = {
-                "event": "artifact_ready",
-                "data": sse_payload,
-            }
-            await _artifact_event_queue.put(synthetic_event)
-            logger.info(f"[chat] Queued early artifact: {artifact_data.get('type')}")
-
-        register_artifact_callback(_on_artifact)
-
-        # Token streaming (RX-02) disabled for now — causes event queue contention
-        # when hundreds of token events are put into the queue from within graph execution.
-        # Blog text is still sent via normal chunking after graph completes.
-        # TODO: Re-enable with a separate queue or batched token approach.
-        # register_token_callback(_on_token)
+        # NOTE: Artifact callback (RX-01, RX-08) was removed.
+        # The previous design registered _on_artifact as a module-level callback that put synthetic
+        # "artifact_ready" events onto the SSE event_queue from within graph.astream_events().
+        # This caused generate_chat_stream to yield SSE mid-workflow (while consume_events was still
+        # running), creating an asyncio scheduling interaction that prevented graph.astream_events()
+        # from completing within the 60-second SSE cap. Product cards are now sent via the existing
+        # ui_blocks path after the graph completes (product_compose's output in the done event).
+        # See: .planning/debug/sse-stream-hang.md
 
         # Start event consumer in background
         event_task = asyncio.create_task(consume_events())
@@ -423,7 +404,6 @@ async def generate_chat_stream(
         result_state = None
         last_node_name = None
         data_already_streamed = False  # Track if we already streamed any data (from stream_chunk_data)
-        text_already_streamed = False   # Set when token callback streams blog article tokens (RX-02)
 
         # RFC §1.1 — enforce 60-second hard limit on the entire SSE connection.
         # asyncio.wait_for cannot wrap an async generator, so the deadline is
@@ -432,7 +412,7 @@ async def generate_chat_stream(
 
         async def _drain_event_loop():
             """Drain the event queue until the workflow sentinel arrives or the 60-second hard cap fires."""
-            nonlocal result_state, last_node_name, data_already_streamed, text_already_streamed, sse_total_timeout_hit
+            nonlocal result_state, last_node_name, data_already_streamed, sse_total_timeout_hit
             # RFC §1.1 — enforce hard cap by checking elapsed time on every iteration.
             # asyncio.wait_for cannot wrap an async generator directly, so the deadline
             # is enforced inline: the check fires within one CHAT_EVENT_QUEUE_TIMEOUT
@@ -509,19 +489,10 @@ async def generate_chat_stream(
                             logger.info(f"Travel planner status (suppressed): from {event_name}")
                             last_node_name = "planner"
 
-                # Handle synthetic artifact_ready events from mid-workflow artifact callbacks (RX-01, RX-08)
-                elif event_type == "artifact_ready":
-                    payload = event.get("data", {})
-                    if payload and payload.get("blocks"):
-                        data_already_streamed = True
-                        yield _sse_event("artifact", payload)
-                        logger.info(f"[chat] Streamed early artifact from callback")
-
-                # Handle synthetic token_ready events from blog article token streaming (RX-02)
-                elif event_type == "token_ready":
-                    token_data = event.get("data", {})
-                    if token_data:
-                        yield _sse_event("content", token_data)
+                # NOTE: artifact_ready and token_ready synthetic event handlers were removed.
+                # Injecting events from within graph.astream_events() via callbacks caused the
+                # drain loop to yield SSE mid-workflow, breaking the sequential consumption model
+                # and preventing graph.astream_events() from completing. See sse-stream-hang.md.
 
         try:
             # RFC §1.1 — drain; the 60-second hard cap fires inside _drain_event_loop
@@ -643,18 +614,12 @@ async def generate_chat_stream(
             })
             ui_blocks_sent_early = True
             logger.info(f"📤 Sent {len(ui_blocks)} UI blocks with clear signal")
-        elif not data_already_streamed:
-            # Clear placeholder ONLY if we haven't already streamed data
-            # (If data was streamed, we want to keep it and append followups below it)
-            yield _sse_event("artifact", {"clear": True})
         else:
-            # Data was already streamed mid-workflow — still send clear to remove placeholder
-            logger.info("🔍 Data already streamed - sending clear to finalize")
+            # Clear the "Thinking..." placeholder
             yield _sse_event("artifact", {"clear": True})
 
-        # Stream response text if available and NOT halted and NOT already streamed via token callback
-        # data_already_streamed only means ui_blocks were sent early — text still needs to go out
-        should_stream_text = not is_halted and response_text and not text_already_streamed
+        # Stream response text if available and NOT halted
+        should_stream_text = not is_halted and bool(response_text)
 
         if should_stream_text:
             logger.info(f"🔍 DEBUG: Streaming response text ({len(response_text)} chars)")
@@ -663,7 +628,7 @@ async def generate_chat_stream(
             for i in range(0, len(response_text), STREAM_CHUNK_SIZE):
                 yield _sse_event("content", {"token": response_text[i:i + STREAM_CHUNK_SIZE]})
         else:
-            logger.info(f"🔍 DEBUG: Skipping text streaming (halted={is_halted}, has_text={bool(response_text)}, data_streamed={data_already_streamed})")
+            logger.info(f"🔍 DEBUG: Skipping text streaming (halted={is_halted}, has_text={bool(response_text)})")
 
         # Only include followup questions if the workflow is HALTED (not completed)
         # Just pass through whatever the clarifier agent returns - no processing here
