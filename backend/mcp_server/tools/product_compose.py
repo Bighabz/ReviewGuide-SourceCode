@@ -60,7 +60,11 @@ ACCESSORY_KEYWORDS = {
     "case", "charger", "protector", "cable", "adapter",
     "stand", "cover", "sleeve", "mount", "holder", "film",
     "tempered glass", "cleaning kit", "skin", "sticker",
-    "screen protector",
+    "screen protector", "screw", "screws", "hinge", "hinges",
+    "bracket", "bezel", "keyboard cover", "replacement part",
+    "replacement parts", "repair", "tool kit", "toolkit",
+    "rubber feet", "feet", "battery", "fan", "heatsink",
+    "power cord", "cord", "dongle", "hub", "dock",
 }
 
 
@@ -504,14 +508,15 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
 FORMAT REQUIREMENTS:
 - Start with a warm 1-2 sentence intro addressing what the user is looking for (their budget, use case, or features mentioned in their query)
 - For each product, write a ## heading with the product name and editorial label (if any) in italics
+- IMMEDIATELY after each ## heading, if an Image URL is provided, include it as: ![Product Name](image_url)
 - Under each heading, write 2-4 sentences of natural prose reviewing the product — strengths, caveats, who it's for
-- Include the price and a markdown buy link: [Check price on Merchant →](url)
+- After the review text, include a price line with buy link: **$XX.XX** — [Check price on Merchant →](url)
 - If review source links are provided in the data (after "| Reviews:"), include 1-2 inline citations in natural prose using the format: [Wirecutter](url) or [Tom's Guide](url). Only link to sources explicitly listed in the data — never invent URLs
 - End with a ## Our Verdict section: 2 sentences with your opinionated top recommendation and who should look elsewhere
 - Write naturally — vary sentence structure, don't be formulaic
 - NEVER invent features or specs not in the data
 - NEVER mention personal details unless the user provided them
-- Keep the total response under 500 words"""},
+- Keep the total response under 600 words"""},
             {"role": "user", "content": blog_data}
         ]
         # Blog article runs in parallel with other LLM calls (no dependency on their results)
@@ -563,38 +568,8 @@ FORMAT REQUIREMENTS:
             })
             logger.info(f"[product_compose] Added comparison HTML block ({len(comparison_html)} chars)")
 
-        # Product cards — one per product mentioned in the blog, with buy links
-        blog_product_cards = []
-        seen_card_titles = set()
-        for pname in blog_product_names:
-            if pname.lower() in seen_card_titles:
-                continue
-            # Find best offer for this product
-            p_offer = next(
-                (p for p in products_with_offers
-                 if _fuzzy_product_match(p.get("name", ""), pname) and p.get("best_offer")),
-                None
-            )
-            if p_offer and p_offer.get("best_offer"):
-                o = p_offer["best_offer"]
-                blog_product_cards.append({
-                    "title": pname,
-                    "price": o.get("price", 0),
-                    "currency": o.get("currency", "USD"),
-                    "url": o.get("url", ""),
-                    "merchant": o.get("merchant", ""),
-                    "image_url": o.get("image_url", ""),
-                    "rating": o.get("rating"),
-                    "review_count": o.get("review_count"),
-                })
-                seen_card_titles.add(pname.lower())
-        if blog_product_cards:
-            ui_blocks.append({
-                "type": "product_cards",
-                "title": "Shop These Products",
-                "data": {"products": blog_product_cards},
-            })
-            logger.info(f"[product_compose] Added {len(blog_product_cards)} product cards for blog products")
+        # Product cards removed — images, prices, and buy links are embedded
+        # inline in the blog article markdown (unified layout per product)
 
         # Cross-retailer price comparison (keep as structured UI block)
         # Filter to only products that appear in the blog article
