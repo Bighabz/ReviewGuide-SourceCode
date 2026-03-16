@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 01-02-PLAN.md
-last_updated: "2026-03-16T01:49:36.611Z"
+stopped_at: Completed 01-response-experience-overhaul/01-01-PLAN.md
+last_updated: "2026-03-16T01:50:28.365Z"
 last_activity: 2026-03-15 — Roadmap updated; 30 requirements mapped to 11 phases (added PERF-01 through PERF-05)
 progress:
   total_phases: 11
   completed_phases: 0
   total_plans: 9
-  completed_plans: 1
+  completed_plans: 2
   percent: 11
 ---
 
@@ -51,6 +51,7 @@ Progress: [█░░░░░░░░░] 11%
 
 *Updated after each plan completion*
 | Phase 01 P02 | 5 | 3 tasks | 5 files |
+| Phase 01-response-experience-overhaul P01 | 6 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -64,6 +65,8 @@ Recent decisions affecting current work:
 - [Init]: Keep direct relationships for top programs — Amazon, Booking, Viator, Expedia get better commission rates than through Skimlinks
 - [Phase 01]: review_search reduced from [:5] to [:3] products — eliminates 2 extra Serper calls on the critical path
 - [Phase 01]: review_search and product_affiliate merged into same parallel plan step — both read product_names from product_search with no mutual dependency
+- [Phase 01-01]: Test stubs use behavioral assertions where behavior is clear, not just pytest.fail() — this gives precise failure messages and stronger RED contracts
+- [Phase 01-01]: Wave 0 scaffolds test_product_affiliate.py, test_chat_streaming.py as new files; test_product_compose.py and test_review_search.py extended in-place
 
 ### Pending Todos
 
@@ -77,6 +80,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-16T01:49:36.607Z
-Stopped at: Completed 01-02-PLAN.md
+Last session: 2026-03-16T01:50:28.363Z
+Stopped at: Completed 01-response-experience-overhaul/01-01-PLAN.md
 Resume file: None

@@ -7,14 +7,14 @@
 
 ### Response Experience
 
-- [ ] **RX-01**: First visible content (product cards) appears within 5 seconds of sending a query
-- [ ] **RX-02**: Blog narrative streams token-by-token from OpenAI via SSE (not batch-then-chunk)
+- [x] **RX-01**: First visible content (product cards) appears within 5 seconds of sending a query
+- [x] **RX-02**: Blog narrative streams token-by-token from OpenAI via SSE (not batch-then-chunk)
 - [x] **RX-03**: Affiliate product searches parallelized within each provider (asyncio.gather instead of sequential for loop)
 - [x] **RX-04**: Review search limited to top 3 products (down from 5) with per-product timeout
 - [x] **RX-05**: Review search and affiliate search run in parallel where data dependencies allow
-- [ ] **RX-06**: product_compose eliminates redundant LLM calls (combine where possible, remove unnecessary ones)
-- [ ] **RX-07**: Blog-style response includes inline affiliate buy links as markdown (e.g. "Check price on Amazon →")
-- [ ] **RX-08**: Product cards render above blog narrative, arriving progressively via stream_chunk_data
+- [x] **RX-06**: product_compose eliminates redundant LLM calls (combine where possible, remove unnecessary ones)
+- [x] **RX-07**: Blog-style response includes inline affiliate buy links as markdown (e.g. "Check price on Amazon →")
+- [x] **RX-08**: Product cards render above blog narrative, arriving progressively via stream_chunk_data
 
 ### Bug Fixes
 
@@ -101,14 +101,14 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| RX-01 | Phase 1 | Pending |
-| RX-02 | Phase 1 | Pending |
+| RX-01 | Phase 1 | Complete |
+| RX-02 | Phase 1 | Complete |
 | RX-03 | Phase 1 | Complete |
 | RX-04 | Phase 1 | Complete |
 | RX-05 | Phase 1 | Complete |
-| RX-06 | Phase 1 | Pending |
-| RX-07 | Phase 1 | Pending |
-| RX-08 | Phase 1 | Pending |
+| RX-06 | Phase 1 | Complete |
+| RX-07 | Phase 1 | Complete |
+| RX-08 | Phase 1 | Complete |
 | FIX-01 | Phase 2 | Pending |
 | FIX-02 | Phase 3 | Pending |
 | FIX-03 | Phase 3 | Pending |
