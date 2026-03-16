@@ -49,6 +49,7 @@ export default function ProductCards({ products }: ProductCardsProps) {
         const displayCurrency = product.currency || product.best_offer?.currency || 'USD'
         const displayMerchant = product.merchant || product.best_offer?.merchant
         const displayLink = product.affiliate_link || product.best_offer?.url || product.url || '#'
+        const displayImage = product.image_url || (product.best_offer as any)?.image_url || ''
         const displayPros = product.pros || []
         const displayCons = product.cons || []
 
@@ -58,6 +59,22 @@ export default function ProductCards({ products }: ProductCardsProps) {
             className="group bg-[var(--surface-elevated)] border border-[var(--border)] rounded-xl overflow-hidden hover:shadow-md transition-all duration-300"
           >
             <div className="p-5 sm:p-6">
+              <div className="flex gap-4">
+                {/* Product image */}
+                {displayImage && (
+                  <a href={displayLink} target="_blank" rel="noopener noreferrer" className="shrink-0">
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden bg-[var(--surface)] border border-[var(--border)]">
+                      <img
+                        src={displayImage}
+                        alt={displayTitle}
+                        className="w-full h-full object-contain p-1"
+                        loading="lazy"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                      />
+                    </div>
+                  </a>
+                )}
+                <div className="flex-1 min-w-0">
               {/* Editorial heading */}
               <div className="flex items-start justify-between gap-4 mb-2">
                 <div className="flex-1 min-w-0">
@@ -126,6 +143,8 @@ export default function ProductCards({ products }: ProductCardsProps) {
                   Check price{displayMerchant ? ` on ${displayMerchant}` : ''} &rarr;
                 </a>
               </div>
+                </div>{/* end flex-1 */}
+              </div>{/* end flex gap-4 */}
             </div>
           </div>
         )
