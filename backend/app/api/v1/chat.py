@@ -536,8 +536,8 @@ async def generate_chat_stream(
             # plus at most one CHAT_EVENT_QUEUE_TIMEOUT tick.
             async for sse_chunk in _drain_event_loop():
                 yield sse_chunk
-        except Exception:
-            pass  # handled below
+        except Exception as drain_err:
+            logger.warning(f"Exception in _drain_event_loop: {drain_err}", exc_info=True)
 
         # RFC §1.1 — await background task to surface any exception.
         # If the hard cap fired, event_task was already cancelled inside _drain_event_loop;
@@ -655,7 +655,9 @@ async def generate_chat_stream(
             # (If data was streamed, we want to keep it and append followups below it)
             yield _sse_event("artifact", {"clear": True})
         else:
-            logger.info("🔍 Skipping clear chunk - data already streamed, will append followups")
+            # Data was already streamed mid-workflow — still send clear to remove placeholder
+            logger.info("🔍 Data already streamed - sending clear to finalize")
+            yield _sse_event("artifact", {"clear": True})
 
         # Stream response text if available and NOT halted and NOT already streamed via token callback
         # data_already_streamed only means ui_blocks were sent early — text still needs to go out
@@ -844,6 +846,14 @@ async def generate_chat_stream(
                 logger.debug(f"Langfuse flush warning: {flush_error}")
 
     except Exception as e:
+        # Clean up global callbacks to prevent leakage to next request
+        try:
+            clear_tool_citation_callbacks()
+            clear_artifact_callbacks()
+            clear_token_callbacks()
+        except Exception:
+            pass
+
         # Log error with centralized logger including RFC §4.1 correlation ID
         logger.error(
             f"Error in chat_stream: {str(e)}",
