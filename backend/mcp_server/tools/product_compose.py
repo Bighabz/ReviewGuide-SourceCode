@@ -54,7 +54,10 @@ ACCESSORY_KEYWORDS = {
     "case", "charger", "protector", "cable", "adapter",
     "stand", "cover", "sleeve", "mount", "holder", "film",
     "tempered glass", "cleaning kit", "skin", "sticker",
-    "screen protector",
+    "screen protector", "screw", "screws", "hinge", "hinges",
+    "bracket", "bezel", "replacement part", "repair", "tool kit",
+    "rubber feet", "battery", "fan", "heatsink", "power cord",
+    "cord", "dongle", "hub", "dock",
 }
 
 
@@ -594,7 +597,28 @@ Products to describe:
                     merchant_str = o.get("merchant", "")
                     link_str = o.get("url", "")
                     image_str = o.get("image_url", "")
-                blog_data_parts.append(f"Product: {pname}{label_str} | Rating: {rating}/5 ({total} reviews) | Price: {price_str} on {merchant_str} | Link: {link_str} | Image: {image_str}")
+                # Build review source references and excerpts
+                source_refs = ""
+                review_excerpts = ""
+                sources = bundle.get("sources", [])
+                if sources:
+                    top_sources = sources[:3]
+                    ref_parts = []
+                    excerpt_parts = []
+                    for s in top_sources:
+                        site = s.get("site_name", "Review")
+                        url = s.get("url", "")
+                        snippet = s.get("snippet", "")
+                        if url:
+                            ref_parts.append(f"[{site}]({url})")
+                        if snippet:
+                            excerpt_parts.append(f"  - {site}: {snippet[:120]}")
+                    if ref_parts:
+                        source_refs = f" | Reviews: {', '.join(ref_parts)}"
+                    if excerpt_parts:
+                        review_excerpts = "\n" + "\n".join(excerpt_parts)
+
+                blog_data_parts.append(f"Product: {pname}{label_str} | Rating: {rating}/5 ({total} reviews) | Price: {price_str} on {merchant_str} | Link: {link_str} | Image: {image_str}{source_refs}{review_excerpts}")
                 blog_product_names.append(pname)
 
         # Also add affiliate-only products NOT already covered by review_bundles
@@ -627,18 +651,20 @@ Products to describe:
 FORMAT REQUIREMENTS:
 - Start with a 2-3 sentence intro addressing what the user is looking for
 - For each product, write a ## heading with the product name and editorial label (if any) in italics
-- Under each heading, write 2-4 sentences of natural prose reviewing the product — strengths, caveats, who it's for
-- Include the price and a markdown link: [Check price on Merchant →](url)
+- After each ## heading, include the product image as: ![Product Name](image_url)
+- Write 3-5 sentences of natural prose reviewing the product — reference specific reviewer insights from the excerpts provided (e.g., "Wirecutter highlights its noise cancellation" or "RTINGS notes the bass response is above average")
+- Include 1-2 inline review source citations as markdown links where relevant
+- Include a price line with buy link: **$XX.XX** — [Check price on Merchant →](url)
 - End with a ## Our Verdict section (2 sentences with your recommendation)
 - Write naturally — vary sentence structure, don't be formulaic
 - NEVER invent features or specs not in the data
 - NEVER mention personal details unless the user provided them
-- Keep the total response under 500 words"""},
+- Keep the total response under 600 words"""},
                 {"role": "user", "content": blog_data}
             ],
             model=settings.COMPOSER_MODEL,
             temperature=0.7,
-            max_tokens=800,
+            max_tokens=900,
             agent_name="blog_article_composer"
         )
 
