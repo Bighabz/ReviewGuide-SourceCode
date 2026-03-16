@@ -563,8 +563,38 @@ FORMAT REQUIREMENTS:
             })
             logger.info(f"[product_compose] Added comparison HTML block ({len(comparison_html)} chars)")
 
-        # Product carousels removed — blog article is the primary display
-        # Buy links are inline in the blog text (Wirecutter style)
+        # Product cards — one per product mentioned in the blog, with buy links
+        blog_product_cards = []
+        seen_card_titles = set()
+        for pname in blog_product_names:
+            if pname.lower() in seen_card_titles:
+                continue
+            # Find best offer for this product
+            p_offer = next(
+                (p for p in products_with_offers
+                 if _fuzzy_product_match(p.get("name", ""), pname) and p.get("best_offer")),
+                None
+            )
+            if p_offer and p_offer.get("best_offer"):
+                o = p_offer["best_offer"]
+                blog_product_cards.append({
+                    "title": pname,
+                    "price": o.get("price", 0),
+                    "currency": o.get("currency", "USD"),
+                    "url": o.get("url", ""),
+                    "merchant": o.get("merchant", ""),
+                    "image_url": o.get("image_url", ""),
+                    "rating": o.get("rating"),
+                    "review_count": o.get("review_count"),
+                })
+                seen_card_titles.add(pname.lower())
+        if blog_product_cards:
+            ui_blocks.append({
+                "type": "product_cards",
+                "title": "Shop These Products",
+                "data": {"products": blog_product_cards},
+            })
+            logger.info(f"[product_compose] Added {len(blog_product_cards)} product cards for blog products")
 
         # Cross-retailer price comparison (keep as structured UI block)
         # Filter to only products that appear in the blog article
