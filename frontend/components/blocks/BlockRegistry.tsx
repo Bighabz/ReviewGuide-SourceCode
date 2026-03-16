@@ -32,22 +32,26 @@ const BLOCK_RENDERERS: Record<string, BlockRenderer> = {
     carousel: (b) => (
         <ProductCarousel items={(b.data as any)?.items ?? b.data ?? []} title={b.title} />
     ),
-    products: (b) => (
-        <ProductCarousel
-            items={((b.data as any[]) ?? []).map((p: any) => ({
-                product_id: p.id ?? p.product_id,
-                title: p.name ?? p.title,
-                price: p.best_offer?.price ?? p.price,
-                currency: p.best_offer?.currency ?? p.currency ?? 'USD',
-                affiliate_link: p.best_offer?.url ?? p.url,
-                merchant: p.best_offer?.merchant ?? p.merchant,
-                image_url: p.best_offer?.image_url ?? p.image_url,
-                rating: p.best_offer?.rating ?? p.rating,
-                review_count: p.best_offer?.review_count ?? p.review_count,
-            }))}
-            title={b.title}
-        />
-    ),
+    products: (b) => {
+        // Handle both array format and {products: [...]} object format
+        const rawItems = Array.isArray(b.data) ? b.data : (b.data as any)?.products ?? []
+        return (
+            <ProductCarousel
+                items={(rawItems as any[]).map((p: any) => ({
+                    product_id: p.id ?? p.product_id,
+                    title: p.name ?? p.title,
+                    price: p.best_offer?.price ?? p.price,
+                    currency: p.best_offer?.currency ?? p.currency ?? 'USD',
+                    affiliate_link: p.best_offer?.url ?? p.url,
+                    merchant: p.best_offer?.merchant ?? p.merchant,
+                    image_url: p.best_offer?.image_url ?? p.image_url,
+                    rating: p.best_offer?.rating ?? p.rating,
+                    review_count: p.best_offer?.review_count ?? p.review_count,
+                }))}
+                title={b.title}
+            />
+        )
+    },
     product_cards: (b) => (
         <ProductCards products={(b.data as any)?.products ?? []} />
     ),
