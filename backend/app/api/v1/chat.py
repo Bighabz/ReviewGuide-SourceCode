@@ -608,6 +608,7 @@ async def generate_chat_stream(
             STREAM_CHUNK_SIZE = 24  # ~24 chars per chunk ≈ a few words at a time
             for i in range(0, len(response_text), STREAM_CHUNK_SIZE):
                 yield _sse_event("content", {"token": response_text[i:i + STREAM_CHUNK_SIZE]})
+                await asyncio.sleep(0.02)  # 20ms typing effect between chunks
         else:
             logger.info(f"🔍 DEBUG: Skipping text streaming (halted={is_halted}, has_text={bool(response_text)}, data_streamed={data_already_streamed})")
 
