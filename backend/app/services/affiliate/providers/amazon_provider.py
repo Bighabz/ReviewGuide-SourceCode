@@ -390,59 +390,84 @@ class AmazonAffiliateProvider(BaseAffiliateProvider):
         limit: int,
         country_code: str,
     ) -> List[AffiliateProduct]:
-        """Return mock products for development - generates category-aware products"""
-        import random
+        """
+        Return Amazon products using curated affiliate links when available,
+        otherwise generate real Amazon search URLs (not fake ASINs).
+        """
         import hashlib
+        from app.services.affiliate.providers.curated_amazon_links import find_curated_links
 
-        # Generate deterministic but different prices/ratings based on query
+        # Check for curated links first
+        curated = find_curated_links(query)
+        if curated:
+            logger.info(f"Amazon curated: found {len(curated)} links for '{query}'")
+            results = []
+            for i, link in enumerate(curated[:limit]):
+                results.append(AffiliateProduct(
+                    product_id=f"CURATED-{i}",
+                    title=query if i == 0 else f"{query} - Option {i + 1}",
+                    price=0,  # Price unknown for curated links
+                    currency="USD",
+                    affiliate_link=link,
+                    merchant="Amazon",
+                    image_url="",
+                    rating=None,
+                    review_count=None,
+                    condition="new",
+                    availability=True,
+                    source_url=link,
+                ))
+            return results
+
+        # Fallback: generate real Amazon search URLs (not fake ASINs)
+        effective_country = country_code or self.country_code
+        domain = AMAZON_DOMAINS.get(effective_country.upper(), "amazon.com")
+        tag = self.associate_tag
+
+        import urllib.parse
+        search_url_base = f"https://www.{domain}/s"
+
         query_hash = int(hashlib.md5(query.encode()).hexdigest()[:8], 16)
-        random.seed(query_hash)
 
         # Detect category for realistic variations
         detected_category = _detect_category(query, category)
         variations = CATEGORY_VARIATIONS.get(detected_category, CATEGORY_VARIATIONS["general"])
         base_price = CATEGORY_BASE_PRICES.get(detected_category, 199.99)
-
         ratings = [4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9]
 
         results = []
-        for i in range(min(limit, 5)):
-            # Deterministic price variance: +/- 30% from base
+        for i in range(min(limit, 3)):
+            # Build real search URL with affiliate tag
+            search_query = query if i == 0 else f"{query} {variations[i % len(variations)]}"
+            params = {"k": search_query}
+            if tag:
+                params["tag"] = tag
+            search_url = f"{search_url_base}?{urllib.parse.urlencode(params)}"
+
+            # Deterministic price/rating
             price_offset = ((query_hash + i * 13) % 60 - 30) / 100.0
             price = round(base_price * (1.0 + price_offset), 2)
             rating_idx = (query_hash + i * 3) % len(ratings)
             review_count = 100 + ((query_hash + i * 7) % 9900)
 
-            asin = f"MOCK{query_hash % 1000000:06d}{i}"
-            affiliate_link = generate_amazon_affiliate_link(
-                asin=asin,
-                country_code=country_code,
-                associate_tag=self.associate_tag,
-            )
-
-            # First result = exact query, rest = query + spec variation
-            if i == 0:
-                title = query
-            else:
-                variation = variations[i % len(variations)]
-                title = f"{query} - {variation}"
+            title = query if i == 0 else f"{query} - {variations[i % len(variations)]}"
 
             results.append(AffiliateProduct(
-                product_id=asin,
+                product_id=f"SEARCH-{query_hash % 1000000:06d}{i}",
                 title=title,
                 price=price,
                 currency="USD",
-                affiliate_link=affiliate_link,
+                affiliate_link=search_url,
                 merchant="Amazon",
-                image_url=f"https://placehold.co/400x400/fef3c7/f59e0b?text={query.replace(' ', '+')}",
+                image_url="",
                 rating=ratings[rating_idx],
                 review_count=review_count,
                 condition="new",
                 availability=True,
-                source_url=affiliate_link,
+                source_url=search_url,
             ))
 
-        logger.info(f"Amazon mock: generated {len(results)} {detected_category} products for '{query}'")
+        logger.info(f"Amazon search-url: generated {len(results)} {detected_category} search links for '{query}'")
         return results
 
     async def _search_real_api(
