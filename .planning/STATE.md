@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Completed 01-03-PLAN.md — removed opener/conclusion LLM calls, threaded review source URLs into blog_data
-last_updated: "2026-03-16T01:52:46.927Z"
+stopped_at: "Completed 01-04-PLAN.md — wired artifact callback streaming path: product_affiliate emits ui_blocks, plan_executor fires callbacks, chat.py pushes product cards to SSE stream"
+last_updated: "2026-03-16T02:00:09.928Z"
 last_activity: 2026-03-15 — Roadmap updated; 30 requirements mapped to 11 phases (added PERF-01 through PERF-05)
 progress:
   total_phases: 11
   completed_phases: 0
   total_plans: 9
-  completed_plans: 3
+  completed_plans: 4
   percent: 11
 ---
 
@@ -53,6 +53,7 @@ Progress: [█░░░░░░░░░] 11%
 | Phase 01 P02 | 5 | 3 tasks | 5 files |
 | Phase 01-response-experience-overhaul P01 | 6 | 2 tasks | 4 files |
 | Phase 01-response-experience-overhaul P03 | 8min | 2 tasks | 2 files |
+| Phase 01-response-experience-overhaul P04 | 4m26s | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,9 @@ Recent decisions affecting current work:
 - [Phase 01-response-experience-overhaul]: Removed opener LLM call: blog_article system prompt now starts with warm intro instruction — single call replaces two
 - [Phase 01-response-experience-overhaul]: Removed conclusion LLM call: Our Verdict section now instructed inline in blog_article prompt
 - [Phase 01-response-experience-overhaul]: Source refs threading: '| Reviews: [SiteName](url)' appended to blog_data product lines, top 3 sources per product
+- [Phase 01-response-experience-overhaul]: Always emit stream_chunk_data from product_affiliate (even empty list) to keep plan_executor contract consistent
+- [Phase 01-response-experience-overhaul]: Synthetic artifact_ready events use the same event_queue as LangGraph events — no second queue needed
+- [Phase 01-response-experience-overhaul]: data_already_streamed=True after early artifact prevents duplicate end-of-workflow re-emit
 
 ### Pending Todos
 
@@ -84,6 +88,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-16T01:52:46.924Z
-Stopped at: Completed 01-03-PLAN.md — removed opener/conclusion LLM calls, threaded review source URLs into blog_data
+Last session: 2026-03-16T02:00:09.925Z
+Stopped at: Completed 01-04-PLAN.md — wired artifact callback streaming path: product_affiliate emits ui_blocks, plan_executor fires callbacks, chat.py pushes product cards to SSE stream
 Resume file: None
