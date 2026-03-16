@@ -218,11 +218,11 @@ def test_stage_budgets_cover_all_required_stages():
 
 
 # ---------------------------------------------------------------------------
-# 8. MAX_TOTAL_REQUEST_S is 60
+# 8. MAX_TOTAL_REQUEST_S is 120 (raised from 60 to accommodate parallel pipeline)
 # ---------------------------------------------------------------------------
 
-def test_max_total_request_s_is_sixty():
-    assert MAX_TOTAL_REQUEST_S == 60.0
+def test_max_total_request_s_is_120():
+    assert MAX_TOTAL_REQUEST_S == 120.0
 
 
 # ---------------------------------------------------------------------------

@@ -99,30 +99,23 @@ async def test_product_cards_emitted_before_compose():
 
 
 @pytest.mark.asyncio
-async def test_blog_article_uses_model_service_stream():
+async def test_blog_article_runs_in_parallel_batch():
     """
-    RX-02: product_compose must call model_service.generate with stream=True
-    for the blog_article task so that tokens are forwarded to the SSE stream
-    incrementally instead of waiting for the full article to be generated.
+    RX-02: product_compose must generate the blog_article in the same parallel
+    LLM batch as consensus/concierge/descriptions calls. This avoids a
+    sequential bottleneck where blog_article (12-15s) runs AFTER the parallel
+    batch, causing compose to timeout.
 
     Test approach: patch model_service.generate to capture kwargs, run
     product_compose with data that triggers the blog_article path, then
-    assert the blog_article_composer call used stream=True.
+    assert the blog_article_composer call was made (non-streaming, in parallel).
     """
     captured_calls = []
-
-    async def _blog_gen():
-        """Async generator mimicking model_service streaming output."""
-        for token in ["## Sony WH-1000XM5\n", "Great headphones.\n\n", "## Our Verdict\n", "Buy the Sony."]:
-            yield token
 
     async def fake_generate(**kwargs):
         captured_calls.append(kwargs)
         agent_name = kwargs.get("agent_name", "")
-        stream = kwargs.get("stream", False)
         if agent_name == "blog_article_composer":
-            if stream:
-                return _blog_gen()  # Return async generator for streaming path
             return "## Sony WH-1000XM5\nGreat headphones.\n\n## Our Verdict\nBuy the Sony."
         if agent_name == "review_consensus":
             return "Excellent product praised by experts."
@@ -184,16 +177,20 @@ async def test_blog_article_uses_model_service_stream():
 
     assert result["success"] is True
 
-    # Find the blog_article_composer call and verify stream=True
+    # Verify blog_article_composer was called
     blog_calls = [c for c in captured_calls if c.get("agent_name") == "blog_article_composer"]
     assert len(blog_calls) >= 1, (
         f"RX-02: Expected at least one blog_article_composer call but none found. "
         f"All calls: {[c.get('agent_name') for c in captured_calls]}"
     )
 
+    # Blog article should be non-streaming (for stability) and in parallel batch
     blog_call = blog_calls[0]
-    assert blog_call.get("stream") is True, (
-        f"RX-02: product_compose does not call model_service.generate(stream=True) "
-        f"for blog_article — got stream={blog_call.get('stream')}. "
-        f"Update the blog_article generate call to pass stream=True."
+    assert blog_call.get("stream") is not True, (
+        f"RX-02: blog_article should be non-streaming for parallel batch stability "
+        f"— got stream={blog_call.get('stream')}."
     )
+
+    # Verify the response contains the blog article content
+    assert result.get("assistant_text"), "RX-02: assistant_text should contain the blog article"
+    assert "Sony WH-1000XM5" in result["assistant_text"]

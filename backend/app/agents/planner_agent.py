@@ -619,8 +619,8 @@ Example: {{"tools": ["product_search"]}} - this will auto-add normalize, affilia
           [Step 1: product_extractor (only for comparisons)]
           Step N:   product_search + product_evidence (PARALLEL — both I/O bound)
           Step N+1: review_search + product_affiliate (PARALLEL — both read product_names)
-          Step N+2: product_normalize (merges search + evidence + review data)
-          Step N+3: product_ranking (needs affiliate data)
+          Step N+2: product_ranking (reads product_names + review_data + affiliate_products)
+          Step N+3: product_normalize (merges product_names + ranked_products)
           Step N+4: product_compose (final assembly, tool_order 800)
           next_step_suggestion appended by _get_product_plan_for_complexity
 
@@ -635,11 +635,12 @@ Example: {{"tools": ["product_search"]}} - this will auto-add normalize, affilia
             step_num += 1
 
         # review_search + product_affiliate parallel (both read product_names from product_search)
+        # ranking before normalize so normalize can merge ranking scores
         steps.extend([
             {"id": f"step_{step_num}", "tools": ["product_search", "product_evidence"], "parallel": True},
             {"id": f"step_{step_num + 1}", "tools": ["review_search", "product_affiliate"], "parallel": True},
-            {"id": f"step_{step_num + 2}", "tools": ["product_normalize"], "parallel": False},
-            {"id": f"step_{step_num + 3}", "tools": ["product_ranking"], "parallel": False},
+            {"id": f"step_{step_num + 2}", "tools": ["product_ranking"], "parallel": False},
+            {"id": f"step_{step_num + 3}", "tools": ["product_normalize"], "parallel": False},
             {"id": f"step_{step_num + 4}", "tools": ["product_compose"], "parallel": False},
         ])
         return {"steps": steps}

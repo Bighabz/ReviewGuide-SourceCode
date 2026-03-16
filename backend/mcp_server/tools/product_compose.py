@@ -629,10 +629,16 @@ FORMAT REQUIREMENTS:
 - Keep the total response under 500 words"""},
             {"role": "user", "content": blog_data}
         ]
-        # blog_article is always streamed (tokens forwarded to callbacks if registered)
-        # DO NOT add to llm_tasks — handled separately in Phase 3b
+        # Blog article runs in parallel with other LLM calls (no dependency on their results)
+        llm_tasks['blog_article'] = model_service.generate(
+            messages=_blog_messages,
+            model=settings.COMPOSER_MODEL,
+            temperature=0.7,
+            max_tokens=800,
+            agent_name="blog_article_composer"
+        )
 
-        # ── Phase 3: Fire non-blog LLM calls in parallel ──
+        # ── Phase 3: Fire ALL LLM calls in parallel (blog + concierge/consensus + descriptions) ──
 
         task_keys = list(llm_tasks.keys())
         if task_keys:
@@ -641,21 +647,6 @@ FORMAT REQUIREMENTS:
             logger.info(f"[product_compose] Parallel LLM batch: {len(task_keys)} calls ({', '.join(task_keys)})")
         else:
             result_map = {}
-
-        # ── Phase 3b: Generate blog article (non-streaming for stability) ──
-        try:
-            blog_result = await model_service.generate(
-                messages=_blog_messages,
-                model=settings.COMPOSER_MODEL,
-                temperature=0.7,
-                max_tokens=800,
-                agent_name="blog_article_composer"
-            )
-            result_map['blog_article'] = blog_result if isinstance(blog_result, str) else ""
-            logger.info(f"[product_compose] Blog article: {len(result_map.get('blog_article', ''))} chars")
-        except Exception as blog_err:
-            logger.error(f"[product_compose] Blog article generation failed: {blog_err}")
-            result_map['blog_article'] = ""
 
         # Inject pre-computed template consensus for lower-ranked products
         if _template_consensus:
@@ -702,6 +693,20 @@ FORMAT REQUIREMENTS:
                     logger.info(f"[product_compose] Generated {len(descriptions)} product descriptions")
                 except (json.JSONDecodeError, Exception) as desc_error:
                     logger.warning(f"[product_compose] Failed to parse descriptions: {desc_error}")
+
+        # Product carousel UI blocks — one per provider
+        for provider_name in sorted_providers:
+            data = products_by_provider.get(provider_name)
+            if not data:
+                continue
+            config = data["config"]
+            ui_blocks.append({
+                "type": config["type"],
+                "title": config["title"],
+                "data": {"products": data["products"][:10]},
+            })
+        if products_by_provider:
+            logger.info(f"[product_compose] Added {len(products_by_provider)} product carousel blocks")
 
         # Cross-retailer price comparison (keep as structured UI block)
         # Filter to only products that appear in the blog article

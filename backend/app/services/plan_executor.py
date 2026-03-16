@@ -25,7 +25,8 @@ from tool_contracts import get_tool_contracts_dict  # noqa: E402
 logger = get_logger(__name__)
 
 # Tool execution timeout configuration
-_TOOL_TIMEOUT_S = 30.0        # Hard timeout per individual tool call (raised for streaming compose)
+_TOOL_TIMEOUT_S = 30.0        # Hard timeout per individual tool call
+_COMPOSE_TOOL_TIMEOUT_S = 55.0  # Higher timeout for compose tools (multiple LLM calls inside)
 _STEP_TIMEOUT_S = 60.0        # Hard timeout for entire step (parallel fan-out)
 _CRITICAL_TOOLS = {           # Tools whose failure aborts the pipeline
     "product_compose",
@@ -185,17 +186,20 @@ class PlanExecutor:
             logger.info(f"🔧 Calling tool directly: {tool_name}")
 
             # Execute tool directly (no subprocess, no MCP protocol)
+            # Compose tools get a higher timeout (they make multiple LLM calls internally)
+            timeout = _COMPOSE_TOOL_TIMEOUT_S if tool_name in _CRITICAL_TOOLS else _TOOL_TIMEOUT_S
             result = await asyncio.wait_for(
                 tool_func(state),
-                timeout=_TOOL_TIMEOUT_S,
+                timeout=timeout,
             )
 
             logger.info(f"✅ Tool {tool_name} completed (direct call)")
             return result
 
         except asyncio.TimeoutError:
-            logger.warning(f"⏱️  Tool {tool_name} timed out after {_TOOL_TIMEOUT_S}s")
-            return {"error": f"timeout after {_TOOL_TIMEOUT_S}s", "success": False, "timed_out": True}
+            timeout = _COMPOSE_TOOL_TIMEOUT_S if tool_name in _CRITICAL_TOOLS else _TOOL_TIMEOUT_S
+            logger.warning(f"⏱️  Tool {tool_name} timed out after {timeout}s")
+            return {"error": f"timeout after {timeout}s", "success": False, "timed_out": True}
         except Exception as e:
             logger.error(f"❌ Tool {tool_name} direct call failed: {e}", exc_info=True)
             return {"error": str(e), "success": False}
@@ -974,10 +978,20 @@ class PlanExecutor:
             if "next_step_suggestion" in key and isinstance(value, dict):
                 results["next_suggestions"] = value.get("next_suggestions", [])
 
-        # If no compose result found, check for other tool outputs
+        # If compose result was an error (timeout/failure), generate a fallback response
         if not results.get("assistant_text"):
-            # Extract raw tool outputs
-            results["tool_outputs"] = self.context.copy()
+            # Check if compose failed and we have product data to summarize
+            product_names = self.state.get("product_names", [])
+            if product_names:
+                fallback_parts = ["Here's what I found for you:\n"]
+                for i, name in enumerate(product_names[:5], 1):
+                    fallback_parts.append(f"{i}. **{name}**")
+                fallback_parts.append("\n*I wasn't able to generate a full review this time. Try again for a detailed comparison.*")
+                results["assistant_text"] = "\n".join(fallback_parts)
+                logger.warning(f"⚠️  Compose tool failed — using fallback response with {len(product_names)} product names")
+            else:
+                # Extract raw tool outputs
+                results["tool_outputs"] = self.context.copy()
 
         # Add execution metadata
         results["execution_context"] = {

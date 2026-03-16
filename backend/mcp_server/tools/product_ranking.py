@@ -18,6 +18,18 @@ if backend_dir not in sys.path:
 
 logger = get_logger(__name__)
 
+
+def _fuzzy_name_match(name_a: str, name_b: str, threshold: float = 0.35) -> bool:
+    """Token-overlap Jaccard similarity for fuzzy product name matching."""
+    a_tokens = set(name_a.lower().split())
+    b_tokens = set(name_b.lower().split())
+    if not a_tokens or not b_tokens:
+        return False
+    intersection = a_tokens & b_tokens
+    union = a_tokens | b_tokens
+    return len(intersection) / len(union) >= threshold
+
+
 # Tool contract for planner
 TOOL_CONTRACT = {
     "name": "product_ranking",
@@ -39,26 +51,37 @@ async def product_ranking(state: Dict[str, Any]) -> Dict[str, Any]:
     Rank products by quality and relevance.
 
     Reads from state:
-        - search_results: Products to rank
+        - product_names: List of product name strings from product_search
+        - normalized_products: Normalized product objects (optional, preferred over product_names)
         - review_aspects: Review analysis results (optional)
-        - affiliate_links: Affiliate link data (optional)
-        - user_profile: User preferences (optional)
+        - affiliate_products: Affiliate link data by provider (optional)
+        - review_data: Review data from review_search (optional)
 
     Writes to state:
         - ranked_products: Ranked list of products with scores
 
     Returns:
         {
-            "ranked_items": [...],
+            "ranked_products": [...],
             "success": bool
         }
     """
     try:
-        # Read from state
-        products = state.get("search_results", [])
+        # Read from state — prefer normalized_products, fall back to product_names
+        normalized_products = state.get("normalized_products", [])
+        product_names = state.get("product_names", [])
+
+        # Build a list of product dicts to rank
+        products = []
+        if normalized_products:
+            products = normalized_products
+        elif product_names:
+            # Convert name strings to minimal dicts
+            products = [{"name": name, "title": name} for name in product_names]
+
         review_aspects = state.get("review_aspects")
-        affiliate_links = state.get("affiliate_links")
-        user_profile = state.get("user_profile")
+        review_data = state.get("review_data", {})
+        affiliate_products = state.get("affiliate_products", {})
 
         logger.info(f"[product_ranking] Ranking {len(products)} products")
 
@@ -71,34 +94,60 @@ async def product_ranking(state: Dict[str, Any]) -> Dict[str, Any]:
             score = 0.0
             reasons = []
 
-            # Factor 1: Authority score from search
-            authority = product.get("authority_score", 0)
-            score += authority / 10  # Normalize to 0-1
-            if authority > 7:
-                reasons.append("High authority source")
+            # Factor 1: Authority/quality score from normalized data
+            authority = product.get("authority_score", 0) or product.get("score", 0)
+            if authority > 0:
+                score += min(authority, 1.0) if authority <= 1.0 else authority / 10
+                if authority > 7 or (authority <= 1.0 and authority > 0.7):
+                    reasons.append("High authority source")
 
-            # Factor 2: Review aspects (if available)
-            if review_aspects:
+            # Factor 2: Review data from review_search (product_name -> ReviewBundle)
+            if review_data:
+                # Fuzzy match product name against review_data keys
+                matching_bundle = None
+                for rname, rbundle in review_data.items():
+                    if _fuzzy_name_match(product_name, rname):
+                        matching_bundle = rbundle
+                        break
+
+                if matching_bundle:
+                    rating = matching_bundle.get("avg_rating", 0)
+                    total_reviews = matching_bundle.get("total_reviews", 0)
+                    quality_score = matching_bundle.get("quality_score", 0)
+                    if rating > 0:
+                        score += rating / 5  # Normalize to 0-1
+                        if rating >= 4.0:
+                            reasons.append(f"Highly rated ({rating}/5)")
+                    if total_reviews > 50:
+                        reasons.append(f"{total_reviews} reviews")
+                    if quality_score > 3.0:
+                        score += 0.1
+
+            # Factor 2b: Legacy review_aspects support
+            elif review_aspects:
                 matching_review = next(
                     (r for r in review_aspects if product_name in r.get("product", "")),
                     None
                 )
                 if matching_review:
                     rating = matching_review.get("rating", 0)
-                    score += rating / 5  # Normalize to 0-1
+                    score += rating / 5
                     if rating >= 4.0:
                         reasons.append(f"Highly rated ({rating}/5)")
-
                     pros_count = len(matching_review.get("pros", []))
                     if pros_count > 2:
                         reasons.append(f"{pros_count} positive aspects")
 
-            # Factor 3: Affiliate availability
-            if affiliate_links:
-                has_affiliate = any(
-                    product_name in link.get("product_name", "")
-                    for link in affiliate_links
-                )
+            # Factor 3: Affiliate availability (check all providers)
+            if affiliate_products:
+                has_affiliate = False
+                for provider_name, provider_groups in affiliate_products.items():
+                    for group in provider_groups:
+                        if _fuzzy_name_match(product_name, group.get("product_name", "")):
+                            has_affiliate = True
+                            break
+                    if has_affiliate:
+                        break
                 if has_affiliate:
                     score += 0.2
                     reasons.append("Available for purchase")
@@ -118,14 +167,14 @@ async def product_ranking(state: Dict[str, Any]) -> Dict[str, Any]:
         logger.info(f"[product_ranking] Top product: {ranked_items[0]['product_name'] if ranked_items else 'None'}")
 
         return {
-            "ranked_items": ranked_items,
+            "ranked_products": ranked_items,
             "success": True
         }
 
     except Exception as e:
         logger.error(f"[product_ranking] Error: {e}", exc_info=True)
         return {
-            "ranked_items": [],
+            "ranked_products": [],
             "error": str(e),
             "success": False
         }
