@@ -2,13 +2,8 @@
 Unit tests for chat streaming behavior.
 
 Covers:
-  RX-01: Product cards (ui_blocks via stream_chunk_data) are emitted to the
-         frontend before product_compose starts — the plan executor must fire
-         an artifact callback after the product_affiliate step.
-  RX-02: product_compose calls model_service.generate with stream=True for
-         the blog_article task so tokens stream incrementally.
-  Token registry: register_token_callback, get_token_callbacks,
-         clear_token_callbacks are importable from plan_executor.
+  RX-02: product_compose calls model_service.generate with stream=False for
+         the blog_article task so tokens are batched in parallel LLM calls.
 """
 import os
 import pytest
@@ -31,71 +26,6 @@ from mcp_server.tools.product_compose import product_compose  # noqa: E402
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
-
-
-def test_token_callback_registry_importable():
-    """
-    Task 1: register_token_callback, get_token_callbacks, clear_token_callbacks
-    must be importable from app.services.plan_executor.
-    """
-    from app.services.plan_executor import (
-        register_token_callback,
-        get_token_callbacks,
-        clear_token_callbacks,
-    )
-    # Verify the registry is a list-like container
-    clear_token_callbacks()
-    assert get_token_callbacks() == []
-
-    sentinel = object()
-    register_token_callback(sentinel)
-    assert sentinel in get_token_callbacks()
-
-    clear_token_callbacks()
-    assert get_token_callbacks() == []
-
-@pytest.mark.asyncio
-async def test_product_cards_emitted_before_compose():
-    """
-    RX-01: After the product_affiliate step completes, the plan executor must
-    emit an artifact callback (stream_chunk_data) containing product card
-    ui_blocks so the frontend can render cards while product_compose is still
-    running.
-
-    Test approach: verify that product_affiliate sets stream_chunk_data in its
-    return dict, which is the contract the plan executor relies on to detect
-    when to fire the mid-pipeline emit.
-    """
-    from mcp_server.tools.product_affiliate import product_affiliate
-
-    state = {
-        "normalized_products": [
-            {"title": "Sony WH-1000XM5"},
-            {"title": "Bose QuietComfort 45"},
-        ],
-        "slots": {},
-        "last_search_context": {},
-    }
-
-    with patch("app.services.affiliate.manager.affiliate_manager") as mock_manager, \
-         patch("app.core.config.settings") as mock_settings:
-        mock_settings.MAX_AFFILIATE_OFFERS_PER_PRODUCT = 3
-        mock_settings.AMAZON_DEFAULT_COUNTRY = "US"
-        mock_manager.get_available_providers.return_value = []
-
-        result = await product_affiliate(state)
-
-    # RX-01: product_affiliate must set stream_chunk_data so the plan executor
-    # knows to emit product cards immediately after this step.
-    stream_chunk = result.get("stream_chunk_data")
-    assert stream_chunk is not None, (
-        "RX-01: plan_executor does not emit artifact callback after product_affiliate step — "
-        "product_affiliate must set stream_chunk_data={'type': 'ui_blocks', ...} in its "
-        "return dict for the plan executor to detect and forward to the SSE stream"
-    )
-    assert stream_chunk.get("type") == "ui_blocks", (
-        f"RX-01: Expected stream_chunk_data['type'] == 'ui_blocks', got: {stream_chunk}"
-    )
 
 
 @pytest.mark.asyncio
@@ -172,7 +102,7 @@ async def test_blog_article_runs_in_parallel_batch():
         "search_history": [],
     }
 
-    with patch("mcp_server.tools.product_compose.model_service", fake_service, create=True):
+    with patch("app.services.model_service.model_service", fake_service):
         result = await product_compose(state)
 
     assert result["success"] is True

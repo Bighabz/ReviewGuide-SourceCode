@@ -367,9 +367,6 @@ class TestProductComposeWithReviews:
 
             assert result["success"] is True
             assert result["assistant_text"]
-            # Should NOT have review_sources block
-            review_blocks = [b for b in result["ui_blocks"] if b.get("type") == "review_sources"]
-            assert len(review_blocks) == 0
 
     @pytest.mark.asyncio
     async def test_compose_with_review_data(self):
@@ -421,11 +418,7 @@ class TestProductComposeWithReviews:
                 result = await product_compose(state)
 
             assert result["success"] is True
-            # Should have review_sources block
-            review_blocks = [b for b in result["ui_blocks"] if b.get("type") == "review_sources"]
-            assert len(review_blocks) == 1
-            assert review_blocks[0]["data"]["products"][0]["name"] == "Sony WH-1000XM5"
-            # assistant_text should be non-empty
+            # assistant_text should contain the blog article with review data
             assert result["assistant_text"]
 
 

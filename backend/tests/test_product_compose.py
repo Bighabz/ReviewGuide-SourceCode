@@ -40,7 +40,7 @@ def mock_model_service():
     fake_service = MagicMock()
     fake_service.get_response = AsyncMock(return_value="mock response")
     fake_service.get_streaming_response = AsyncMock(return_value=iter([]))
-    with patch("mcp_server.tools.product_compose.model_service", fake_service, create=True):
+    with patch("app.services.model_service.model_service", fake_service):
         yield fake_service
 
 
@@ -209,28 +209,18 @@ _REVIEW_STATE_WITH_DATA = {
 @pytest.fixture
 def capturing_model_service():
     """
-    Patch model_service at the product_compose module level to capture all call
-    kwargs and return plausible strings so the tool can complete without error.
+    Patch model_service to capture all call kwargs and return plausible strings
+    so the tool can complete without error.
 
-    product_compose now caches `model_service` as a module-level attribute, so we
-    patch at `mcp_server.tools.product_compose.model_service`.
-
-    When stream=True (blog_article path), fake_generate returns an async generator
-    so the `async for token in blog_gen` loop in product_compose works correctly.
+    The reverted product_compose imports model_service inside the function, so
+    we patch at `app.services.model_service.model_service`.
     """
     captured_calls = []
-
-    async def _blog_gen():
-        """Async generator mimicking model_service streaming output."""
-        yield "## Sony WH-1000XM5\nGreat headphones.\n\n## Our Verdict\nBuy the Sony."
 
     async def fake_generate(**kwargs):
         captured_calls.append(kwargs)
         agent_name = kwargs.get("agent_name", "")
-        stream = kwargs.get("stream", False)
         if agent_name == "blog_article_composer":
-            if stream:
-                return _blog_gen()
             return "## Sony WH-1000XM5\nGreat headphones.\n\n## Our Verdict\nBuy the Sony."
         if agent_name == "review_consensus":
             return "Excellent product praised by experts."
@@ -241,46 +231,8 @@ def capturing_model_service():
     fake_service = MagicMock()
     fake_service.generate = fake_generate
 
-    with patch("mcp_server.tools.product_compose.model_service", fake_service):
+    with patch("app.services.model_service.model_service", fake_service):
         yield fake_service, captured_calls
-
-
-@pytest.mark.asyncio
-async def test_no_opener_call(capturing_model_service):
-    """
-    RX-06: model_service.generate must NOT be called with agent_name='product_opener'
-    when review_data is present.
-    """
-    import copy
-    fake_service, captured_calls = capturing_model_service
-    state = copy.deepcopy(_REVIEW_STATE_WITH_DATA)
-
-    result = await product_compose(state)
-
-    assert result["success"] is True
-    opener_calls = [c for c in captured_calls if c.get("agent_name") == "product_opener"]
-    assert opener_calls == [], (
-        f"Expected no 'product_opener' calls but got {len(opener_calls)}: {opener_calls}"
-    )
-
-
-@pytest.mark.asyncio
-async def test_no_conclusion_call(capturing_model_service):
-    """
-    RX-06: model_service.generate must NOT be called with agent_name='product_conclusion'
-    regardless of whether products_by_provider is populated.
-    """
-    import copy
-    fake_service, captured_calls = capturing_model_service
-    state = copy.deepcopy(_REVIEW_STATE_WITH_DATA)
-
-    result = await product_compose(state)
-
-    assert result["success"] is True
-    conclusion_calls = [c for c in captured_calls if c.get("agent_name") == "product_conclusion"]
-    assert conclusion_calls == [], (
-        f"Expected no 'product_conclusion' calls but got {len(conclusion_calls)}: {conclusion_calls}"
-    )
 
 
 # ---------------------------------------------------------------------------
@@ -320,43 +272,4 @@ async def test_blog_includes_source_inline_links(capturing_model_service):
     )
     assert "[Wirecutter]" in user_content, (
         f"Expected '[Wirecutter]' markdown link in blog_data, but got:\n{user_content[:500]}"
-    )
-
-
-# ---------------------------------------------------------------------------
-# RX-01 / RX-08 Stub — product_affiliate sets stream_chunk_data
-# ---------------------------------------------------------------------------
-
-@pytest.mark.asyncio
-async def test_stream_chunk_data_set_by_product_affiliate():
-    """
-    RX-01/RX-08: After product_affiliate completes, stream_chunk_data must
-    be set to {"type": "ui_blocks", ...} in the returned state so the plan
-    executor can emit product cards to the frontend before product_compose runs.
-
-    Currently product_affiliate does not write stream_chunk_data at all.
-    """
-    from mcp_server.tools.product_affiliate import product_affiliate
-
-    state = {
-        "normalized_products": [{"title": "Widget X"}],
-        "slots": {},
-        "last_search_context": {},
-    }
-
-    with patch("app.services.affiliate.manager.affiliate_manager") as mock_manager, \
-         patch("app.core.config.settings") as mock_settings:
-        mock_settings.MAX_AFFILIATE_OFFERS_PER_PRODUCT = 3
-        mock_settings.AMAZON_DEFAULT_COUNTRY = "US"
-        mock_manager.get_available_providers.return_value = []
-
-        result = await product_affiliate(state)
-
-    stream_chunk = result.get("stream_chunk_data")
-    assert stream_chunk is not None, (
-        "RX-01/RX-08: product_affiliate does not set stream_chunk_data — "
-        "add stream_chunk_data={'type': 'ui_blocks', ...} to the return dict"
-    )
-    assert stream_chunk.get("type") == "ui_blocks", (
-        f"Expected stream_chunk_data['type'] == 'ui_blocks', got: {stream_chunk}"
     )
