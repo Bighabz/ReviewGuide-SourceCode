@@ -539,8 +539,9 @@ RULES:
 3. If no personal context exists, write objectively about the product's strengths
 4. Vary your descriptions — don't repeat the same pattern
 5. Be warm and informative, like a knowledgeable friend
+6. Return descriptions in the EXACT same order as the products listed
 
-Return JSON: {"descriptions": ["desc1", "desc2", ...]}"""
+Return JSON: {"descriptions": {"Product Title 1": "desc1", "Product Title 2": "desc2", ...}}"""
 
             desc_user = f'''Conversation context:
 {desc_context if desc_context else "No prior context"}
@@ -744,17 +745,35 @@ FORMAT REQUIREMENTS:
             })
             logger.info(f"[product_compose] Added comparison HTML block ({len(comparison_html)} chars)")
 
-        # Apply descriptions to products (keep existing logic)
+        # Apply descriptions to products — match by title (not index) to avoid mismatch
         if 'descriptions' in result_map:
             desc_raw = _get_result('descriptions')
             if desc_raw:
                 try:
                     desc_data = json.loads(desc_raw)
-                    descriptions = desc_data.get("descriptions", [])
-                    for i, desc in enumerate(descriptions):
-                        if i < len(all_products_for_desc):
-                            all_products_for_desc[i]["description"] = desc
-                    logger.info(f"[product_compose] Generated {len(descriptions)} product descriptions")
+                    descriptions = desc_data.get("descriptions", {})
+                    matched = 0
+                    if isinstance(descriptions, dict):
+                        # Title-keyed dict: {"Product Title": "description"}
+                        for product in all_products_for_desc:
+                            title = product.get("title", "")
+                            # Try exact match first, then fuzzy
+                            desc = descriptions.get(title) or descriptions.get(title[:50])
+                            if not desc:
+                                for key, val in descriptions.items():
+                                    if _fuzzy_product_match(title, key, threshold=0.4):
+                                        desc = val
+                                        break
+                            if desc:
+                                product["description"] = desc
+                                matched += 1
+                    elif isinstance(descriptions, list):
+                        # Fallback: array of descriptions (old format)
+                        for i, desc in enumerate(descriptions):
+                            if i < len(all_products_for_desc):
+                                all_products_for_desc[i]["description"] = desc
+                                matched += 1
+                    logger.info(f"[product_compose] Applied {matched} product descriptions")
                 except (json.JSONDecodeError, Exception) as desc_error:
                     logger.warning(f"[product_compose] Failed to parse descriptions: {desc_error}")
 

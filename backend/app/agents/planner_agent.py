@@ -118,6 +118,9 @@ class PlannerAgent(BaseAgent):
             elif intent == "intro":
                 plan = self._create_manual_plan_for_intro()
                 self.colored_logger.info("📋 Using manual plan for intro intent")
+            elif intent == "travel":
+                plan = self._create_fast_path_travel_plan()
+                self.colored_logger.info("🚀 FAST PATH: travel intent → hardcoded template")
             elif intent == "product":
                 user_message = state.get("user_message", "")
                 slots = state.get("slots", {})
@@ -644,6 +647,26 @@ Example: {{"tools": ["product_search"]}} - this will auto-add normalize, affilia
             {"id": f"step_{step_num + 5}", "tools": ["product_compose"], "parallel": False},
         ])
         return {"steps": steps}
+
+    def _create_fast_path_travel_plan(self) -> Dict[str, Any]:
+        """
+        Hardcoded execution plan for travel intent.
+        Bypasses the LLM Planner to avoid 10s timeout.
+
+        Pipeline:
+          Step 1: travel_itinerary + travel_destination_facts (PARALLEL)
+          Step 2: travel_search_hotels + travel_search_flights (PARALLEL)
+          Step 3: travel_compose
+          Step 4: next_step_suggestion
+        """
+        return {
+            "steps": [
+                {"id": "step_1", "tools": ["travel_itinerary", "travel_destination_facts"], "parallel": True},
+                {"id": "step_2", "tools": ["travel_search_hotels", "travel_search_flights"], "parallel": True},
+                {"id": "step_3", "tools": ["travel_compose"], "parallel": False},
+                {"id": "step_4", "tools": ["next_step_suggestion"], "parallel": False},
+            ]
+        }
 
     def _create_manual_plan_for_intro(self) -> Dict[str, Any]:
         """

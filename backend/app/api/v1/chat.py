@@ -459,7 +459,13 @@ async def generate_chat_stream(
                                 data_type = stream_data.get("type")
                                 data_content = stream_data.get("data")
 
-                                if data_type and data_content:
+                                # Emit tool citations as status messages for progress indicator
+                                if data_type == "tool_citation" and isinstance(data_content, dict):
+                                    citation_message = data_content.get("message", "")
+                                    if citation_message:
+                                        yield _sse_event("status", {"text": citation_message})
+                                        logger.info(f"Streamed status: {citation_message}")
+                                elif data_type and data_content:
                                     artifact_payload = {
                                         "type": data_type,
                                         "blocks": data_content,
