@@ -91,6 +91,25 @@ def get_tool_citation_callbacks():
     return _tool_citation_callbacks
 
 
+# Artifact streaming callbacks (for mid-workflow product card streaming)
+_artifact_callbacks_global: List = []
+
+
+def register_artifact_callback(callback):
+    """Register a module-level callback called when a tool produces streamable artifact data."""
+    _artifact_callbacks_global.append(callback)
+
+
+def clear_artifact_callbacks():
+    """Clear module-level artifact callbacks to avoid leaking between requests."""
+    _artifact_callbacks_global.clear()
+
+
+def get_artifact_callbacks():
+    """Get module-level artifact callbacks."""
+    return _artifact_callbacks_global
+
+
 class PlanExecutor:
     """
     Executes plans with support for:
@@ -107,6 +126,7 @@ class PlanExecutor:
         self.state: Dict[str, Any] = {}
         self.tool_citations: List[Dict[str, str]] = []  # Track tool citation messages
         self._citation_callbacks: List = []  # Per-instance callbacks (session-isolated)
+        self._artifact_callbacks: List = []  # Per-instance artifact callbacks (session-isolated)
 
     def register_citation_callback(self, callback):
         """Register a citation callback scoped to this executor instance."""
@@ -115,6 +135,14 @@ class PlanExecutor:
     def clear_citation_callbacks(self):
         """Clear citation callbacks for this executor instance."""
         self._citation_callbacks.clear()
+
+    def register_artifact_callback_instance(self, callback):
+        """Register an instance-level artifact callback."""
+        self._artifact_callbacks.append(callback)
+
+    def clear_artifact_callbacks_instance(self):
+        """Clear instance-level artifact callbacks."""
+        self._artifact_callbacks.clear()
 
     async def _call_tool_direct(self, tool_name: str, state: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -310,6 +338,13 @@ class PlanExecutor:
                     self.context[f"{step_id}.{tool_name}"] = result
                     # Write tool outputs back to state
                     self._write_tool_outputs_to_state(tool_name, result, contracts.get(tool_name))
+                    # Emit artifact immediately if tool produced streamable ui_blocks (RX-01, RX-08)
+                    stream_data = result.get("stream_chunk_data") if isinstance(result, dict) else None
+                    if stream_data and stream_data.get("type") == "ui_blocks":
+                        await self._emit_artifact({
+                            "type": "ui_blocks",
+                            "blocks": stream_data.get("data", []),
+                        })
 
             # Collect failed/timed-out tools into missing_sources for partial-success tracking
             failed_tools = [
@@ -347,6 +382,14 @@ class PlanExecutor:
 
                     # Write tool outputs back to state
                     self._write_tool_outputs_to_state(tool_name, result, contracts.get(tool_name))
+
+                    # Emit artifact immediately if tool produced streamable ui_blocks (RX-01, RX-08)
+                    stream_data = result.get("stream_chunk_data") if isinstance(result, dict) else None
+                    if stream_data and stream_data.get("type") == "ui_blocks":
+                        await self._emit_artifact({
+                            "type": "ui_blocks",
+                            "blocks": stream_data.get("data", []),
+                        })
 
                     # Check for tool failure (timeout or error returned from _call_tool_direct)
                     if isinstance(result, dict) and not result.get("success", True):
@@ -399,6 +442,23 @@ class PlanExecutor:
 
         # Yield control to event loop to allow streaming to happen
         await asyncio.sleep(0)
+
+    async def _emit_artifact(self, artifact_data: dict) -> None:
+        """
+        Emit artifact data to all registered callbacks (instance + global).
+        Called immediately after a tool that produces ui_blocks completes.
+        """
+        logger.info(f"Emitting artifact: type={artifact_data.get('type')}, blocks={len(artifact_data.get('blocks', []))}")
+        all_callbacks = self._artifact_callbacks + get_artifact_callbacks()
+        for callback in all_callbacks:
+            try:
+                if asyncio.iscoroutinefunction(callback):
+                    await callback(artifact_data)
+                else:
+                    callback(artifact_data)
+            except Exception as e:
+                logger.error(f"Error calling artifact callback: {e}", exc_info=True)
+        await asyncio.sleep(0)  # yield control to event loop
 
     def _make_serializable(self, obj: Any) -> Any:
         """
