@@ -410,18 +410,11 @@ async def generate_chat_stream(
 
         register_artifact_callback(_on_artifact)
 
-        # Register token callback to stream blog article tokens mid-workflow (RX-02)
-        async def _on_token(token: str):
-            """Called by product_compose for each blog article token."""
-            nonlocal text_already_streamed
-            text_already_streamed = True
-            synthetic_event = {
-                "event": "token_ready",
-                "data": {"token": token},
-            }
-            await _artifact_event_queue.put(synthetic_event)
-
-        register_token_callback(_on_token)
+        # Token streaming (RX-02) disabled for now — causes event queue contention
+        # when hundreds of token events are put into the queue from within graph execution.
+        # Blog text is still sent via normal chunking after graph completes.
+        # TODO: Re-enable with a separate queue or batched token approach.
+        # register_token_callback(_on_token)
 
         # Start event consumer in background
         event_task = asyncio.create_task(consume_events())
