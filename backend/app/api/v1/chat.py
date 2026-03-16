@@ -371,6 +371,8 @@ async def generate_chat_stream(
             clear_tool_citation_callbacks,
             register_artifact_callback,   # module-level registry from Plan 04 Task 1
             clear_artifact_callbacks,      # clears artifact callbacks after workflow
+            register_token_callback,       # module-level token streaming registry (Plan 05)
+            clear_token_callbacks,         # clears token callbacks after workflow
         )
 
         # Background task that polls event stream
@@ -408,6 +410,19 @@ async def generate_chat_stream(
 
         register_artifact_callback(_on_artifact)
 
+        # Register token callback to stream blog article tokens mid-workflow (RX-02)
+        async def _on_token(token: str):
+            """Called by product_compose for each blog article token."""
+            nonlocal text_already_streamed
+            text_already_streamed = True
+            synthetic_event = {
+                "event": "token_ready",
+                "data": {"token": token},
+            }
+            await _artifact_event_queue.put(synthetic_event)
+
+        register_token_callback(_on_token)
+
         # Start event consumer in background
         event_task = asyncio.create_task(consume_events())
 
@@ -415,6 +430,7 @@ async def generate_chat_stream(
         result_state = None
         last_node_name = None
         data_already_streamed = False  # Track if we already streamed any data (from stream_chunk_data)
+        text_already_streamed = False   # Set when token callback streams blog article tokens (RX-02)
 
         # RFC §1.1 — enforce 60-second hard limit on the entire SSE connection.
         # asyncio.wait_for cannot wrap an async generator, so the deadline is
@@ -423,7 +439,7 @@ async def generate_chat_stream(
 
         async def _drain_event_loop():
             """Drain the event queue until the workflow sentinel arrives or the 60-second hard cap fires."""
-            nonlocal result_state, last_node_name, data_already_streamed, sse_total_timeout_hit
+            nonlocal result_state, last_node_name, data_already_streamed, text_already_streamed, sse_total_timeout_hit
             # RFC §1.1 — enforce hard cap by checking elapsed time on every iteration.
             # asyncio.wait_for cannot wrap an async generator directly, so the deadline
             # is enforced inline: the check fires within one CHAT_EVENT_QUEUE_TIMEOUT
@@ -508,6 +524,12 @@ async def generate_chat_stream(
                         yield _sse_event("artifact", payload)
                         logger.info(f"[chat] Streamed early artifact from callback")
 
+                # Handle synthetic token_ready events from blog article token streaming (RX-02)
+                elif event_type == "token_ready":
+                    token_data = event.get("data", {})
+                    if token_data:
+                        yield _sse_event("content", token_data)
+
         try:
             # RFC §1.1 — drain; the 60-second hard cap fires inside _drain_event_loop
             # on every iteration, so this loop is always bounded by MAX_TOTAL_REQUEST_S
@@ -531,6 +553,7 @@ async def generate_chat_stream(
         if sse_total_timeout_hit:
             clear_tool_citation_callbacks()
             clear_artifact_callbacks()   # prevent callback leakage between requests
+            clear_token_callbacks()      # prevent token callback leakage between requests
             yield _sse_event("error", {
                 "code": "request_timeout",
                 "message": "Request exceeded the 60-second time limit. Please try a simpler query.",
@@ -552,6 +575,7 @@ async def generate_chat_stream(
         # Clear callbacks after workflow completes
         clear_tool_citation_callbacks()
         clear_artifact_callbacks()   # prevent callback leakage between requests
+        clear_token_callbacks()      # prevent token callback leakage between requests
 
         # DEBUG: Log result_state keys
         logger.info(f"🔍 DEBUG: result_state keys: {list(result_state.keys())}")
@@ -633,8 +657,9 @@ async def generate_chat_stream(
         else:
             logger.info("🔍 Skipping clear chunk - data already streamed, will append followups")
 
-        # Stream response text if available and NOT halted and NOT already streamed data
-        should_stream_text = not is_halted and response_text and not data_already_streamed
+        # Stream response text if available and NOT halted and NOT already streamed
+        # also skip fake-chunking when tokens were already streamed via token callback (RX-02)
+        should_stream_text = not is_halted and response_text and not data_already_streamed and not text_already_streamed
 
         if should_stream_text:
             logger.info(f"🔍 DEBUG: Streaming response text ({len(response_text)} chars)")
