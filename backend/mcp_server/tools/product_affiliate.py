@@ -96,6 +96,7 @@ async def product_affiliate(
         if not products_to_search:
             return {
                 "affiliate_products": {},
+                "stream_chunk_data": None,
                 "success": True
             }
 
@@ -180,8 +181,45 @@ async def product_affiliate(
 
         logger.info(f"[product_affiliate] Total providers with results: {list(affiliate_products.keys())}")
 
+        # Build product card ui_blocks for early streaming (RX-01, RX-08)
+        # This allows plan_executor to push product cards to the browser before product_compose runs
+        early_ui_blocks = []
+        for provider_name, provider_groups in affiliate_products.items():
+            provider_config = {
+                "ebay": {"title": "Shop on eBay", "type": "ebay_products"},
+                "amazon": {"title": "Shop on Amazon", "type": "amazon_products"},
+            }
+            config = provider_config.get(provider_name, {
+                "title": f"Shop on {provider_name.title()}",
+                "type": f"{provider_name}_products",
+            })
+            products = []
+            for group in provider_groups:
+                for offer in group.get("offers", [])[:5]:
+                    products.append({
+                        "title": offer.get("title", ""),
+                        "price": offer.get("price", 0),
+                        "currency": offer.get("currency", "USD"),
+                        "url": offer.get("url", ""),
+                        "image_url": offer.get("image_url", ""),
+                        "merchant": offer.get("merchant", provider_name.title()),
+                        "rating": offer.get("rating"),
+                        "review_count": offer.get("review_count"),
+                        "source": provider_name,
+                    })
+            if products:
+                early_ui_blocks.append({
+                    "type": config["type"],
+                    "title": config["title"],
+                    "data": {"products": products[:10]},
+                })
+
+        stream_chunk = {"type": "ui_blocks", "data": early_ui_blocks}
+        logger.info(f"[product_affiliate] Prepared {len(early_ui_blocks)} early ui_blocks for streaming")
+
         return {
             "affiliate_products": affiliate_products,
+            "stream_chunk_data": stream_chunk,
             "success": True
         }
 
@@ -189,6 +227,7 @@ async def product_affiliate(
         logger.error(f"[product_affiliate] Error: {e}", exc_info=True)
         return {
             "affiliate_products": {},
+            "stream_chunk_data": None,
             "error": str(e),
             "success": False
         }

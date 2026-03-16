@@ -340,7 +340,7 @@ class PlanExecutor:
                     self._write_tool_outputs_to_state(tool_name, result, contracts.get(tool_name))
                     # Emit artifact immediately if tool produced streamable ui_blocks (RX-01, RX-08)
                     stream_data = result.get("stream_chunk_data") if isinstance(result, dict) else None
-                    if stream_data and stream_data.get("type") == "ui_blocks":
+                    if stream_data and stream_data.get("type") == "ui_blocks" and stream_data.get("data"):
                         await self._emit_artifact({
                             "type": "ui_blocks",
                             "blocks": stream_data.get("data", []),
@@ -385,7 +385,7 @@ class PlanExecutor:
 
                     # Emit artifact immediately if tool produced streamable ui_blocks (RX-01, RX-08)
                     stream_data = result.get("stream_chunk_data") if isinstance(result, dict) else None
-                    if stream_data and stream_data.get("type") == "ui_blocks":
+                    if stream_data and stream_data.get("type") == "ui_blocks" and stream_data.get("data"):
                         await self._emit_artifact({
                             "type": "ui_blocks",
                             "blocks": stream_data.get("data", []),
