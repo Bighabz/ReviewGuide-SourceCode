@@ -409,140 +409,25 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
 
         llm_tasks = {}  # key -> coroutine
 
-        # --- Assistant text: concierge OR opener (mutually exclusive with review consensus) ---
+        # --- Static assistant_text for comparison HTML (no LLM needed) ---
         assistant_text = ""
         if comparison_html:
             comp_product_names = comparison_data.get("products", []) if comparison_data else []
             assistant_text = f"## Product Comparison: {', '.join(comp_product_names)}\n\nHere's a detailed specification comparison."
-        elif not review_data:
-            # Concierge-style summary
-            provider_names = [p.title() for p in affiliate_products.keys()]
-            conversation_history = state.get("conversation_history", [])
-            context_summary = ""
-            if conversation_history:
-                recent = conversation_history[-4:]
-                context_summary = "\n".join([
-                    f"{msg.get('role', 'user')}: {msg.get('content', '')[:150]}"
-                    for msg in recent if msg.get('content')
-                ])
-            product_name_list = [p.get("name", "") for p in normalized_products[:5] if p.get("name")]
-            user_prefs = (state.get("metadata") or {}).get("user_preferences", {})
-            pref_note = ""
-            if user_prefs.get("brands") or user_prefs.get("categories"):
-                past_cats = list(user_prefs.get("categories", {}).keys())[:2]
-                past_brands = list(user_prefs.get("brands", {}).keys())[:2]
-                parts = []
-                if past_cats:
-                    parts.append(f"often searches for {', '.join(past_cats)}")
-                if past_brands:
-                    parts.append(f"favors {', '.join(past_brands)}")
-                pref_note = f"\nReturning user who {' and '.join(parts)}."
 
-            llm_tasks['concierge'] = model_service.generate(
-                messages=[
-                    {"role": "system", "content": "You are ReviewGuide, a friendly and knowledgeable AI shopping assistant. Never open with phrases like 'Based on X sources' or mention how many sources you searched. Never describe your process. Write 2-3 SHORT sentences (max 60 words). If the user introduced themselves or shared their name earlier in the conversation, always address them by name. Explain WHY these products match the user's needs. Reference their criteria from the conversation (budget, features, use case). Do NOT list products — they are shown in cards below. End with a brief, warm follow-up that shows you remember the user's context."},
-                    {"role": "user", "content": f'User asked: "{user_message}"\nContext:\n{context_summary}{pref_note}\nProducts: {", ".join(product_name_list)}\nSources: {", ".join(provider_names)}'}
-                ],
-                model=settings.COMPOSER_MODEL,
-                temperature=0.7,
-                max_tokens=120,
-                agent_name="product_compose"
-            )
-
-        # --- Review consensus (one per product) + opener ---
-        # Cap LLM consensus to top 3 products by quality_score to reduce fanout latency
-        MAX_CONSENSUS_PRODUCTS = 3
-        _template_consensus = {}  # Pre-computed consensus for lower-ranked products
-        review_bundles = {}  # product_name -> bundle (for assembly later)
+        # --- Collect review bundles for blog article data (no LLM calls here) ---
+        review_bundles = {}  # product_name -> bundle
         if review_data:
-            # Separate products with sources from those without
             products_with_sources = [
                 (name, bundle) for name, bundle in review_data.items()
                 if bundle.get("sources")
             ]
-            # Sort by quality_score descending
             products_with_sources.sort(
                 key=lambda kv: kv[1].get("quality_score", 0),
                 reverse=True
             )
-            top_products = products_with_sources[:MAX_CONSENSUS_PRODUCTS]
-            remaining_products = products_with_sources[MAX_CONSENSUS_PRODUCTS:]
-
-            # Full LLM consensus for top products
-            for product_name, bundle in top_products:
+            for product_name, bundle in products_with_sources:
                 review_bundles[product_name] = bundle
-                source_snippets = "\n".join([
-                    f"- {s.get('site_name', 'Review')}: {s.get('snippet', '')}"
-                    for s in bundle.get("sources", [])[:5]
-                ])
-                llm_tasks[f'consensus:{product_name}'] = model_service.generate(
-                    messages=[
-                        {"role": "system", "content": "You are an editorial product reviewer writing a concise expert summary. Write a 3-5 sentence summary that covers: (1) what reviewers consistently praise, (2) any notable criticisms or caveats, and (3) who this product is best suited for. Write in a warm, authoritative editorial voice — like a knowledgeable friend giving the tldr. Never open with \"Based on X sources\" or mention how many sources. Weave in source names only when it adds credibility (e.g., \"Wirecutter highlights its noise cancellation\"). End with a sentence describing the ideal buyer."},
-                        {"role": "user", "content": f"Product: {product_name}\nAvg Rating: {bundle.get('avg_rating', 0)}/5 from {bundle.get('total_reviews', 0)} reviews\n\nReview excerpts:\n{source_snippets}\n\nWrite a 3-5 sentence editorial summary covering: strengths, criticisms, and ideal buyer."}
-                    ],
-                    model=settings.COMPOSER_MODEL,
-                    temperature=0.5,
-                    max_tokens=220,
-                    agent_name="review_consensus"
-                )
-
-            # Deterministic template for remaining products (no LLM call)
-            # These get injected into result_map after the asyncio.gather below
-            _template_consensus = {}
-            for product_name, bundle in remaining_products:
-                review_bundles[product_name] = bundle
-                rating = bundle.get("avg_rating", "N/A")
-                total = bundle.get("total_reviews", 0)
-                top_source = bundle.get("sources", [{}])[0].get("site_name", "reviewers")
-                _template_consensus[f'consensus:{product_name}'] = (
-                    f"Rated {rating}/5 across {total} reviews. "
-                    f"{top_source} highlights this as a solid option in its category. "
-                    f"See the full reviews for detailed pros and cons."
-                )
-
-        # --- Personalized product descriptions ---
-        if all_products_for_desc:
-            products_to_describe = all_products_for_desc[:15]
-            product_titles = [p["title"][:50] for p in products_to_describe]
-            conversation_history = state.get("conversation_history", [])
-            desc_context = ""
-            if conversation_history:
-                recent_messages = conversation_history[-6:]
-                desc_context = "\n".join([
-                    f"{msg.get('role', 'user')}: {msg.get('content', '')[:100]}"
-                    for msg in recent_messages if msg.get('content')
-                ])
-
-            desc_system = """Generate factual 15-25 word descriptions for each product.
-
-RULES:
-1. Focus on what makes each product stand out — key features, best use case, who it's ideal for
-2. ONLY reference personal details (names, pets, family) if they appear in the conversation context. NEVER invent or assume personal details.
-3. If no personal context exists, write objectively about the product's strengths
-4. Vary your descriptions — don't repeat the same pattern
-5. Be warm and informative, like a knowledgeable friend
-
-Return JSON: {"descriptions": ["desc1", "desc2", ...]}"""
-
-            desc_user = f'''Conversation context:
-{desc_context if desc_context else "No prior context"}
-
-User's current question: "{user_message}"
-
-Products to describe:
-{json.dumps(product_titles)}'''
-
-            llm_tasks['descriptions'] = model_service.generate(
-                messages=[
-                    {"role": "system", "content": desc_system},
-                    {"role": "user", "content": desc_user}
-                ],
-                model=settings.COMPOSER_MODEL,
-                temperature=0.7,
-                max_tokens=600,
-                response_format={"type": "json_object"},
-                agent_name="product_compose_descriptions"
-            )
 
         # --- Blog article composition ---
         # Gather all data the blog writer needs
@@ -648,9 +533,7 @@ FORMAT REQUIREMENTS:
         else:
             result_map = {}
 
-        # Inject pre-computed template consensus for lower-ranked products
-        if _template_consensus:
-            result_map.update(_template_consensus)
+        # (consensus calls removed — blog article covers all products)
 
         # Helper to safely extract a string result
         def _get_result(key: str, fallback: str = "") -> str:
@@ -680,33 +563,8 @@ FORMAT REQUIREMENTS:
             })
             logger.info(f"[product_compose] Added comparison HTML block ({len(comparison_html)} chars)")
 
-        # Apply descriptions to products (keep existing logic)
-        if 'descriptions' in result_map:
-            desc_raw = _get_result('descriptions')
-            if desc_raw:
-                try:
-                    desc_data = json.loads(desc_raw)
-                    descriptions = desc_data.get("descriptions", [])
-                    for i, desc in enumerate(descriptions):
-                        if i < len(all_products_for_desc):
-                            all_products_for_desc[i]["description"] = desc
-                    logger.info(f"[product_compose] Generated {len(descriptions)} product descriptions")
-                except (json.JSONDecodeError, Exception) as desc_error:
-                    logger.warning(f"[product_compose] Failed to parse descriptions: {desc_error}")
-
-        # Product carousel UI blocks — one per provider
-        for provider_name in sorted_providers:
-            data = products_by_provider.get(provider_name)
-            if not data:
-                continue
-            config = data["config"]
-            ui_blocks.append({
-                "type": config["type"],
-                "title": config["title"],
-                "data": {"products": data["products"][:10]},
-            })
-        if products_by_provider:
-            logger.info(f"[product_compose] Added {len(products_by_provider)} product carousel blocks")
+        # Product carousels removed — blog article is the primary display
+        # Buy links are inline in the blog text (Wirecutter style)
 
         # Cross-retailer price comparison (keep as structured UI block)
         # Filter to only products that appear in the blog article
@@ -771,63 +629,28 @@ FORMAT REQUIREMENTS:
         if blog_article:
             assistant_text = blog_article
             logger.info(f"[product_compose] LLM blog article: {len(assistant_text)} chars")
-        elif review_data and review_bundles:
-            # Fallback: template assembly (used only if blog_article LLM call fails)
+        else:
+            # Fallback: simple template with buy links (used only if blog LLM fails)
             article_parts = []
-            for idx, (product_name, bundle) in enumerate(review_bundles.items(), 1):
-                consensus = _get_result(f'consensus:{product_name}', '')
-                label = editorial_labels.get(product_name, '')
-                heading = f"## {idx}. {product_name}"
-                if label:
-                    heading += f" — *{label}*"
-                article_parts.append(heading)
-                if consensus:
-                    article_parts.append(consensus)
-                product_offer = next(
-                    (p for p in products_with_offers
-                     if _fuzzy_product_match(p.get("name", ""), product_name) and p.get("best_offer")),
-                    None
-                )
-                if product_offer and product_offer.get("best_offer"):
-                    offer = product_offer["best_offer"]
-                    price = offer.get("price", 0)
-                    merchant = offer.get("merchant", "")
-                    url = offer.get("url", "")
-                    if price > 0 and url:
-                        article_parts.append(f"**${price:.2f}** — [Check price on {merchant} →]({url})")
-            assistant_text = "\n\n".join(article_parts)
-        elif 'concierge' in result_map:
-            concierge = _get_result('concierge', "Here's what I found for you.")
-            article_parts = [concierge]
-            seen_products = set()
-            product_idx = 0
+            seen = set()
+            idx = 0
             for provider_name, data in products_by_provider.items():
                 for product in data["products"]:
                     title = product.get("title", "")
-                    if title in seen_products or product_idx >= 8:
+                    if title in seen or idx >= 5:
                         continue
-                    seen_products.add(title)
-                    product_idx += 1
+                    seen.add(title)
+                    idx += 1
                     price = product.get("price", 0)
                     merchant = product.get("merchant", provider_name.title())
                     url = product.get("url", "")
-                    description = product.get("description", "")
-                    heading = f"### {product_idx}. {title}"
+                    heading = f"## {idx}. {title}"
                     article_parts.append(heading)
-                    # Product image
-                    image_url = product.get("image_url", "")
-                    if image_url:
-                        article_parts.append(f"![{title}]({image_url})")
-                    if description:
-                        article_parts.append(description)
                     if price > 0 and url:
                         article_parts.append(f"**${price:.2f}** — [Check price on {merchant} →]({url})")
                     elif url:
                         article_parts.append(f"[View on {merchant} →]({url})")
-            assistant_text = "\n\n".join(article_parts)
-        else:
-            if not assistant_text:
-                assistant_text = "Here's what I found for you."
+            assistant_text = "\n\n".join(article_parts) if article_parts else "Here's what I found for you."
 
         # Create citations
         citations = [p["url"] for p in normalized_products if p.get("url")][:5]
