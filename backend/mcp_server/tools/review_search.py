@@ -37,6 +37,7 @@ TOOL_CONTRACT = {
 MIN_AVG_RATING = 3.5
 MIN_TOTAL_REVIEWS = 5
 MIN_SOURCE_TYPES = 2  # Require at least 2 different source types
+PER_PRODUCT_TIMEOUT_S = 8  # Timeout per product review search
 
 
 def _quality_score(avg_rating: float, total_reviews: int) -> float:
@@ -116,8 +117,8 @@ async def review_search(state: Dict[str, Any]) -> Dict[str, Any]:
                 "success": True,
             }
 
-        # Take top 5 products max
-        products_to_search = product_names[:5]
+        # Take top 3 products max (cap to reduce latency)
+        products_to_search = product_names[:3]
 
         logger.info(f"[review_search] Searching reviews for {len(products_to_search)} products")
 
@@ -133,9 +134,15 @@ async def review_search(state: Dict[str, Any]) -> Dict[str, Any]:
         from app.services.serpapi.client import SerpAPIClient
         client = SerpAPIClient()
 
-        # Run parallel searches for all products
+        # Run parallel searches for all products with per-product timeout
+        async def _search_with_timeout(name: str, cat: str):
+            return await asyncio.wait_for(
+                client.search_reviews(name, cat),
+                timeout=PER_PRODUCT_TIMEOUT_S,
+            )
+
         tasks = [
-            client.search_reviews(name, category)
+            _search_with_timeout(name, category)
             for name in products_to_search
         ]
         bundles = await asyncio.gather(*tasks, return_exceptions=True)

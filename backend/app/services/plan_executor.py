@@ -25,7 +25,7 @@ from tool_contracts import get_tool_contracts_dict  # noqa: E402
 logger = get_logger(__name__)
 
 # Tool execution timeout configuration
-_TOOL_TIMEOUT_S = 15.0        # Hard timeout per individual tool call
+_TOOL_TIMEOUT_S = 30.0        # Hard timeout per individual tool call
 _STEP_TIMEOUT_S = 45.0        # Hard timeout for entire step (parallel fan-out)
 _CRITICAL_TOOLS = {           # Tools whose failure aborts the pipeline
     "product_compose",

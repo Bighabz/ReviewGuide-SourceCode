@@ -106,60 +106,70 @@ async def product_affiliate(
 
         logger.info(f"[product_affiliate] Using providers: {providers_to_use}")
 
-        # Helper function to search a provider for all products
+        # Helper function to search a single product on a single provider
+        async def search_single_product(provider, provider_name: str, product_name: str) -> Dict[str, Any]:
+            """Search one product on one provider."""
+            try:
+                search_kwargs = {
+                    "query": product_name,
+                    "limit": max_offers,
+                    "category": category,
+                }
+
+                # Add country_code for providers that support it
+                if hasattr(provider, 'search_products'):
+                    import inspect
+                    sig = inspect.signature(provider.search_products)
+                    if 'country_code' in sig.parameters:
+                        search_kwargs['country_code'] = country_code
+
+                search_results = await provider.search_products(**search_kwargs)
+
+                if search_results:
+                    offers = []
+                    for result in search_results:
+                        offer = {
+                            "merchant": getattr(result, 'merchant', provider_name.title()),
+                            "price": getattr(result, 'price', 0),
+                            "currency": getattr(result, 'currency', "USD"),
+                            "url": getattr(result, 'affiliate_link', ""),
+                            "condition": getattr(result, 'condition', "new"),
+                            "title": getattr(result, 'title', ""),
+                            "image_url": getattr(result, 'image_url', ""),
+                            "rating": getattr(result, 'rating', None),
+                            "review_count": getattr(result, 'review_count', None),
+                            "source": provider_name
+                        }
+                        if hasattr(result, 'product_id') and result.product_id:
+                            offer["product_id"] = result.product_id
+                        offers.append(offer)
+
+                    return {"product_name": product_name, "offers": offers}
+
+            except Exception as e:
+                logger.warning(f"[product_affiliate] {provider_name} search failed for {product_name}: {e}")
+
+            return None
+
+        # Helper function to search a provider for all products (in parallel)
         async def search_provider(provider_name: str) -> Dict[str, Any]:
-            """Search all products on a single provider."""
+            """Search all products on a single provider using asyncio.gather."""
             provider = affiliate_manager.get_provider(provider_name)
             if not provider:
                 return {"provider": provider_name, "results": []}
 
+            tasks = [
+                search_single_product(provider, provider_name, name)
+                for name in products_to_search
+            ]
+            raw_results = await asyncio.gather(*tasks, return_exceptions=True)
+
             results = []
-            for product_name in products_to_search:
-                try:
-                    # Check if provider supports country_code (like Amazon)
-                    search_kwargs = {
-                        "query": product_name,
-                        "limit": max_offers,
-                        "category": category,
-                    }
-
-                    # Add country_code for providers that support it
-                    if hasattr(provider, 'search_products'):
-                        import inspect
-                        sig = inspect.signature(provider.search_products)
-                        if 'country_code' in sig.parameters:
-                            search_kwargs['country_code'] = country_code
-
-                    search_results = await provider.search_products(**search_kwargs)
-
-                    if search_results:
-                        offers = []
-                        for result in search_results:
-                            offer = {
-                                "merchant": getattr(result, 'merchant', provider_name.title()),
-                                "price": getattr(result, 'price', 0),
-                                "currency": getattr(result, 'currency', "USD"),
-                                "url": getattr(result, 'affiliate_link', ""),
-                                "condition": getattr(result, 'condition', "new"),
-                                "title": getattr(result, 'title', ""),
-                                "image_url": getattr(result, 'image_url', ""),
-                                "rating": getattr(result, 'rating', None),
-                                "review_count": getattr(result, 'review_count', None),
-                                "source": provider_name
-                            }
-                            # Add product_id if available (e.g., ASIN for Amazon)
-                            if hasattr(result, 'product_id') and result.product_id:
-                                offer["product_id"] = result.product_id
-                            offers.append(offer)
-
-                        results.append({
-                            "product_name": product_name,
-                            "offers": offers
-                        })
-
-                except Exception as e:
-                    logger.warning(f"[product_affiliate] {provider_name} search failed for {product_name}: {e}")
-                    continue
+            for r in raw_results:
+                if isinstance(r, Exception):
+                    logger.warning(f"[product_affiliate] {provider_name} product search exception: {r}")
+                elif r is not None:
+                    results.append(r)
 
             return {"provider": provider_name, "results": results}
 
