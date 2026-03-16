@@ -172,7 +172,7 @@ Phase 1 executes first (performance is the top priority). Phases 2, 3, 4 can exe
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Response Experience Overhaul | 4/6 | In Progress|  |
+| 1. Response Experience Overhaul | 5/6 | In Progress|  |
 | 2. Fix Review Source Links | 0/1 | Not started | - |
 | 3. Serper Shopping Provider | 0/1 | Not started | - |
 | 4. Browse Page Fixes | 0/1 | Not started | - |
