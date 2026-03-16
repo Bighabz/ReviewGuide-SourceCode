@@ -9,9 +9,9 @@
 
 - [ ] **RX-01**: First visible content (product cards) appears within 5 seconds of sending a query
 - [ ] **RX-02**: Blog narrative streams token-by-token from OpenAI via SSE (not batch-then-chunk)
-- [ ] **RX-03**: Affiliate product searches parallelized within each provider (asyncio.gather instead of sequential for loop)
-- [ ] **RX-04**: Review search limited to top 3 products (down from 5) with per-product timeout
-- [ ] **RX-05**: Review search and affiliate search run in parallel where data dependencies allow
+- [x] **RX-03**: Affiliate product searches parallelized within each provider (asyncio.gather instead of sequential for loop)
+- [x] **RX-04**: Review search limited to top 3 products (down from 5) with per-product timeout
+- [x] **RX-05**: Review search and affiliate search run in parallel where data dependencies allow
 - [ ] **RX-06**: product_compose eliminates redundant LLM calls (combine where possible, remove unnecessary ones)
 - [ ] **RX-07**: Blog-style response includes inline affiliate buy links as markdown (e.g. "Check price on Amazon →")
 - [ ] **RX-08**: Product cards render above blog narrative, arriving progressively via stream_chunk_data
@@ -103,9 +103,9 @@
 |-------------|-------|--------|
 | RX-01 | Phase 1 | Pending |
 | RX-02 | Phase 1 | Pending |
-| RX-03 | Phase 1 | Pending |
-| RX-04 | Phase 1 | Pending |
-| RX-05 | Phase 1 | Pending |
+| RX-03 | Phase 1 | Complete |
+| RX-04 | Phase 1 | Complete |
+| RX-05 | Phase 1 | Complete |
 | RX-06 | Phase 1 | Pending |
 | RX-07 | Phase 1 | Pending |
 | RX-08 | Phase 1 | Pending |
