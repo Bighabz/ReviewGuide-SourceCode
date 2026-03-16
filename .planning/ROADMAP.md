@@ -57,14 +57,9 @@ Plans:
   2. Clicking a source link opens the original review page in a new tab
   3. Source links appear in the blog-style narrative, not just as a raw URL dump
   4. At least two sources are cited per product response when review data is available
-**Plans**: 6 plans
+**Plans**: 1 plan
 Plans:
-- [ ] 01-01-PLAN.md — Wave 0 test scaffolds for all 8 RX requirements
-- [ ] 01-02-PLAN.md — Backend parallelism (RX-03, RX-04, RX-05)
-- [ ] 01-03-PLAN.md — product_compose cleanup: remove opener/conclusion, thread source URLs (RX-06, RX-07)
-- [ ] 01-04-PLAN.md — Early product card streaming via artifact callback (RX-01, RX-08)
-- [ ] 01-05-PLAN.md — Blog article token streaming via token callback (RX-02)
-- [ ] 01-06-PLAN.md — Human verification checkpoint
+- [ ] 02-01-PLAN.md — Thread source URLs into LLM context, update system prompt, fix citations (FIX-01)
 
 ### Phase 3: Serper Shopping Provider
 **Goal**: Product search returns results from multiple retailers with product images, prices, and merchant names — not eBay alone
@@ -76,14 +71,9 @@ Plans:
   3. Product results appear in the AffiliateProviderRegistry under the "serper_shopping" key and are auto-discovered by the provider loader
   4. Repeated identical queries within the same session do not trigger a second Serper API call (Redis cache hit)
   5. The Serper shopping provider requires no new API credentials (reuses existing SERPER_API_KEY)
-**Plans**: 6 plans
+**Plans**: 1 plan
 Plans:
-- [ ] 01-01-PLAN.md — Wave 0 test scaffolds for all 8 RX requirements
-- [ ] 01-02-PLAN.md — Backend parallelism (RX-03, RX-04, RX-05)
-- [ ] 01-03-PLAN.md — product_compose cleanup: remove opener/conclusion, thread source URLs (RX-06, RX-07)
-- [ ] 01-04-PLAN.md — Early product card streaming via artifact callback (RX-01, RX-08)
-- [ ] 01-05-PLAN.md — Blog article token streaming via token callback (RX-02)
-- [ ] 01-06-PLAN.md — Human verification checkpoint
+- [ ] 03-01-PLAN.md — SerperShoppingProvider: create provider, register in loader and product_compose (FIX-02, FIX-03, SRCH-01, SRCH-02, SRCH-03)
 
 ### Phase 4: Browse Page Fixes
 **Goal**: All affiliate links on browse category pages resolve correctly with no broken or truncated URLs
@@ -93,14 +83,9 @@ Plans:
   1. amzn.to links on browse pages open to the correct Amazon product page when clicked
   2. The menopause supplements category affiliate link is complete and resolves to a working product page
   3. No 404 or redirect errors appear in the browser console when clicking curated affiliate links
-**Plans**: 6 plans
+**Plans**: 1 plan
 Plans:
-- [ ] 01-01-PLAN.md — Wave 0 test scaffolds for all 8 RX requirements
-- [ ] 01-02-PLAN.md — Backend parallelism (RX-03, RX-04, RX-05)
-- [ ] 01-03-PLAN.md — product_compose cleanup: remove opener/conclusion, thread source URLs (RX-06, RX-07)
-- [ ] 01-04-PLAN.md — Early product card streaming via artifact callback (RX-01, RX-08)
-- [ ] 01-05-PLAN.md — Blog article token streaming via token callback (RX-02)
-- [ ] 01-06-PLAN.md — Human verification checkpoint
+- [ ] 04-01-PLAN.md — Guard amzn.to in health checker, fix menopause URL, wire CuratedProductCard into category page (FIX-04, FIX-05)
 
 ### Phase 5: Amazon Creators API Migration
 **Goal**: Amazon product search continues working after May 15, 2026 using the Creators API with OAuth2 authentication
@@ -112,14 +97,7 @@ Plans:
   3. Amazon product images are displayed via direct hotlink to Amazon CDN URLs — no caching or re-hosting
   4. The amazon_provider.py file contains no AWS Signature V4 credential logic after migration
   5. Amazon integration is live on Railway before May 15, 2026
-**Plans**: 6 plans
-Plans:
-- [ ] 01-01-PLAN.md — Wave 0 test scaffolds for all 8 RX requirements
-- [ ] 01-02-PLAN.md — Backend parallelism (RX-03, RX-04, RX-05)
-- [ ] 01-03-PLAN.md — product_compose cleanup: remove opener/conclusion, thread source URLs (RX-06, RX-07)
-- [ ] 01-04-PLAN.md — Early product card streaming via artifact callback (RX-01, RX-08)
-- [ ] 01-05-PLAN.md — Blog article token streaming via token callback (RX-02)
-- [ ] 01-06-PLAN.md — Human verification checkpoint
+**Plans**: TBD
 
 ### Phase 6: Skimlinks Link Wrapper
 **Goal**: Product URLs from Serper Shopping and other non-Amazon, non-eBay sources are monetized via Skimlinks affiliate tracking
@@ -130,14 +108,7 @@ Plans:
   2. An Amazon product URL is never passed through the Skimlinks wrapper
   3. The Skimlinks merchant domain list is fetched from Redis on cache hit and from the Merchant API only on cache miss (24h TTL)
   4. The Skimlinks link wrapper can be disabled via SKIMLINKS_API_ENABLED=false without breaking product search
-**Plans**: 6 plans
-Plans:
-- [ ] 01-01-PLAN.md — Wave 0 test scaffolds for all 8 RX requirements
-- [ ] 01-02-PLAN.md — Backend parallelism (RX-03, RX-04, RX-05)
-- [ ] 01-03-PLAN.md — product_compose cleanup: remove opener/conclusion, thread source URLs (RX-06, RX-07)
-- [ ] 01-04-PLAN.md — Early product card streaming via artifact callback (RX-01, RX-08)
-- [ ] 01-05-PLAN.md — Blog article token streaming via token callback (RX-02)
-- [ ] 01-06-PLAN.md — Human verification checkpoint
+**Plans**: TBD
 
 ### Phase 7: Skimlinks Middleware + Editor's Picks
 **Goal**: Skimlinks post-processing runs automatically on all provider results, and Editor's Picks with product images are visible on browse category pages
@@ -148,14 +119,7 @@ Plans:
   2. Editor's Picks sections appear on browse category pages with product names, images, and working affiliate links
   3. Editor's Picks images load from a live provider (not placehold.co placeholders)
   4. The curatedLinks.ts data is used to populate Editor's Picks without requiring a new data source
-**Plans**: 6 plans
-Plans:
-- [ ] 01-01-PLAN.md — Wave 0 test scaffolds for all 8 RX requirements
-- [ ] 01-02-PLAN.md — Backend parallelism (RX-03, RX-04, RX-05)
-- [ ] 01-03-PLAN.md — product_compose cleanup: remove opener/conclusion, thread source URLs (RX-06, RX-07)
-- [ ] 01-04-PLAN.md — Early product card streaming via artifact callback (RX-01, RX-08)
-- [ ] 01-05-PLAN.md — Blog article token streaming via token callback (RX-02)
-- [ ] 01-06-PLAN.md — Human verification checkpoint
+**Plans**: TBD
 
 ### Phase 8: Clarifier Suggestion Chips
 **Goal**: Clarifying questions arrive with tappable chip options so users can answer in one tap instead of typing
@@ -166,14 +130,7 @@ Plans:
   2. Tapping a chip sends its text as the user's reply without typing
   3. Chips are rendered as styled buttons consistent with the Editorial Luxury theme (DM Sans, warm ivory/charcoal palette)
   4. The clarifier_chips field is present in GraphState with a default value so LangGraph channels do not crash on existing sessions
-**Plans**: 6 plans
-Plans:
-- [ ] 01-01-PLAN.md — Wave 0 test scaffolds for all 8 RX requirements
-- [ ] 01-02-PLAN.md — Backend parallelism (RX-03, RX-04, RX-05)
-- [ ] 01-03-PLAN.md — product_compose cleanup: remove opener/conclusion, thread source URLs (RX-06, RX-07)
-- [ ] 01-04-PLAN.md — Early product card streaming via artifact callback (RX-01, RX-08)
-- [ ] 01-05-PLAN.md — Blog article token streaming via token callback (RX-02)
-- [ ] 01-06-PLAN.md — Human verification checkpoint
+**Plans**: TBD
 
 ### Phase 9: Top Pick Block + Help Me Decide
 **Goal**: Product responses lead with a single opinionated editorial recommendation, product counts are capped at 5, and comparison intent triggers a comparison table automatically
@@ -184,14 +141,7 @@ Plans:
   2. No product response returns more than 5 product cards
   3. A follow-up message like "how do these compare?" or "which one should I get?" against an active product shortlist automatically returns a ComparisonTable — without the user asking for a table explicitly
   4. The top_pick ui_block type is rendered correctly in Message.tsx without modifying the existing ui_blocks dispatch logic
-**Plans**: 6 plans
-Plans:
-- [ ] 01-01-PLAN.md — Wave 0 test scaffolds for all 8 RX requirements
-- [ ] 01-02-PLAN.md — Backend parallelism (RX-03, RX-04, RX-05)
-- [ ] 01-03-PLAN.md — product_compose cleanup: remove opener/conclusion, thread source URLs (RX-06, RX-07)
-- [ ] 01-04-PLAN.md — Early product card streaming via artifact callback (RX-01, RX-08)
-- [ ] 01-05-PLAN.md — Blog article token streaming via token callback (RX-02)
-- [ ] 01-06-PLAN.md — Human verification checkpoint
+**Plans**: TBD
 
 ### Phase 10: Impact.com Provider
 **Goal**: Impact.com affiliate catalog is available as a product search provider, adding higher-commission direct brand relationships
@@ -202,14 +152,7 @@ Plans:
   2. Impact.com results are auto-discovered by the provider loader and registered in AffiliateProviderRegistry
   3. Impact.com API calls are rate-limited to stay within 3,000 requests/hour
   4. The provider can be disabled via IMPACT_API_ENABLED=false without affecting other providers
-**Plans**: 6 plans
-Plans:
-- [ ] 01-01-PLAN.md — Wave 0 test scaffolds for all 8 RX requirements
-- [ ] 01-02-PLAN.md — Backend parallelism (RX-03, RX-04, RX-05)
-- [ ] 01-03-PLAN.md — product_compose cleanup: remove opener/conclusion, thread source URLs (RX-06, RX-07)
-- [ ] 01-04-PLAN.md — Early product card streaming via artifact callback (RX-01, RX-08)
-- [ ] 01-05-PLAN.md — Blog article token streaming via token callback (RX-02)
-- [ ] 01-06-PLAN.md — Human verification checkpoint
+**Plans**: TBD
 
 ### Phase 11: Viator + CJ Expansion
 **Goal**: Viator activity search is available for travel queries, and CJ advertiser coverage is expanded to include major retail brands
@@ -220,14 +163,7 @@ Plans:
   2. Viator results are auto-discovered by the provider loader and registered in AffiliateProviderRegistry
   3. CJ advertiser applications for at least 3 of the target programs (Best Buy, Dell, Target, Wayfair, Nike) are submitted and confirmation emails received
   4. Once a CJ advertiser approves the application, their products appear in CJ search results without any code change
-**Plans**: 6 plans
-Plans:
-- [ ] 01-01-PLAN.md — Wave 0 test scaffolds for all 8 RX requirements
-- [ ] 01-02-PLAN.md — Backend parallelism (RX-03, RX-04, RX-05)
-- [ ] 01-03-PLAN.md — product_compose cleanup: remove opener/conclusion, thread source URLs (RX-06, RX-07)
-- [ ] 01-04-PLAN.md — Early product card streaming via artifact callback (RX-01, RX-08)
-- [ ] 01-05-PLAN.md — Blog article token streaming via token callback (RX-02)
-- [ ] 01-06-PLAN.md — Human verification checkpoint
+**Plans**: TBD
 
 ## Progress
 
@@ -237,9 +173,9 @@ Phase 1 executes first (performance is the top priority). Phases 2, 3, 4 can exe
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Response Experience Overhaul | 0/6 | Not started | - |
-| 2. Fix Review Source Links | 0/TBD | Not started | - |
-| 3. Serper Shopping Provider | 0/TBD | Not started | - |
-| 4. Browse Page Fixes | 0/TBD | Not started | - |
+| 2. Fix Review Source Links | 0/1 | Not started | - |
+| 3. Serper Shopping Provider | 0/1 | Not started | - |
+| 4. Browse Page Fixes | 0/1 | Not started | - |
 | 5. Amazon Creators API Migration | 0/TBD | Not started | - |
 | 6. Skimlinks Link Wrapper | 0/TBD | Not started | - |
 | 7. Skimlinks Middleware + Editor's Picks | 0/TBD | Not started | - |
