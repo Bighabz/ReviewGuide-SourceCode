@@ -642,37 +642,16 @@ FORMAT REQUIREMENTS:
         else:
             result_map = {}
 
-        # ── Phase 3b: Stream blog_article tokens (always streamed; callbacks forwarded if registered) ──
+        # ── Phase 3b: Generate blog article (non-streaming for stability) ──
         try:
-            from app.services.plan_executor import get_token_callbacks
-            _token_cbs = get_token_callbacks()
-            blog_gen = await model_service.generate(
+            blog_result = await model_service.generate(
                 messages=_blog_messages,
                 model=settings.COMPOSER_MODEL,
                 temperature=0.7,
                 max_tokens=800,
-                stream=True,
                 agent_name="blog_article_composer"
             )
-            blog_tokens = []
-            if hasattr(blog_gen, "__aiter__"):
-                # Real streaming path: async generator
-                async for token in blog_gen:
-                    if token:
-                        blog_tokens.append(token)
-                        if _token_cbs:
-                            for cb in _token_cbs:
-                                try:
-                                    if asyncio.iscoroutinefunction(cb):
-                                        await cb(token)
-                                    else:
-                                        cb(token)
-                                except Exception as cb_err:
-                                    logger.warning(f"[product_compose] Token callback error: {cb_err}")
-                result_map['blog_article'] = "".join(blog_tokens)
-            else:
-                # Fallback: generate returned a string (e.g. in tests or non-streaming fallback)
-                result_map['blog_article'] = blog_gen if isinstance(blog_gen, str) else ""
+            result_map['blog_article'] = blog_result if isinstance(blog_result, str) else ""
             logger.info(f"[product_compose] Blog article: {len(result_map.get('blog_article', ''))} chars")
         except Exception as blog_err:
             logger.error(f"[product_compose] Blog article generation failed: {blog_err}")
