@@ -462,6 +462,7 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
                     link_str = o.get("url", "")
                     image_str = o.get("image_url", "")
                 source_refs = ""
+                review_excerpts = ""
                 if bundle.get("sources"):
                     top_sources = bundle["sources"][:3]
                     source_ref_parts = [
@@ -471,10 +472,18 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
                     ]
                     if source_ref_parts:
                         source_refs = " | Reviews: " + ", ".join(source_ref_parts)
+                    # Include actual review snippets so the LLM can write informed reviews
+                    snippet_parts = [
+                        f"  - {s.get('site_name', 'Review')}: {s.get('snippet', '')}"
+                        for s in top_sources
+                        if s.get("snippet")
+                    ]
+                    if snippet_parts:
+                        review_excerpts = "\n" + "\n".join(snippet_parts)
                 blog_data_parts.append(
                     f"Product: {pname}{label_str} | Rating: {rating}/5 ({total} reviews)"
                     f" | Price: {price_str} on {merchant_str} | Link: {link_str}"
-                    f" | Image: {image_str}{source_refs}"
+                    f" | Image: {image_str}{source_refs}{review_excerpts}"
                 )
                 blog_product_names.append(pname)
 
@@ -509,7 +518,7 @@ FORMAT REQUIREMENTS:
 - Start with a warm 1-2 sentence intro addressing what the user is looking for (their budget, use case, or features mentioned in their query)
 - For each product, write a ## heading with the product name and editorial label (if any) in italics
 - IMMEDIATELY after each ## heading, if an Image URL is provided, include it as: ![Product Name](image_url)
-- Under each heading, write 2-4 sentences of natural prose reviewing the product — strengths, caveats, who it's for
+- Under each heading, write 3-5 sentences of natural prose reviewing the product based on the review excerpts provided — what reviewers praise, any caveats, and who it's best for. Reference specific reviewer insights when available.
 - After the review text, include a price line with buy link: **$XX.XX** — [Check price on Merchant →](url)
 - If review source links are provided in the data (after "| Reviews:"), include 1-2 inline citations in natural prose using the format: [Wirecutter](url) or [Tom's Guide](url). Only link to sources explicitly listed in the data — never invent URLs
 - End with a ## Our Verdict section: 2 sentences with your opinionated top recommendation and who should look elsewhere
