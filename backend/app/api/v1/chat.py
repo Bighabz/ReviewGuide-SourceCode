@@ -367,7 +367,11 @@ async def generate_chat_stream(
         workflow_running = True
 
         # Event queue for streaming
-        from app.services.plan_executor import clear_tool_citation_callbacks
+        from app.services.plan_executor import (
+            clear_tool_citation_callbacks,
+            register_artifact_callback,   # module-level registry from Plan 04 Task 1
+            clear_artifact_callbacks,      # clears artifact callbacks after workflow
+        )
 
         # Background task that polls event stream
         event_queue = asyncio.Queue()
@@ -383,6 +387,26 @@ async def generate_chat_stream(
             finally:
                 workflow_running = False
                 await event_queue.put(None)  # Sentinel value
+
+        # Register artifact callback to stream product cards mid-workflow (RX-01, RX-08)
+        # The callback writes a synthetic event to event_queue so the SSE drain loop picks it up immediately
+        _artifact_event_queue = event_queue  # Capture reference for use in closure
+
+        async def _on_artifact(artifact_data: dict):
+            """Called by PlanExecutor when a tool produces streamable artifact data."""
+            sse_payload = {
+                "type": artifact_data.get("type", "ui_blocks"),
+                "blocks": artifact_data.get("blocks", []),
+                "clear": True,
+            }
+            synthetic_event = {
+                "event": "artifact_ready",
+                "data": sse_payload,
+            }
+            await _artifact_event_queue.put(synthetic_event)
+            logger.info(f"[chat] Queued early artifact: {artifact_data.get('type')}")
+
+        register_artifact_callback(_on_artifact)
 
         # Start event consumer in background
         event_task = asyncio.create_task(consume_events())
@@ -476,6 +500,14 @@ async def generate_chat_stream(
                             logger.info(f"Travel planner status (suppressed): from {event_name}")
                             last_node_name = "planner"
 
+                # Handle synthetic artifact_ready events from mid-workflow artifact callbacks (RX-01, RX-08)
+                elif event_type == "artifact_ready":
+                    payload = event.get("data", {})
+                    if payload and payload.get("blocks"):
+                        data_already_streamed = True
+                        yield _sse_event("artifact", payload)
+                        logger.info(f"[chat] Streamed early artifact from callback")
+
         try:
             # RFC §1.1 — drain; the 60-second hard cap fires inside _drain_event_loop
             # on every iteration, so this loop is always bounded by MAX_TOTAL_REQUEST_S
@@ -498,6 +530,7 @@ async def generate_chat_stream(
         # RFC §1.1 — if the 60-second hard cap fired, terminate the stream immediately
         if sse_total_timeout_hit:
             clear_tool_citation_callbacks()
+            clear_artifact_callbacks()   # prevent callback leakage between requests
             yield _sse_event("error", {
                 "code": "request_timeout",
                 "message": "Request exceeded the 60-second time limit. Please try a simpler query.",
@@ -518,6 +551,7 @@ async def generate_chat_stream(
 
         # Clear callbacks after workflow completes
         clear_tool_citation_callbacks()
+        clear_artifact_callbacks()   # prevent callback leakage between requests
 
         # DEBUG: Log result_state keys
         logger.info(f"🔍 DEBUG: result_state keys: {list(result_state.keys())}")
