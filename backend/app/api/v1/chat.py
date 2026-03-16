@@ -657,9 +657,9 @@ async def generate_chat_stream(
         else:
             logger.info("🔍 Skipping clear chunk - data already streamed, will append followups")
 
-        # Stream response text if available and NOT halted and NOT already streamed
-        # also skip fake-chunking when tokens were already streamed via token callback (RX-02)
-        should_stream_text = not is_halted and response_text and not data_already_streamed and not text_already_streamed
+        # Stream response text if available and NOT halted and NOT already streamed via token callback
+        # data_already_streamed only means ui_blocks were sent early — text still needs to go out
+        should_stream_text = not is_halted and response_text and not text_already_streamed
 
         if should_stream_text:
             logger.info(f"🔍 DEBUG: Streaming response text ({len(response_text)} chars)")
