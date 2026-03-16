@@ -116,10 +116,11 @@ async def review_search(state: Dict[str, Any]) -> Dict[str, Any]:
                 "success": True,
             }
 
-        # Take top 5 products max
-        products_to_search = product_names[:5]
+        # Take top 3 products max (down from 5 to reduce latency)
+        PER_PRODUCT_TIMEOUT_S = 8  # per-product Serper review search timeout
+        products_to_search = product_names[:3]
 
-        logger.info(f"[review_search] Searching reviews for {len(products_to_search)} products")
+        logger.info(f"[review_search] Searching reviews for {len(products_to_search)} products (top 3, 8s timeout each)")
 
         # Emit status update
         tool_citations = [
@@ -133,9 +134,12 @@ async def review_search(state: Dict[str, Any]) -> Dict[str, Any]:
         from app.services.serpapi.client import SerpAPIClient
         client = SerpAPIClient()
 
-        # Run parallel searches for all products
+        # Run parallel searches for all products with per-product timeout
         tasks = [
-            client.search_reviews(name, category)
+            asyncio.wait_for(
+                client.search_reviews(name, category),
+                timeout=PER_PRODUCT_TIMEOUT_S
+            )
             for name in products_to_search
         ]
         bundles = await asyncio.gather(*tasks, return_exceptions=True)

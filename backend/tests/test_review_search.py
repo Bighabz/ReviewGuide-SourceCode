@@ -430,9 +430,32 @@ class TestProductComposeWithReviews:
 
 
 # ============================================================
-# RX-04 Stub — caps at 3 products
+# RX-04 — caps at 3 products, per-product timeout
 # ============================================================
 
+import inspect as _inspect
+import ast as _ast
+
 def test_review_search_caps_at_3_products():
-    """RX-04: review_search must limit results to 3 products, not 5."""
-    pytest.fail("RX-04: review_search still uses [:5] — update slice to [:3]")
+    """
+    RX-04: review_search must use product_names[:3] (not [:5]) and wrap each
+    search call with asyncio.wait_for(..., timeout=8).
+    """
+    import mcp_server.tools.review_search as rs_module
+
+    source = _inspect.getsource(rs_module)
+
+    # Verify the 3-product cap is in place
+    assert "product_names[:3]" in source, (
+        "review_search still uses [:5] or another slice — expected product_names[:3]"
+    )
+
+    # Verify asyncio.wait_for is used for per-product timeout
+    assert "asyncio.wait_for" in source, (
+        "review_search does not use asyncio.wait_for for per-product timeout"
+    )
+
+    # Verify a timeout of 8 seconds is configured
+    assert "timeout=PER_PRODUCT_TIMEOUT_S" in source or "timeout=8" in source, (
+        "review_search does not set an 8-second per-product timeout"
+    )
