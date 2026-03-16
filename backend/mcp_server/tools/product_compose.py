@@ -17,12 +17,6 @@ backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__
 if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
-# Module-level reference so tests can patch mcp_server.tools.product_compose.model_service
-try:
-    from app.services.model_service import model_service
-except Exception:
-    model_service = None  # type: ignore[assignment]
-
 # Tool contract for planner
 TOOL_CONTRACT = {
     "name": "product_compose",
@@ -60,11 +54,7 @@ ACCESSORY_KEYWORDS = {
     "case", "charger", "protector", "cable", "adapter",
     "stand", "cover", "sleeve", "mount", "holder", "film",
     "tempered glass", "cleaning kit", "skin", "sticker",
-    "screen protector", "screw", "screws", "hinge", "hinges",
-    "bracket", "bezel", "keyboard cover", "replacement part",
-    "replacement parts", "repair", "tool kit", "toolkit",
-    "rubber feet", "feet", "battery", "fan", "heatsink",
-    "power cord", "cord", "dongle", "hub", "dock",
+    "screen protector",
 }
 
 
@@ -269,6 +259,7 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     # Import here to avoid settings validation at module load
     from app.core.centralized_logger import get_logger
+    from app.services.model_service import model_service
     from app.core.config import settings
 
     logger = get_logger(__name__)
@@ -413,25 +404,167 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
 
         llm_tasks = {}  # key -> coroutine
 
-        # --- Static assistant_text for comparison HTML (no LLM needed) ---
+        # --- Assistant text: concierge OR opener (mutually exclusive with review consensus) ---
         assistant_text = ""
         if comparison_html:
             comp_product_names = comparison_data.get("products", []) if comparison_data else []
             assistant_text = f"## Product Comparison: {', '.join(comp_product_names)}\n\nHere's a detailed specification comparison."
+        elif not review_data:
+            # Concierge-style summary
+            provider_names = [p.title() for p in affiliate_products.keys()]
+            conversation_history = state.get("conversation_history", [])
+            context_summary = ""
+            if conversation_history:
+                recent = conversation_history[-4:]
+                context_summary = "\n".join([
+                    f"{msg.get('role', 'user')}: {msg.get('content', '')[:150]}"
+                    for msg in recent if msg.get('content')
+                ])
+            product_name_list = [p.get("name", "") for p in normalized_products[:5] if p.get("name")]
+            user_prefs = (state.get("metadata") or {}).get("user_preferences", {})
+            pref_note = ""
+            if user_prefs.get("brands") or user_prefs.get("categories"):
+                past_cats = list(user_prefs.get("categories", {}).keys())[:2]
+                past_brands = list(user_prefs.get("brands", {}).keys())[:2]
+                parts = []
+                if past_cats:
+                    parts.append(f"often searches for {', '.join(past_cats)}")
+                if past_brands:
+                    parts.append(f"favors {', '.join(past_brands)}")
+                pref_note = f"\nReturning user who {' and '.join(parts)}."
 
-        # --- Collect review bundles for blog article data (no LLM calls here) ---
-        review_bundles = {}  # product_name -> bundle
+            llm_tasks['concierge'] = model_service.generate(
+                messages=[
+                    {"role": "system", "content": "You are ReviewGuide, a friendly and knowledgeable AI shopping assistant. Never open with phrases like 'Based on X sources' or mention how many sources you searched. Never describe your process. Write 2-3 SHORT sentences (max 60 words). If the user introduced themselves or shared their name earlier in the conversation, always address them by name. Explain WHY these products match the user's needs. Reference their criteria from the conversation (budget, features, use case). Do NOT list products — they are shown in cards below. End with a brief, warm follow-up that shows you remember the user's context."},
+                    {"role": "user", "content": f'User asked: "{user_message}"\nContext:\n{context_summary}{pref_note}\nProducts: {", ".join(product_name_list)}\nSources: {", ".join(provider_names)}'}
+                ],
+                model=settings.COMPOSER_MODEL,
+                temperature=0.7,
+                max_tokens=120,
+                agent_name="product_compose"
+            )
+
+        # --- Review consensus (one per product) + opener ---
+        # Cap LLM consensus to top 3 products by quality_score to reduce fanout latency
+        MAX_CONSENSUS_PRODUCTS = 3
+        _template_consensus = {}  # Pre-computed consensus for lower-ranked products
+        review_bundles = {}  # product_name -> bundle (for assembly later)
         if review_data:
+            # Separate products with sources from those without
             products_with_sources = [
                 (name, bundle) for name, bundle in review_data.items()
                 if bundle.get("sources")
             ]
+            # Sort by quality_score descending
             products_with_sources.sort(
                 key=lambda kv: kv[1].get("quality_score", 0),
                 reverse=True
             )
-            for product_name, bundle in products_with_sources:
+            top_products = products_with_sources[:MAX_CONSENSUS_PRODUCTS]
+            remaining_products = products_with_sources[MAX_CONSENSUS_PRODUCTS:]
+
+            # Full LLM consensus for top products
+            for product_name, bundle in top_products:
                 review_bundles[product_name] = bundle
+                source_snippets = "\n".join([
+                    f"- {s.get('site_name', 'Review')}: {s.get('snippet', '')}"
+                    for s in bundle.get("sources", [])[:5]
+                ])
+                llm_tasks[f'consensus:{product_name}'] = model_service.generate(
+                    messages=[
+                        {"role": "system", "content": "You are an editorial product reviewer writing a concise expert summary. Write a 3-5 sentence summary that covers: (1) what reviewers consistently praise, (2) any notable criticisms or caveats, and (3) who this product is best suited for. Write in a warm, authoritative editorial voice — like a knowledgeable friend giving the tldr. Never open with \"Based on X sources\" or mention how many sources. Weave in source names only when it adds credibility (e.g., \"Wirecutter highlights its noise cancellation\"). End with a sentence describing the ideal buyer."},
+                        {"role": "user", "content": f"Product: {product_name}\nAvg Rating: {bundle.get('avg_rating', 0)}/5 from {bundle.get('total_reviews', 0)} reviews\n\nReview excerpts:\n{source_snippets}\n\nWrite a 3-5 sentence editorial summary covering: strengths, criticisms, and ideal buyer."}
+                    ],
+                    model=settings.COMPOSER_MODEL,
+                    temperature=0.5,
+                    max_tokens=220,
+                    agent_name="review_consensus"
+                )
+
+            # Deterministic template for remaining products (no LLM call)
+            # These get injected into result_map after the asyncio.gather below
+            _template_consensus = {}
+            for product_name, bundle in remaining_products:
+                review_bundles[product_name] = bundle
+                rating = bundle.get("avg_rating", "N/A")
+                total = bundle.get("total_reviews", 0)
+                top_source = bundle.get("sources", [{}])[0].get("site_name", "reviewers")
+                _template_consensus[f'consensus:{product_name}'] = (
+                    f"Rated {rating}/5 across {total} reviews. "
+                    f"{top_source} highlights this as a solid option in its category. "
+                    f"See the full reviews for detailed pros and cons."
+                )
+
+            # Opener (only depends on user_message, independent of consensus)
+            # Only queue if we actually have bundles with sources
+            if review_bundles:
+                llm_tasks['opener'] = model_service.generate(
+                    messages=[
+                        {"role": "system", "content": "Write a warm 1-2 sentence intro for product review results. Reference what the user asked for — their budget, use case, or features. Sound like a knowledgeable friend, not a search engine. NEVER mention source counts, number of reviews, or 'trusted sources'. Never describe your process. Respond immediately in a conversational tone. Max 30 words."},
+                        {"role": "user", "content": f'User asked: "{user_message}"'}
+                    ],
+                    model=settings.COMPOSER_MODEL,
+                    temperature=0.7,
+                    max_tokens=60,
+                    agent_name="product_opener"
+                )
+
+        # --- Personalized product descriptions ---
+        if all_products_for_desc:
+            products_to_describe = all_products_for_desc[:15]
+            product_titles = [p["title"][:50] for p in products_to_describe]
+            conversation_history = state.get("conversation_history", [])
+            desc_context = ""
+            if conversation_history:
+                recent_messages = conversation_history[-6:]
+                desc_context = "\n".join([
+                    f"{msg.get('role', 'user')}: {msg.get('content', '')[:100]}"
+                    for msg in recent_messages if msg.get('content')
+                ])
+
+            desc_system = """Generate factual 15-25 word descriptions for each product.
+
+RULES:
+1. Focus on what makes each product stand out — key features, best use case, who it's ideal for
+2. ONLY reference personal details (names, pets, family) if they appear in the conversation context. NEVER invent or assume personal details.
+3. If no personal context exists, write objectively about the product's strengths
+4. Vary your descriptions — don't repeat the same pattern
+5. Be warm and informative, like a knowledgeable friend
+
+Return JSON: {"descriptions": ["desc1", "desc2", ...]}"""
+
+            desc_user = f'''Conversation context:
+{desc_context if desc_context else "No prior context"}
+
+User's current question: "{user_message}"
+
+Products to describe:
+{json.dumps(product_titles)}'''
+
+            llm_tasks['descriptions'] = model_service.generate(
+                messages=[
+                    {"role": "system", "content": desc_system},
+                    {"role": "user", "content": desc_user}
+                ],
+                model=settings.COMPOSER_MODEL,
+                temperature=0.7,
+                max_tokens=600,
+                response_format={"type": "json_object"},
+                agent_name="product_compose_descriptions"
+            )
+
+        # --- Conclusion ---
+        if products_by_provider:
+            llm_tasks['conclusion'] = model_service.generate(
+                messages=[
+                    {"role": "system", "content": "You are a helpful shopping assistant. Write 2 sentences: first, briefly interpret what was found (mention count and price range if evident), then ask a natural follow-up question to help narrow down. Be warm and conversational — like a knowledgeable friend. Never describe your process. Do NOT use markdown. Max 50 words total."},
+                    {"role": "user", "content": f'User asked: "{user_message}"\nFound {num_products} products from {", ".join(products_by_provider.keys())}. Write a 2-sentence response: what was found + a follow-up question to narrow things down.'}
+                ],
+                model=settings.COMPOSER_MODEL,
+                temperature=0.7,
+                max_tokens=80,
+                agent_name="product_conclusion"
+            )
 
         # --- Blog article composition ---
         # Gather all data the blog writer needs
@@ -461,30 +594,7 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
                     merchant_str = o.get("merchant", "")
                     link_str = o.get("url", "")
                     image_str = o.get("image_url", "")
-                source_refs = ""
-                review_excerpts = ""
-                if bundle.get("sources"):
-                    top_sources = bundle["sources"][:3]
-                    source_ref_parts = [
-                        f"[{s.get('site_name', 'source')}]({s.get('url', '')})"
-                        for s in top_sources
-                        if s.get("url") and s.get("site_name")
-                    ]
-                    if source_ref_parts:
-                        source_refs = " | Reviews: " + ", ".join(source_ref_parts)
-                    # Include actual review snippets so the LLM can write informed reviews
-                    snippet_parts = [
-                        f"  - {s.get('site_name', 'Review')}: {s.get('snippet', '')}"
-                        for s in top_sources
-                        if s.get("snippet")
-                    ]
-                    if snippet_parts:
-                        review_excerpts = "\n" + "\n".join(snippet_parts)
-                blog_data_parts.append(
-                    f"Product: {pname}{label_str} | Rating: {rating}/5 ({total} reviews)"
-                    f" | Price: {price_str} on {merchant_str} | Link: {link_str}"
-                    f" | Image: {image_str}{source_refs}{review_excerpts}"
-                )
+                blog_data_parts.append(f"Product: {pname}{label_str} | Rating: {rating}/5 ({total} reviews) | Price: {price_str} on {merchant_str} | Link: {link_str} | Image: {image_str}")
                 blog_product_names.append(pname)
 
         # Also add affiliate-only products NOT already covered by review_bundles
@@ -510,34 +620,29 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
 
         blog_data = "\n".join(blog_data_parts)
 
-        # Build blog article messages (used in Phase 3b streaming call)
-        _blog_messages = [
-            {"role": "system", "content": """You are an expert product journalist writing a blog-style review article. Write in a warm, authoritative voice — like a Wirecutter or The Verge review.
+        llm_tasks['blog_article'] = model_service.generate(
+            messages=[
+                {"role": "system", "content": """You are an expert product journalist writing a blog-style review article. Write in a warm, authoritative voice — like a Wirecutter or The Verge review.
 
 FORMAT REQUIREMENTS:
-- Start with a warm 1-2 sentence intro addressing what the user is looking for (their budget, use case, or features mentioned in their query)
+- Start with a 2-3 sentence intro addressing what the user is looking for
 - For each product, write a ## heading with the product name and editorial label (if any) in italics
-- IMMEDIATELY after each ## heading, if an Image URL is provided, include it as: ![Product Name](image_url)
-- Under each heading, write 3-5 sentences of natural prose reviewing the product based on the review excerpts provided — what reviewers praise, any caveats, and who it's best for. Reference specific reviewer insights when available.
-- After the review text, include a price line with buy link: **$XX.XX** — [Check price on Merchant →](url)
-- If review source links are provided in the data (after "| Reviews:"), include 1-2 inline citations in natural prose using the format: [Wirecutter](url) or [Tom's Guide](url). Only link to sources explicitly listed in the data — never invent URLs
-- End with a ## Our Verdict section: 2 sentences with your opinionated top recommendation and who should look elsewhere
+- Under each heading, write 2-4 sentences of natural prose reviewing the product — strengths, caveats, who it's for
+- Include the price and a markdown link: [Check price on Merchant →](url)
+- End with a ## Our Verdict section (2 sentences with your recommendation)
 - Write naturally — vary sentence structure, don't be formulaic
 - NEVER invent features or specs not in the data
 - NEVER mention personal details unless the user provided them
-- Keep the total response under 600 words"""},
-            {"role": "user", "content": blog_data}
-        ]
-        # Blog article runs in parallel with other LLM calls (no dependency on their results)
-        llm_tasks['blog_article'] = model_service.generate(
-            messages=_blog_messages,
+- Keep the total response under 500 words"""},
+                {"role": "user", "content": blog_data}
+            ],
             model=settings.COMPOSER_MODEL,
             temperature=0.7,
             max_tokens=800,
             agent_name="blog_article_composer"
         )
 
-        # ── Phase 3: Fire ALL LLM calls in parallel (blog + concierge/consensus + descriptions) ──
+        # ── Phase 3: Fire all LLM calls in parallel ──
 
         task_keys = list(llm_tasks.keys())
         if task_keys:
@@ -547,7 +652,9 @@ FORMAT REQUIREMENTS:
         else:
             result_map = {}
 
-        # (consensus calls removed — blog article covers all products)
+        # Inject pre-computed template consensus for lower-ranked products
+        if _template_consensus:
+            result_map.update(_template_consensus)
 
         # Helper to safely extract a string result
         def _get_result(key: str, fallback: str = "") -> str:
@@ -577,8 +684,19 @@ FORMAT REQUIREMENTS:
             })
             logger.info(f"[product_compose] Added comparison HTML block ({len(comparison_html)} chars)")
 
-        # Product cards removed — images, prices, and buy links are embedded
-        # inline in the blog article markdown (unified layout per product)
+        # Apply descriptions to products (keep existing logic)
+        if 'descriptions' in result_map:
+            desc_raw = _get_result('descriptions')
+            if desc_raw:
+                try:
+                    desc_data = json.loads(desc_raw)
+                    descriptions = desc_data.get("descriptions", [])
+                    for i, desc in enumerate(descriptions):
+                        if i < len(all_products_for_desc):
+                            all_products_for_desc[i]["description"] = desc
+                    logger.info(f"[product_compose] Generated {len(descriptions)} product descriptions")
+                except (json.JSONDecodeError, Exception) as desc_error:
+                    logger.warning(f"[product_compose] Failed to parse descriptions: {desc_error}")
 
         # Cross-retailer price comparison (keep as structured UI block)
         # Filter to only products that appear in the blog article
@@ -643,28 +761,74 @@ FORMAT REQUIREMENTS:
         if blog_article:
             assistant_text = blog_article
             logger.info(f"[product_compose] LLM blog article: {len(assistant_text)} chars")
-        else:
-            # Fallback: simple template with buy links (used only if blog LLM fails)
+        elif review_data and review_bundles:
+            # Fallback: template assembly (same as current code)
+            opener = _get_result('opener', '')
             article_parts = []
-            seen = set()
-            idx = 0
+            if opener:
+                article_parts.append(opener)
+            for idx, (product_name, bundle) in enumerate(review_bundles.items(), 1):
+                consensus = _get_result(f'consensus:{product_name}', '')
+                label = editorial_labels.get(product_name, '')
+                heading = f"## {idx}. {product_name}"
+                if label:
+                    heading += f" — *{label}*"
+                article_parts.append(heading)
+                if consensus:
+                    article_parts.append(consensus)
+                product_offer = next(
+                    (p for p in products_with_offers
+                     if _fuzzy_product_match(p.get("name", ""), product_name) and p.get("best_offer")),
+                    None
+                )
+                if product_offer and product_offer.get("best_offer"):
+                    offer = product_offer["best_offer"]
+                    price = offer.get("price", 0)
+                    merchant = offer.get("merchant", "")
+                    url = offer.get("url", "")
+                    if price > 0 and url:
+                        article_parts.append(f"**${price:.2f}** — [Check price on {merchant} →]({url})")
+            conclusion = _get_result('conclusion', '')
+            if conclusion:
+                article_parts.append("## Our Verdict")
+                article_parts.append(conclusion)
+            assistant_text = "\n\n".join(article_parts)
+        elif 'concierge' in result_map:
+            concierge = _get_result('concierge', "Here's what I found for you.")
+            article_parts = [concierge]
+            seen_products = set()
+            product_idx = 0
             for provider_name, data in products_by_provider.items():
                 for product in data["products"]:
                     title = product.get("title", "")
-                    if title in seen or idx >= 5:
+                    if title in seen_products or product_idx >= 8:
                         continue
-                    seen.add(title)
-                    idx += 1
+                    seen_products.add(title)
+                    product_idx += 1
                     price = product.get("price", 0)
                     merchant = product.get("merchant", provider_name.title())
                     url = product.get("url", "")
-                    heading = f"## {idx}. {title}"
+                    description = product.get("description", "")
+                    heading = f"### {product_idx}. {title}"
                     article_parts.append(heading)
+                    # Product image
+                    image_url = product.get("image_url", "")
+                    if image_url:
+                        article_parts.append(f"![{title}]({image_url})")
+                    if description:
+                        article_parts.append(description)
                     if price > 0 and url:
                         article_parts.append(f"**${price:.2f}** — [Check price on {merchant} →]({url})")
                     elif url:
                         article_parts.append(f"[View on {merchant} →]({url})")
-            assistant_text = "\n\n".join(article_parts) if article_parts else "Here's what I found for you."
+            conclusion = _get_result('conclusion', '')
+            if conclusion:
+                article_parts.append("---")
+                article_parts.append(conclusion)
+            assistant_text = "\n\n".join(article_parts)
+        else:
+            if not assistant_text:
+                assistant_text = "Here's what I found for you."
 
         # Create citations
         citations = [p["url"] for p in normalized_products if p.get("url")][:5]

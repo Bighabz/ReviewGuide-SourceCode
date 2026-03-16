@@ -52,13 +52,13 @@ STAGE_BUDGETS: dict[str, tuple[float, float]] = {
     "clarifier":    (4.0,   8.0),
     "planner":      (5.0,  10.0),
     "tool":         (8.0,  15.0),
-    "plan_exec":    (40.0, 90.0),
+    "plan_exec":    (25.0, 45.0),
     "composition":  (6.0,  12.0),
     "finalization": (2.0,   4.0),
 }
 
 # Maximum wall-clock time allowed for the entire SSE streaming response.
-MAX_TOTAL_REQUEST_S: float = 120.0
+MAX_TOTAL_REQUEST_S: float = 60.0
 
 
 # ---------------------------------------------------------------------------

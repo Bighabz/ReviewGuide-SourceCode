@@ -96,7 +96,6 @@ async def product_affiliate(
         if not products_to_search:
             return {
                 "affiliate_products": {},
-                "stream_chunk_data": None,
                 "success": True
             }
 
@@ -109,28 +108,30 @@ async def product_affiliate(
 
         # Helper function to search a provider for all products
         async def search_provider(provider_name: str) -> Dict[str, Any]:
-            """Search all products on a single provider using asyncio.gather for parallelism."""
+            """Search all products on a single provider."""
             provider = affiliate_manager.get_provider(provider_name)
             if not provider:
                 return {"provider": provider_name, "results": []}
 
-            # Build search kwargs template once (shared across products)
-            base_search_kwargs = {
-                "limit": max_offers,
-                "category": category,
-            }
-
-            # Check if provider supports country_code (like Amazon)
-            if hasattr(provider, 'search_products'):
-                import inspect
-                sig = inspect.signature(provider.search_products)
-                if 'country_code' in sig.parameters:
-                    base_search_kwargs['country_code'] = country_code
-
-            async def search_single_product(product_name: str):
+            results = []
+            for product_name in products_to_search:
                 try:
-                    search_kwargs = {"query": product_name, **base_search_kwargs}
+                    # Check if provider supports country_code (like Amazon)
+                    search_kwargs = {
+                        "query": product_name,
+                        "limit": max_offers,
+                        "category": category,
+                    }
+
+                    # Add country_code for providers that support it
+                    if hasattr(provider, 'search_products'):
+                        import inspect
+                        sig = inspect.signature(provider.search_products)
+                        if 'country_code' in sig.parameters:
+                            search_kwargs['country_code'] = country_code
+
                     search_results = await provider.search_products(**search_kwargs)
+
                     if search_results:
                         offers = []
                         for result in search_results:
@@ -150,15 +151,15 @@ async def product_affiliate(
                             if hasattr(result, 'product_id') and result.product_id:
                                 offer["product_id"] = result.product_id
                             offers.append(offer)
-                        return {"product_name": product_name, "offers": offers}
-                    return None
+
+                        results.append({
+                            "product_name": product_name,
+                            "offers": offers
+                        })
+
                 except Exception as e:
                     logger.warning(f"[product_affiliate] {provider_name} search failed for {product_name}: {e}")
-                    return None
-
-            search_tasks = [search_single_product(name) for name in products_to_search]
-            raw_results = await asyncio.gather(*search_tasks, return_exceptions=True)
-            results = [r for r in raw_results if r is not None and not isinstance(r, Exception)]
+                    continue
 
             return {"provider": provider_name, "results": results}
 
@@ -181,45 +182,8 @@ async def product_affiliate(
 
         logger.info(f"[product_affiliate] Total providers with results: {list(affiliate_products.keys())}")
 
-        # Build product card ui_blocks for early streaming (RX-01, RX-08)
-        # This allows plan_executor to push product cards to the browser before product_compose runs
-        early_ui_blocks = []
-        for provider_name, provider_groups in affiliate_products.items():
-            provider_config = {
-                "ebay": {"title": "Shop on eBay", "type": "ebay_products"},
-                "amazon": {"title": "Shop on Amazon", "type": "amazon_products"},
-            }
-            config = provider_config.get(provider_name, {
-                "title": f"Shop on {provider_name.title()}",
-                "type": f"{provider_name}_products",
-            })
-            products = []
-            for group in provider_groups:
-                for offer in group.get("offers", [])[:5]:
-                    products.append({
-                        "title": offer.get("title", ""),
-                        "price": offer.get("price", 0),
-                        "currency": offer.get("currency", "USD"),
-                        "url": offer.get("url", ""),
-                        "image_url": offer.get("image_url", ""),
-                        "merchant": offer.get("merchant", provider_name.title()),
-                        "rating": offer.get("rating"),
-                        "review_count": offer.get("review_count"),
-                        "source": provider_name,
-                    })
-            if products:
-                early_ui_blocks.append({
-                    "type": config["type"],
-                    "title": config["title"],
-                    "data": {"products": products[:10]},
-                })
-
-        stream_chunk = {"type": "ui_blocks", "data": early_ui_blocks}
-        logger.info(f"[product_affiliate] Prepared {len(early_ui_blocks)} early ui_blocks for streaming")
-
         return {
             "affiliate_products": affiliate_products,
-            "stream_chunk_data": stream_chunk,
             "success": True
         }
 
@@ -227,7 +191,6 @@ async def product_affiliate(
         logger.error(f"[product_affiliate] Error: {e}", exc_info=True)
         return {
             "affiliate_products": {},
-            "stream_chunk_data": None,
             "error": str(e),
             "success": False
         }

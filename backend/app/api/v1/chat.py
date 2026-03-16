@@ -367,11 +367,7 @@ async def generate_chat_stream(
         workflow_running = True
 
         # Event queue for streaming
-        from app.services.plan_executor import (
-            clear_tool_citation_callbacks,
-            clear_artifact_callbacks,      # clears artifact callbacks after workflow
-            clear_token_callbacks,         # clears token callbacks after workflow
-        )
+        from app.services.plan_executor import clear_tool_citation_callbacks
 
         # Background task that polls event stream
         event_queue = asyncio.Queue()
@@ -387,15 +383,6 @@ async def generate_chat_stream(
             finally:
                 workflow_running = False
                 await event_queue.put(None)  # Sentinel value
-
-        # NOTE: Artifact callback (RX-01, RX-08) was removed.
-        # The previous design registered _on_artifact as a module-level callback that put synthetic
-        # "artifact_ready" events onto the SSE event_queue from within graph.astream_events().
-        # This caused generate_chat_stream to yield SSE mid-workflow (while consume_events was still
-        # running), creating an asyncio scheduling interaction that prevented graph.astream_events()
-        # from completing within the 60-second SSE cap. Product cards are now sent via the existing
-        # ui_blocks path after the graph completes (product_compose's output in the done event).
-        # See: .planning/debug/sse-stream-hang.md
 
         # Start event consumer in background
         event_task = asyncio.create_task(consume_events())
@@ -489,19 +476,14 @@ async def generate_chat_stream(
                             logger.info(f"Travel planner status (suppressed): from {event_name}")
                             last_node_name = "planner"
 
-                # NOTE: artifact_ready and token_ready synthetic event handlers were removed.
-                # Injecting events from within graph.astream_events() via callbacks caused the
-                # drain loop to yield SSE mid-workflow, breaking the sequential consumption model
-                # and preventing graph.astream_events() from completing. See sse-stream-hang.md.
-
         try:
             # RFC §1.1 — drain; the 60-second hard cap fires inside _drain_event_loop
             # on every iteration, so this loop is always bounded by MAX_TOTAL_REQUEST_S
             # plus at most one CHAT_EVENT_QUEUE_TIMEOUT tick.
             async for sse_chunk in _drain_event_loop():
                 yield sse_chunk
-        except Exception as drain_err:
-            logger.warning(f"Exception in _drain_event_loop: {drain_err}", exc_info=True)
+        except Exception:
+            pass  # handled below
 
         # RFC §1.1 — await background task to surface any exception.
         # If the hard cap fired, event_task was already cancelled inside _drain_event_loop;
@@ -516,8 +498,6 @@ async def generate_chat_stream(
         # RFC §1.1 — if the 60-second hard cap fired, terminate the stream immediately
         if sse_total_timeout_hit:
             clear_tool_citation_callbacks()
-            clear_artifact_callbacks()   # prevent callback leakage between requests
-            clear_token_callbacks()      # prevent token callback leakage between requests
             yield _sse_event("error", {
                 "code": "request_timeout",
                 "message": "Request exceeded the 60-second time limit. Please try a simpler query.",
@@ -538,8 +518,6 @@ async def generate_chat_stream(
 
         # Clear callbacks after workflow completes
         clear_tool_citation_callbacks()
-        clear_artifact_callbacks()   # prevent callback leakage between requests
-        clear_token_callbacks()      # prevent token callback leakage between requests
 
         # DEBUG: Log result_state keys
         logger.info(f"🔍 DEBUG: result_state keys: {list(result_state.keys())}")
@@ -614,22 +592,24 @@ async def generate_chat_stream(
             })
             ui_blocks_sent_early = True
             logger.info(f"📤 Sent {len(ui_blocks)} UI blocks with clear signal")
-        else:
-            # Clear the "Thinking..." placeholder
+        elif not data_already_streamed:
+            # Clear placeholder ONLY if we haven't already streamed data
+            # (If data was streamed, we want to keep it and append followups below it)
             yield _sse_event("artifact", {"clear": True})
+        else:
+            logger.info("🔍 Skipping clear chunk - data already streamed, will append followups")
 
-        # Stream response text if available and NOT halted
-        should_stream_text = not is_halted and bool(response_text)
+        # Stream response text if available and NOT halted and NOT already streamed data
+        should_stream_text = not is_halted and response_text and not data_already_streamed
 
         if should_stream_text:
             logger.info(f"🔍 DEBUG: Streaming response text ({len(response_text)} chars)")
-            # Chunked emission with pacing — gives a real-time typing feel
+            # Chunked emission — preserves progressive UX feel without per-char tax
             STREAM_CHUNK_SIZE = 24  # ~24 chars per chunk ≈ a few words at a time
             for i in range(0, len(response_text), STREAM_CHUNK_SIZE):
                 yield _sse_event("content", {"token": response_text[i:i + STREAM_CHUNK_SIZE]})
-                await asyncio.sleep(0.02)  # 20ms between chunks — typing effect
         else:
-            logger.info(f"🔍 DEBUG: Skipping text streaming (halted={is_halted}, has_text={bool(response_text)})")
+            logger.info(f"🔍 DEBUG: Skipping text streaming (halted={is_halted}, has_text={bool(response_text)}, data_streamed={data_already_streamed})")
 
         # Only include followup questions if the workflow is HALTED (not completed)
         # Just pass through whatever the clarifier agent returns - no processing here
@@ -805,14 +785,6 @@ async def generate_chat_stream(
                 logger.debug(f"Langfuse flush warning: {flush_error}")
 
     except Exception as e:
-        # Clean up global callbacks to prevent leakage to next request
-        try:
-            clear_tool_citation_callbacks()
-            clear_artifact_callbacks()
-            clear_token_callbacks()
-        except Exception:
-            pass
-
         # Log error with centralized logger including RFC §4.1 correlation ID
         logger.error(
             f"Error in chat_stream: {str(e)}",

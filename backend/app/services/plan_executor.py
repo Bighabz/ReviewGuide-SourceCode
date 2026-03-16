@@ -25,9 +25,8 @@ from tool_contracts import get_tool_contracts_dict  # noqa: E402
 logger = get_logger(__name__)
 
 # Tool execution timeout configuration
-_TOOL_TIMEOUT_S = 30.0        # Hard timeout per individual tool call
-_COMPOSE_TOOL_TIMEOUT_S = 55.0  # Higher timeout for compose tools (multiple LLM calls inside)
-_STEP_TIMEOUT_S = 60.0        # Hard timeout for entire step (parallel fan-out)
+_TOOL_TIMEOUT_S = 15.0        # Hard timeout per individual tool call
+_STEP_TIMEOUT_S = 45.0        # Hard timeout for entire step (parallel fan-out)
 _CRITICAL_TOOLS = {           # Tools whose failure aborts the pipeline
     "product_compose",
     "travel_compose",
@@ -92,44 +91,6 @@ def get_tool_citation_callbacks():
     return _tool_citation_callbacks
 
 
-# Artifact streaming callbacks (for mid-workflow product card streaming)
-_artifact_callbacks_global: List = []
-
-
-def register_artifact_callback(callback):
-    """Register a module-level callback called when a tool produces streamable artifact data."""
-    _artifact_callbacks_global.append(callback)
-
-
-def clear_artifact_callbacks():
-    """Clear module-level artifact callbacks to avoid leaking between requests."""
-    _artifact_callbacks_global.clear()
-
-
-def get_artifact_callbacks():
-    """Get module-level artifact callbacks."""
-    return _artifact_callbacks_global
-
-
-# Token streaming callbacks (for mid-workflow blog article token streaming)
-_token_callbacks_global: List = []
-
-
-def register_token_callback(callback):
-    """Register a callback for streaming blog article tokens mid-workflow."""
-    _token_callbacks_global.append(callback)
-
-
-def clear_token_callbacks():
-    """Clear token callbacks after workflow completes."""
-    _token_callbacks_global.clear()
-
-
-def get_token_callbacks():
-    """Get registered token callbacks."""
-    return _token_callbacks_global
-
-
 class PlanExecutor:
     """
     Executes plans with support for:
@@ -146,7 +107,6 @@ class PlanExecutor:
         self.state: Dict[str, Any] = {}
         self.tool_citations: List[Dict[str, str]] = []  # Track tool citation messages
         self._citation_callbacks: List = []  # Per-instance callbacks (session-isolated)
-        self._artifact_callbacks: List = []  # Per-instance artifact callbacks (session-isolated)
 
     def register_citation_callback(self, callback):
         """Register a citation callback scoped to this executor instance."""
@@ -155,14 +115,6 @@ class PlanExecutor:
     def clear_citation_callbacks(self):
         """Clear citation callbacks for this executor instance."""
         self._citation_callbacks.clear()
-
-    def register_artifact_callback_instance(self, callback):
-        """Register an instance-level artifact callback."""
-        self._artifact_callbacks.append(callback)
-
-    def clear_artifact_callbacks_instance(self):
-        """Clear instance-level artifact callbacks."""
-        self._artifact_callbacks.clear()
 
     async def _call_tool_direct(self, tool_name: str, state: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -186,20 +138,17 @@ class PlanExecutor:
             logger.info(f"🔧 Calling tool directly: {tool_name}")
 
             # Execute tool directly (no subprocess, no MCP protocol)
-            # Compose tools get a higher timeout (they make multiple LLM calls internally)
-            timeout = _COMPOSE_TOOL_TIMEOUT_S if tool_name in _CRITICAL_TOOLS else _TOOL_TIMEOUT_S
             result = await asyncio.wait_for(
                 tool_func(state),
-                timeout=timeout,
+                timeout=_TOOL_TIMEOUT_S,
             )
 
             logger.info(f"✅ Tool {tool_name} completed (direct call)")
             return result
 
         except asyncio.TimeoutError:
-            timeout = _COMPOSE_TOOL_TIMEOUT_S if tool_name in _CRITICAL_TOOLS else _TOOL_TIMEOUT_S
-            logger.warning(f"⏱️  Tool {tool_name} timed out after {timeout}s")
-            return {"error": f"timeout after {timeout}s", "success": False, "timed_out": True}
+            logger.warning(f"⏱️  Tool {tool_name} timed out after {_TOOL_TIMEOUT_S}s")
+            return {"error": f"timeout after {_TOOL_TIMEOUT_S}s", "success": False, "timed_out": True}
         except Exception as e:
             logger.error(f"❌ Tool {tool_name} direct call failed: {e}", exc_info=True)
             return {"error": str(e), "success": False}
@@ -361,13 +310,6 @@ class PlanExecutor:
                     self.context[f"{step_id}.{tool_name}"] = result
                     # Write tool outputs back to state
                     self._write_tool_outputs_to_state(tool_name, result, contracts.get(tool_name))
-                    # Emit artifact immediately if tool produced streamable ui_blocks (RX-01, RX-08)
-                    stream_data = result.get("stream_chunk_data") if isinstance(result, dict) else None
-                    if stream_data and stream_data.get("type") == "ui_blocks" and stream_data.get("data"):
-                        await self._emit_artifact({
-                            "type": "ui_blocks",
-                            "blocks": stream_data.get("data", []),
-                        })
 
             # Collect failed/timed-out tools into missing_sources for partial-success tracking
             failed_tools = [
@@ -405,14 +347,6 @@ class PlanExecutor:
 
                     # Write tool outputs back to state
                     self._write_tool_outputs_to_state(tool_name, result, contracts.get(tool_name))
-
-                    # Emit artifact immediately if tool produced streamable ui_blocks (RX-01, RX-08)
-                    stream_data = result.get("stream_chunk_data") if isinstance(result, dict) else None
-                    if stream_data and stream_data.get("type") == "ui_blocks" and stream_data.get("data"):
-                        await self._emit_artifact({
-                            "type": "ui_blocks",
-                            "blocks": stream_data.get("data", []),
-                        })
 
                     # Check for tool failure (timeout or error returned from _call_tool_direct)
                     if isinstance(result, dict) and not result.get("success", True):
@@ -465,27 +399,6 @@ class PlanExecutor:
 
         # Yield control to event loop to allow streaming to happen
         await asyncio.sleep(0)
-
-    async def _emit_artifact(self, artifact_data: dict) -> None:
-        """
-        Emit artifact data to all registered callbacks (instance + global).
-        Called immediately after a tool that produces ui_blocks completes.
-
-        NOTE: asyncio.sleep(0) was intentionally removed. Yielding to the event loop
-        from within graph.astream_events() execution via a side-channel callback caused
-        the drain loop in chat.py to yield SSE mid-workflow, which broke the sequential
-        consumption model and caused the 60s SSE cap to fire. See sse-stream-hang.md.
-        """
-        logger.info(f"Emitting artifact: type={artifact_data.get('type')}, blocks={len(artifact_data.get('blocks', []))}")
-        all_callbacks = self._artifact_callbacks + get_artifact_callbacks()
-        for callback in all_callbacks:
-            try:
-                if asyncio.iscoroutinefunction(callback):
-                    await callback(artifact_data)
-                else:
-                    callback(artifact_data)
-            except Exception as e:
-                logger.error(f"Error calling artifact callback: {e}", exc_info=True)
 
     def _make_serializable(self, obj: Any) -> Any:
         """
@@ -978,20 +891,10 @@ class PlanExecutor:
             if "next_step_suggestion" in key and isinstance(value, dict):
                 results["next_suggestions"] = value.get("next_suggestions", [])
 
-        # If compose result was an error (timeout/failure), generate a fallback response
+        # If no compose result found, check for other tool outputs
         if not results.get("assistant_text"):
-            # Check if compose failed and we have product data to summarize
-            product_names = self.state.get("product_names", [])
-            if product_names:
-                fallback_parts = ["Here's what I found for you:\n"]
-                for i, name in enumerate(product_names[:5], 1):
-                    fallback_parts.append(f"{i}. **{name}**")
-                fallback_parts.append("\n*I wasn't able to generate a full review this time. Try again for a detailed comparison.*")
-                results["assistant_text"] = "\n".join(fallback_parts)
-                logger.warning(f"⚠️  Compose tool failed — using fallback response with {len(product_names)} product names")
-            else:
-                # Extract raw tool outputs
-                results["tool_outputs"] = self.context.copy()
+            # Extract raw tool outputs
+            results["tool_outputs"] = self.context.copy()
 
         # Add execution metadata
         results["execution_context"] = {
