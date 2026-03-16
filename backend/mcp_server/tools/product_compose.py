@@ -567,7 +567,21 @@ Products to describe:
                     merchant_str = o.get("merchant", "")
                     link_str = o.get("url", "")
                     image_str = o.get("image_url", "")
-                blog_data_parts.append(f"Product: {pname}{label_str} | Rating: {rating}/5 ({total} reviews) | Price: {price_str} on {merchant_str} | Link: {link_str} | Image: {image_str}")
+                source_refs = ""
+                if bundle.get("sources"):
+                    top_sources = bundle["sources"][:3]
+                    source_ref_parts = [
+                        f"[{s.get('site_name', 'source')}]({s.get('url', '')})"
+                        for s in top_sources
+                        if s.get("url") and s.get("site_name")
+                    ]
+                    if source_ref_parts:
+                        source_refs = " | Reviews: " + ", ".join(source_ref_parts)
+                blog_data_parts.append(
+                    f"Product: {pname}{label_str} | Rating: {rating}/5 ({total} reviews)"
+                    f" | Price: {price_str} on {merchant_str} | Link: {link_str}"
+                    f" | Image: {image_str}{source_refs}"
+                )
                 blog_product_names.append(pname)
 
         # Also add affiliate-only products NOT already covered by review_bundles
