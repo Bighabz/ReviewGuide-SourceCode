@@ -427,3 +427,12 @@ class TestProductComposeWithReviews:
             assert review_blocks[0]["data"]["products"][0]["name"] == "Sony WH-1000XM5"
             # assistant_text should be non-empty
             assert result["assistant_text"]
+
+
+# ============================================================
+# RX-04 Stub — caps at 3 products
+# ============================================================
+
+def test_review_search_caps_at_3_products():
+    """RX-04: review_search must limit results to 3 products, not 5."""
+    pytest.fail("RX-04: review_search still uses [:5] — update slice to [:3]")
