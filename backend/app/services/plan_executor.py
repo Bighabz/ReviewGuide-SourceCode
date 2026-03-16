@@ -110,6 +110,25 @@ def get_artifact_callbacks():
     return _artifact_callbacks_global
 
 
+# Token streaming callbacks (for mid-workflow blog article token streaming)
+_token_callbacks_global: List = []
+
+
+def register_token_callback(callback):
+    """Register a callback for streaming blog article tokens mid-workflow."""
+    _token_callbacks_global.append(callback)
+
+
+def clear_token_callbacks():
+    """Clear token callbacks after workflow completes."""
+    _token_callbacks_global.clear()
+
+
+def get_token_callbacks():
+    """Get registered token callbacks."""
+    return _token_callbacks_global
+
+
 class PlanExecutor:
     """
     Executes plans with support for:

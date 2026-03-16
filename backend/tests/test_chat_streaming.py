@@ -7,6 +7,8 @@ Covers:
          an artifact callback after the product_affiliate step.
   RX-02: product_compose calls model_service.generate with stream=True for
          the blog_article task so tokens stream incrementally.
+  Token registry: register_token_callback, get_token_callbacks,
+         clear_token_callbacks are importable from plan_executor.
 """
 import os
 import pytest
@@ -29,6 +31,28 @@ from mcp_server.tools.product_compose import product_compose  # noqa: E402
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
+
+
+def test_token_callback_registry_importable():
+    """
+    Task 1: register_token_callback, get_token_callbacks, clear_token_callbacks
+    must be importable from app.services.plan_executor.
+    """
+    from app.services.plan_executor import (
+        register_token_callback,
+        get_token_callbacks,
+        clear_token_callbacks,
+    )
+    # Verify the registry is a list-like container
+    clear_token_callbacks()
+    assert get_token_callbacks() == []
+
+    sentinel = object()
+    register_token_callback(sentinel)
+    assert sentinel in get_token_callbacks()
+
+    clear_token_callbacks()
+    assert get_token_callbacks() == []
 
 @pytest.mark.asyncio
 async def test_product_cards_emitted_before_compose():
