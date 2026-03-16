@@ -2,8 +2,8 @@
 phase: 1
 slug: response-experience-overhaul
 status: draft
-nyquist_compliant: false
-wave_0_complete: false
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-03-15
 ---
 
@@ -38,13 +38,20 @@ created: 2026-03-15
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 1-01-01 | 01 | 1 | RX-03 | unit | `pytest tests/test_product_affiliate.py -v` | ❌ W0 | ⬜ pending |
-| 1-01-02 | 01 | 1 | RX-04 | unit | `pytest tests/test_review_search.py -v` | ✅ | ⬜ pending |
-| 1-01-03 | 01 | 1 | RX-05 | unit | `pytest tests/test_plan_executor.py -v` | ❌ W0 | ⬜ pending |
-| 1-02-01 | 02 | 1 | RX-06 | unit | `pytest tests/test_product_compose.py -v` | ❌ W0 | ⬜ pending |
-| 1-02-02 | 02 | 1 | RX-07 | unit | `pytest tests/test_product_compose.py -v` | ❌ W0 | ⬜ pending |
-| 1-03-01 | 03 | 2 | RX-02 | integration | `pytest tests/test_chat_streaming.py -v` | ❌ W0 | ⬜ pending |
-| 1-03-02 | 03 | 2 | RX-01, RX-08 | manual | Browser test | N/A | ⬜ pending |
+| 1-01-01 | 01 | 1 | RX-03, RX-04, RX-05 | unit | `pytest tests/test_product_affiliate.py tests/test_review_search.py -v` | ❌ W0 | ⬜ pending |
+| 1-01-02 | 01 | 1 | RX-01, RX-02, RX-06, RX-07, RX-08 | unit | `pytest tests/test_product_compose.py tests/test_chat_streaming.py -v` | ❌ W0 | ⬜ pending |
+| 1-02-01 | 02 | 1 | RX-03 | unit | `pytest tests/test_product_affiliate.py::test_affiliate_search_products_parallel_within_provider -v` | ❌ W0 | ⬜ pending |
+| 1-02-02 | 02 | 1 | RX-04 | unit | `pytest tests/test_review_search.py -v` | ❌ W0 | ⬜ pending |
+| 1-02-03 | 02 | 1 | RX-05 | unit | `pytest tests/test_product_affiliate.py::test_planner_fast_path_review_and_affiliate_in_same_step -v` | ❌ W0 | ⬜ pending |
+| 1-03-01 | 03 | 1 | RX-06 | unit | `pytest tests/test_product_compose.py -v` | ❌ W0 | ⬜ pending |
+| 1-03-02 | 03 | 1 | RX-07 | unit | `pytest tests/test_product_compose.py -v` | ❌ W0 | ⬜ pending |
+| 1-04-01 | 04 | 2 | RX-01, RX-08 | unit | `pytest tests/test_chat_streaming.py::test_product_cards_emitted_before_compose -v` | ❌ W0 | ⬜ pending |
+| 1-04-02 | 04 | 2 | RX-01, RX-08 | unit | `pytest tests/test_product_affiliate.py -v` | ❌ W0 | ⬜ pending |
+| 1-04-03 | 04 | 2 | RX-01, RX-08 | import-check | `python -c "from app.api.v1.chat import stream_chat; print('OK')"` | ✅ | ⬜ pending |
+| 1-05-01 | 05 | 3 | RX-02 | import-check | `python -c "from app.services.plan_executor import register_token_callback; print('OK')"` | ✅ | ⬜ pending |
+| 1-05-02 | 05 | 3 | RX-02 | unit | `pytest tests/test_chat_streaming.py::test_blog_article_uses_model_service_stream -v` | ❌ W0 | ⬜ pending |
+| 1-05-03 | 05 | 3 | RX-02 | import-check | `python -c "from app.api.v1.chat import stream_chat; print('OK')"` | ✅ | ⬜ pending |
+| 1-06-01 | 06 | 4 | all RX | manual | Browser test (full stack) | N/A | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -52,11 +59,14 @@ created: 2026-03-15
 
 ## Wave 0 Requirements
 
-- [ ] `tests/test_product_affiliate.py` — stubs for RX-03 (parallel affiliate searches)
-- [ ] `tests/test_product_compose.py` — stubs for RX-06, RX-07 (reduced LLM calls, buy links)
-- [ ] `tests/test_chat_streaming.py` — stubs for RX-02 (token streaming)
+Wave 0 is Plan 01-01. The following test files must exist with failing stubs before any implementation plan runs:
 
-*Existing infrastructure covers: review_search tests (RX-04)*
+- [ ] `tests/test_product_affiliate.py` — stubs for RX-03 (parallel affiliate), RX-05 (fast path plan)
+- [ ] `tests/test_product_compose.py` — stubs for RX-06, RX-07, RX-08/RX-01 (reduced LLM calls, buy links, stream_chunk_data)
+- [ ] `tests/test_chat_streaming.py` — stubs for RX-01 (artifact callback), RX-02 (token streaming)
+- [ ] `tests/test_review_search.py` — stub appended for RX-04 (caps at 3 products)
+
+*Existing infrastructure covers: test_review_search.py (existing tests — preserved, RX-04 stub appended)*
 
 ---
 
@@ -72,11 +82,11 @@ created: 2026-03-15
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 15s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references (test_product_affiliate.py, test_product_compose.py additions, test_chat_streaming.py, test_review_search.py stub)
+- [x] No watch-mode flags
+- [x] Feedback latency < 15s
+- [x] `nyquist_compliant: true` set in frontmatter
 
 **Approval:** pending
