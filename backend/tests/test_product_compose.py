@@ -4,10 +4,13 @@ Unit tests for product_compose tool.
 Covers the general_product_info fallback path: when the planner routes through
 product_general_information (factoid queries), the fetched answer must be
 surfaced as assistant_text rather than silently discarded by the no-results guard.
+
+Also covers RX-06: opener and conclusion LLM calls must be removed.
+Also covers RX-07: review source URLs must be threaded into blog_data.
 """
 import os
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch, call
 
 # ---------------------------------------------------------------------------
 # Environment bootstrap — must happen before any app import
@@ -151,3 +154,200 @@ async def test_compose_general_product_info_not_used_when_listings_present(mock_
     assert "success" in result
     assert "assistant_text" in result
     assert "ui_blocks" in result
+
+
+# ---------------------------------------------------------------------------
+# RX-06: Opener and conclusion LLM calls must be removed
+# ---------------------------------------------------------------------------
+
+_REVIEW_STATE_WITH_DATA = {
+    "user_message": "best noise cancelling headphones under $300",
+    "intent": "product",
+    "slots": {"category": "headphones", "budget": 300},
+    "normalized_products": [
+        {"name": "Sony WH-1000XM5", "price": 299, "url": "https://example.com/sony"},
+        {"name": "Bose QuietComfort 45", "price": 279, "url": "https://example.com/bose"},
+    ],
+    "affiliate_products": {
+        "amazon": [
+            {
+                "product_name": "Sony WH-1000XM5",
+                "offers": [{"title": "Sony WH-1000XM5", "price": 299.99, "currency": "USD",
+                             "url": "https://amazon.com/sony", "merchant": "Amazon",
+                             "image_url": "https://example.com/img.jpg"}]
+            }
+        ]
+    },
+    "review_data": {
+        "Sony WH-1000XM5": {
+            "avg_rating": 4.7,
+            "total_reviews": 12500,
+            "quality_score": 0.95,
+            "sources": [
+                {"site_name": "Wirecutter", "url": "https://wirecutter.com/sony", "snippet": "Best in class ANC"},
+                {"site_name": "The Verge", "url": "https://theverge.com/sony", "snippet": "Excellent comfort"},
+            ]
+        },
+        "Bose QuietComfort 45": {
+            "avg_rating": 4.5,
+            "total_reviews": 8400,
+            "quality_score": 0.88,
+            "sources": [
+                {"site_name": "RTINGS", "url": "https://rtings.com/bose", "snippet": "Great sound quality"},
+            ]
+        }
+    },
+    "comparison_html": None,
+    "comparison_data": None,
+    "general_product_info": "",
+    "conversation_history": [],
+    "last_search_context": {},
+    "search_history": [],
+}
+
+
+@pytest.fixture
+def capturing_model_service():
+    """
+    Patch model_service.generate (at the app.services.model_service module level)
+    to capture all call kwargs and return plausible strings so the tool can
+    complete without error.
+
+    product_compose does `from app.services.model_service import model_service`
+    inside the function body, so we patch at the source module, not the tool module.
+    """
+    captured_calls = []
+
+    async def fake_generate(**kwargs):
+        captured_calls.append(kwargs)
+        agent_name = kwargs.get("agent_name", "")
+        if agent_name == "blog_article_composer":
+            return "## Sony WH-1000XM5\nGreat headphones.\n\n## Our Verdict\nBuy the Sony."
+        if agent_name == "review_consensus":
+            return "Excellent product praised by experts."
+        if agent_name == "product_compose_descriptions":
+            return '{"descriptions": ["desc1", "desc2"]}'
+        return "mock response"
+
+    fake_service = MagicMock()
+    fake_service.generate = fake_generate
+
+    with patch("app.services.model_service.model_service", fake_service):
+        yield fake_service, captured_calls
+
+
+@pytest.mark.asyncio
+async def test_no_opener_call(capturing_model_service):
+    """
+    RX-06: model_service.generate must NOT be called with agent_name='product_opener'
+    when review_data is present.
+    """
+    import copy
+    fake_service, captured_calls = capturing_model_service
+    state = copy.deepcopy(_REVIEW_STATE_WITH_DATA)
+
+    result = await product_compose(state)
+
+    assert result["success"] is True
+    opener_calls = [c for c in captured_calls if c.get("agent_name") == "product_opener"]
+    assert opener_calls == [], (
+        f"Expected no 'product_opener' calls but got {len(opener_calls)}: {opener_calls}"
+    )
+
+
+@pytest.mark.asyncio
+async def test_no_conclusion_call(capturing_model_service):
+    """
+    RX-06: model_service.generate must NOT be called with agent_name='product_conclusion'
+    regardless of whether products_by_provider is populated.
+    """
+    import copy
+    fake_service, captured_calls = capturing_model_service
+    state = copy.deepcopy(_REVIEW_STATE_WITH_DATA)
+
+    result = await product_compose(state)
+
+    assert result["success"] is True
+    conclusion_calls = [c for c in captured_calls if c.get("agent_name") == "product_conclusion"]
+    assert conclusion_calls == [], (
+        f"Expected no 'product_conclusion' calls but got {len(conclusion_calls)}: {conclusion_calls}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# RX-07: Review source URLs must be threaded into blog_data
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_blog_includes_source_inline_links(capturing_model_service):
+    """
+    RX-07: When review bundle has sources with url+site_name, the blog_data string
+    passed to model_service.generate for the blog_article call must contain
+    'Reviews: [SiteName](url)' entries.
+    """
+    import copy
+    fake_service, captured_calls = capturing_model_service
+    state = copy.deepcopy(_REVIEW_STATE_WITH_DATA)
+
+    result = await product_compose(state)
+
+    assert result["success"] is True
+
+    # Find the blog_article generate call
+    blog_calls = [c for c in captured_calls if c.get("agent_name") == "blog_article_composer"]
+    assert len(blog_calls) >= 1, "Expected at least one blog_article_composer call"
+
+    # Extract the user content from the messages list
+    blog_call = blog_calls[0]
+    messages = blog_call.get("messages", [])
+    user_content = next(
+        (m["content"] for m in messages if m.get("role") == "user"),
+        ""
+    )
+
+    # The blog_data must contain inline source refs for Sony (which has sources with url+site_name)
+    assert "Reviews:" in user_content, (
+        f"Expected 'Reviews:' in blog_data user content, but got:\n{user_content[:500]}"
+    )
+    assert "[Wirecutter]" in user_content, (
+        f"Expected '[Wirecutter]' markdown link in blog_data, but got:\n{user_content[:500]}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# RX-01 / RX-08 Stub — product_affiliate sets stream_chunk_data
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_stream_chunk_data_set_by_product_affiliate():
+    """
+    RX-01/RX-08: After product_affiliate completes, stream_chunk_data must
+    be set to {"type": "ui_blocks", ...} in the returned state so the plan
+    executor can emit product cards to the frontend before product_compose runs.
+
+    Currently product_affiliate does not write stream_chunk_data at all.
+    """
+    from mcp_server.tools.product_affiliate import product_affiliate
+
+    state = {
+        "normalized_products": [{"title": "Widget X"}],
+        "slots": {},
+        "last_search_context": {},
+    }
+
+    with patch("app.services.affiliate.manager.affiliate_manager") as mock_manager, \
+         patch("app.core.config.settings") as mock_settings:
+        mock_settings.MAX_AFFILIATE_OFFERS_PER_PRODUCT = 3
+        mock_settings.AMAZON_DEFAULT_COUNTRY = "US"
+        mock_manager.get_available_providers.return_value = []
+
+        result = await product_affiliate(state)
+
+    stream_chunk = result.get("stream_chunk_data")
+    assert stream_chunk is not None, (
+        "RX-01/RX-08: product_affiliate does not set stream_chunk_data — "
+        "add stream_chunk_data={'type': 'ui_blocks', ...} to the return dict"
+    )
+    assert stream_chunk.get("type") == "ui_blocks", (
+        f"Expected stream_chunk_data['type'] == 'ui_blocks', got: {stream_chunk}"
+    )
