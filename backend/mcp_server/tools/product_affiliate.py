@@ -108,30 +108,28 @@ async def product_affiliate(
 
         # Helper function to search a provider for all products
         async def search_provider(provider_name: str) -> Dict[str, Any]:
-            """Search all products on a single provider."""
+            """Search all products on a single provider using asyncio.gather for parallelism."""
             provider = affiliate_manager.get_provider(provider_name)
             if not provider:
                 return {"provider": provider_name, "results": []}
 
-            results = []
-            for product_name in products_to_search:
+            # Build search kwargs template once (shared across products)
+            base_search_kwargs = {
+                "limit": max_offers,
+                "category": category,
+            }
+
+            # Check if provider supports country_code (like Amazon)
+            if hasattr(provider, 'search_products'):
+                import inspect
+                sig = inspect.signature(provider.search_products)
+                if 'country_code' in sig.parameters:
+                    base_search_kwargs['country_code'] = country_code
+
+            async def search_single_product(product_name: str):
                 try:
-                    # Check if provider supports country_code (like Amazon)
-                    search_kwargs = {
-                        "query": product_name,
-                        "limit": max_offers,
-                        "category": category,
-                    }
-
-                    # Add country_code for providers that support it
-                    if hasattr(provider, 'search_products'):
-                        import inspect
-                        sig = inspect.signature(provider.search_products)
-                        if 'country_code' in sig.parameters:
-                            search_kwargs['country_code'] = country_code
-
+                    search_kwargs = {"query": product_name, **base_search_kwargs}
                     search_results = await provider.search_products(**search_kwargs)
-
                     if search_results:
                         offers = []
                         for result in search_results:
@@ -151,15 +149,15 @@ async def product_affiliate(
                             if hasattr(result, 'product_id') and result.product_id:
                                 offer["product_id"] = result.product_id
                             offers.append(offer)
-
-                        results.append({
-                            "product_name": product_name,
-                            "offers": offers
-                        })
-
+                        return {"product_name": product_name, "offers": offers}
+                    return None
                 except Exception as e:
                     logger.warning(f"[product_affiliate] {provider_name} search failed for {product_name}: {e}")
-                    continue
+                    return None
+
+            search_tasks = [search_single_product(name) for name in products_to_search]
+            raw_results = await asyncio.gather(*search_tasks, return_exceptions=True)
+            results = [r for r in raw_results if r is not None and not isinstance(r, Exception)]
 
             return {"provider": provider_name, "results": results}
 

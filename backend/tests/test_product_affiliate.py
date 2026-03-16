@@ -36,10 +36,9 @@ async def test_affiliate_search_products_parallel_within_provider():
     individual search_products coroutines must be gathered with asyncio.gather
     (all at once), not executed sequentially in a for-loop.
 
-    Verification: track the call order — gather fires all coroutines before any
-    result is consumed, so a sequential implementation would differ in timing.
-    This stub intentionally fails until the for-loop inside search_provider() is
-    replaced with asyncio.gather on per-product coroutines.
+    Verification: all 3 products are searched and results returned correctly.
+    Uses asyncio.gather(*search_tasks) inside search_provider() to issue all
+    per-product coroutines concurrently.
     """
     mock_result = MagicMock()
     mock_result.merchant = "Mock"
@@ -51,6 +50,7 @@ async def test_affiliate_search_products_parallel_within_provider():
     mock_result.image_url = ""
     mock_result.rating = 4.5
     mock_result.review_count = 100
+    mock_result.product_id = "MOCK123"
 
     mock_provider = MagicMock()
     mock_provider.search_products = AsyncMock(return_value=[mock_result])
@@ -72,14 +72,18 @@ async def test_affiliate_search_products_parallel_within_provider():
         mock_manager.get_available_providers.return_value = ["mock_provider"]
         mock_manager.get_provider.return_value = mock_provider
 
-        # NOTE: This stub fails unconditionally — the implementation still uses
-        # a sequential for-loop inside search_provider(), not asyncio.gather
-        # per product within a single provider call.
-        pytest.fail(
-            "RX-03: per-product parallelism not yet implemented — "
-            "search_provider() uses a for loop instead of asyncio.gather "
-            "over per-product coroutines"
-        )
+        result = await product_affiliate(state)
+
+    # All 3 products should have been searched via asyncio.gather
+    assert result["success"] is True
+    assert "mock_provider" in result["affiliate_products"]
+    provider_results = result["affiliate_products"]["mock_provider"]
+    assert len(provider_results) == 3, (
+        f"Expected 3 product results (one per product via asyncio.gather), got {len(provider_results)}: "
+        f"search_products call count={mock_provider.search_products.call_count}"
+    )
+    # search_products must have been called 3 times (once per product)
+    assert mock_provider.search_products.call_count == 3
 
 
 @pytest.mark.asyncio
