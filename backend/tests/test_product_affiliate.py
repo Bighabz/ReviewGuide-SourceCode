@@ -92,9 +92,9 @@ async def test_planner_fast_path_review_and_affiliate_in_same_step():
     RX-05: PlannerAgent._create_fast_path_product_plan must put review_search
     and product_affiliate in the SAME execution step with parallel=True.
 
-    Currently review_search and product_affiliate are in separate sequential
-    steps, which forces waiting for review results before affiliate links start.
-    Combining them saves ~2s latency.
+    Both tools read product_names written by product_search (the prior step).
+    Neither depends on the other, so they can run concurrently.
+    Combining them saves ~2s of sequential latency.
     """
     from app.agents.planner_agent import PlannerAgent
 
@@ -111,10 +111,11 @@ async def test_planner_fast_path_review_and_affiliate_in_same_step():
             combined_step = step
             break
 
-    # This stub intentionally fails until review_search and product_affiliate
-    # are merged into a single parallel step in the fast-path plan.
-    pytest.fail(
-        "RX-05: review_search and product_affiliate not in the same parallel step "
-        "in fast_path plan — currently they are sequential steps: "
-        f"{[s['tools'] for s in steps]}"
+    assert combined_step is not None, (
+        "RX-05: review_search and product_affiliate not in the same step. "
+        f"Current steps: {[s['tools'] for s in steps]}"
+    )
+    assert combined_step.get("parallel") is True, (
+        f"Step with review_search + product_affiliate must have parallel=True, "
+        f"got: {combined_step}"
     )
