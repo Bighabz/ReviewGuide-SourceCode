@@ -226,7 +226,12 @@ Plans:
   4. Source citation links are clickable and open the original review article URL in a new tab
   5. User's own messages appear right-aligned in a blue bubble; AI messages appear left-aligned in a white bubble with a "✦ ReviewGuide" label
   6. Follow-up suggestion chips appear below each AI response and submitting one (by tap) sends it as the next user message without any typing
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 14-01-PLAN.md — Wave 0 test scaffolds for all CHAT requirements (CHAT-01 through CHAT-06)
+- [ ] 14-02-PLAN.md — Backend review_sources fix, InlineProductCard, SourceCitations, ChatStatusContext (CHAT-02, CHAT-03, CHAT-04)
+- [ ] 14-03-PLAN.md — Integration: Message.tsx bubbles, BlockRegistry wiring, MobileHeader status, chip restyle (CHAT-01, CHAT-03, CHAT-05, CHAT-06)
+- [ ] 14-04-PLAN.md — Full test suite, build check, and human visual verification (all CHAT requirements)
 
 ### Phase 15: Results Screen
 **Goal**: Users can navigate to a dedicated, shareable Results page for any completed research session — with a full product grid, source panel, and quick actions — laid out in a desktop split panel and a mobile full-width view.
@@ -271,7 +276,7 @@ v2.0 phases execute sequentially: 12 -> 13 -> 14 -> 15 -> 16. Phase 12 is a hard
 | 10. Impact.com Provider | v1.0 | 0/TBD | Not started | - |
 | 11. Viator + CJ Expansion | v1.0 | 0/TBD | Not started | - |
 | 12. Navigation Shell | v2.0 | 3/3 | Complete | 2026-03-17 |
-| 13. Discover Screen | 3/3 | Complete    | 2026-03-17 | - |
-| 14. Chat Screen | v2.0 | 0/TBD | Not started | - |
+| 13. Discover Screen | v2.0 | 3/3 | Complete | 2026-03-17 |
+| 14. Chat Screen | v2.0 | 0/4 | Not started | - |
 | 15. Results Screen | v2.0 | 0/TBD | Not started | - |
 | 16. Placeholder Routes and Build QA | v2.0 | 0/TBD | Not started | - |
