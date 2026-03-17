@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Core Platform
 status: completed
-stopped_at: Completed 14-02-PLAN.md
-last_updated: "2026-03-17T09:29:32.732Z"
-last_activity: 2026-03-17 — Phase 14 Plan 02 complete; InlineProductCard, SourceCitations, ChatStatusContext created; review_sources restored; 29 tests GREEN
+stopped_at: Completed 14-03-PLAN.md
+last_updated: "2026-03-17T09:41:30.784Z"
+last_activity: 2026-03-17 — Phase 14 Plan 03 complete; bubble wrappers, ReviewGuide byline, pill chips, BlockRegistry + normalizeBlocks wired; ChatStatusContext end-to-end; 50 Phase 14 tests GREEN
 progress:
   total_phases: 16
   completed_phases: 2
   total_plans: 19
-  completed_plans: 13
-  percent: 0
+  completed_plans: 14
+  percent: 74
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 ## Current Position
 
 Phase: 14 of 16 (Chat Screen)
-Plan: 02 of 04 — COMPLETE
-Status: Plan 02 complete, ready for Plan 03 (integrate InlineProductCard, SourceCitations into Message.tsx, BlockRegistry, MobileHeader)
-Last activity: 2026-03-17 — Phase 14 Plan 02 complete; InlineProductCard, SourceCitations, ChatStatusContext created; review_sources backend restored; all 29 CHAT-02/CHAT-04 tests GREEN
+Plan: 03 of 04 — COMPLETE
+Status: Plan 03 complete, ready for Plan 04 (chat screen visual polish, remaining CHAT-* requirements)
+Last activity: 2026-03-17 — Phase 14 Plan 03 complete; bubble wrappers, ReviewGuide byline, pill chips, BlockRegistry wired with InlineProductCard/SourceCitations, ChatStatusContext connected end-to-end; all 50 Phase 14 tests GREEN
 
-Progress: [███████░░░] 68%
+Progress: [███████░░░] 74%
 
 ## Performance Metrics
 
@@ -65,6 +65,8 @@ Progress: [███████░░░] 68%
 - [Phase 14-01]: Colored dot tests use class AND style fallbacks to allow flexible Tailwind/inline implementation choices
 - [Phase 14-chat-screen]: review_sources consensus intentionally empty string — blog assistant_text handles editorial prose to avoid Pitfall 3 redundancy
 - [Phase 14-chat-screen]: Dual color approach for dots: inline style sets actual color, Tailwind bg- class enables test DOM queryability
+- [Phase 14-chat-screen]: Suggestion chips render OUTSIDE the AI bubble — visual independence from content per CHAT-06 spec
+- [Phase 14-chat-screen]: MobileHeader back button navigates to / (Discover) not /browse — consistent with Phase 13 route migration
 
 ### Pending Todos
 
@@ -78,6 +80,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-17T09:29:23.361Z
-Stopped at: Completed 14-02-PLAN.md
+Last session: 2026-03-17T09:41:30.781Z
+Stopped at: Completed 14-03-PLAN.md
 Resume file: None
