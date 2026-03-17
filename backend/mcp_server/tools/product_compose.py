@@ -681,25 +681,26 @@ Products to describe:
 
         llm_tasks['blog_article'] = model_service.generate(
             messages=[
-                {"role": "system", "content": """You are an expert product journalist writing a blog-style review article. Write in a warm, authoritative voice — like a Wirecutter or The Verge review.
+                {"role": "system", "content": """You are an expert product journalist writing a buying guide intro. Write in a warm, authoritative voice — like a Wirecutter or The Verge review.
 
 FORMAT REQUIREMENTS:
-- Start with a 2-3 sentence intro addressing what the user is looking for
-- For each product, write a ## heading with the product name and editorial label (if any) in italics
-- After each ## heading, include the product image as: ![Product Name](image_url) — ONLY if an image URL is provided
-- Write 3-5 sentences of natural prose reviewing the product — reference specific reviewer insights from the excerpts provided (e.g., "Wirecutter highlights its noise cancellation" or "[RTINGS](url) notes the bass response is above average")
-- Include 1-2 inline review source citations as markdown links where relevant
-- Include buy links for EVERY retailer provided in the data. Format each as: [Check price on Merchant →](url). If multiple retailers are listed (e.g., eBay AND Amazon), include BOTH links on separate lines
-- End with a ## Our Verdict section (2 sentences with your recommendation)
+- Write a 3-5 paragraph editorial summary of the product category
+- Paragraph 1: What the user is looking for and what matters most in this category
+- Paragraph 2-3: Summarize what reviewers say — reference specific reviewer insights using inline citations (e.g., "[Wirecutter](url) highlights..." or "According to [RTINGS](url)..."). Name the top picks and WHY reviewers recommend them.
+- Paragraph 4: Brief mention of what to watch out for — common tradeoffs, things reviewers flag
+- Final paragraph: A short verdict/recommendation summary
+- DO NOT write per-product ## headings or sections — the individual products are shown as interactive cards below your text
+- DO NOT include product images, prices, or buy links — those are in the cards
+- DO include review source names and citation links throughout the text
 - Write naturally — vary sentence structure, don't be formulaic
 - NEVER invent features or specs not in the data
 - NEVER mention personal details unless the user provided them
-- Keep the total response under 600 words"""},
+- Keep the total response under 350 words"""},
                 {"role": "user", "content": blog_data}
             ],
             model=settings.COMPOSER_MODEL,
             temperature=0.7,
-            max_tokens=900,
+            max_tokens=500,
             agent_name="blog_article_composer"
         )
 
@@ -810,9 +811,12 @@ FORMAT REQUIREMENTS:
             seen_card_names.add(pname)
 
             # Build affiliate_links array for the card
+            # Prioritize eBay offers first (they have real images/prices)
+            sorted_offers = sorted(real_offers, key=lambda o: (o.get("source") != "ebay", not o.get("image_url")))
             affiliate_links = []
             best_image = ""
-            for o in real_offers:
+            for o in sorted_offers:
+                img = o.get("image_url", "")
                 affiliate_links.append({
                     "product_id": f"{o.get('source', 'unknown')}-{idx}",
                     "title": o.get("merchant", "") + " - " + pname,
@@ -820,12 +824,12 @@ FORMAT REQUIREMENTS:
                     "currency": o.get("currency", "USD"),
                     "affiliate_link": o.get("url", ""),
                     "merchant": o.get("merchant", ""),
-                    "image_url": o.get("image_url", ""),
+                    "image_url": img,
                     "rating": o.get("rating"),
                     "review_count": o.get("review_count"),
                 })
-                if not best_image and o.get("image_url"):
-                    best_image = o["image_url"]
+                if not best_image and img:
+                    best_image = img
 
             if not affiliate_links:
                 continue

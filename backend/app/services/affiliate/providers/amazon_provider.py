@@ -429,11 +429,9 @@ class AmazonAffiliateProvider(BaseAffiliateProvider):
 
         query_hash = int(hashlib.md5(query.encode()).hexdigest()[:8], 16)
 
-        # Detect category for realistic variations
+        # Detect category for title variations only (no fake prices)
         detected_category = _detect_category(query, category)
         variations = CATEGORY_VARIATIONS.get(detected_category, CATEGORY_VARIATIONS["general"])
-        base_price = CATEGORY_BASE_PRICES.get(detected_category, 199.99)
-        ratings = [4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9]
 
         results = []
         for i in range(min(limit, 3)):
@@ -444,24 +442,19 @@ class AmazonAffiliateProvider(BaseAffiliateProvider):
                 params["tag"] = tag
             search_url = f"{search_url_base}?{urllib.parse.urlencode(params)}"
 
-            # Deterministic price/rating
-            price_offset = ((query_hash + i * 13) % 60 - 30) / 100.0
-            price = round(base_price * (1.0 + price_offset), 2)
-            rating_idx = (query_hash + i * 3) % len(ratings)
-            review_count = 100 + ((query_hash + i * 7) % 9900)
-
             title = query if i == 0 else f"{query} - {variations[i % len(variations)]}"
 
+            # Don't fabricate prices/ratings — we don't have real data
             results.append(AffiliateProduct(
                 product_id=f"SEARCH-{query_hash % 1000000:06d}{i}",
                 title=title,
-                price=price,
+                price=0,  # No real price data without PA-API
                 currency="USD",
                 affiliate_link=search_url,
                 merchant="Amazon",
                 image_url="",
-                rating=ratings[rating_idx],
-                review_count=review_count,
+                rating=None,
+                review_count=None,
                 condition="new",
                 availability=True,
                 source_url=search_url,
