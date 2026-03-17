@@ -175,7 +175,7 @@ Plans:
 
 **Milestone Goal:** Complete frontend redesign — unified Discover -> Chat -> Results flow with mobile-first, app-like navigation and structured AI responses, evolving the editorial luxury aesthetic. No backend changes required.
 
-- [ ] **Phase 12: Navigation Shell** - Mobile bottom tab bar, desktop top nav, central FAB, iOS safe area, layout baseline
+- [x] **Phase 12: Navigation Shell** - Mobile bottom tab bar, desktop top nav, central FAB, iOS safe area, layout baseline (completed 2026-03-17)
 - [ ] **Phase 13: Discover Screen** - Unified entry point replacing Browse/Chat split — hero search, category chips, trending cards
 - [ ] **Phase 14: Chat Screen** - Restructured AI responses, compact inline product cards, suggestion chips, source citations
 - [ ] **Phase 15: Results Screen** - Dedicated `/results/:id` route with desktop split panel and mobile full-width layouts
@@ -266,7 +266,7 @@ v2.0 phases execute sequentially: 12 -> 13 -> 14 -> 15 -> 16. Phase 12 is a hard
 | 9. Top Pick Block + Help Me Decide | v1.0 | 0/TBD | Not started | - |
 | 10. Impact.com Provider | v1.0 | 0/TBD | Not started | - |
 | 11. Viator + CJ Expansion | v1.0 | 0/TBD | Not started | - |
-| 12. Navigation Shell | 2/3 | In Progress|  | - |
+| 12. Navigation Shell | 3/3 | Complete   | 2026-03-17 | - |
 | 13. Discover Screen | v2.0 | 0/TBD | Not started | - |
 | 14. Chat Screen | v2.0 | 0/TBD | Not started | - |
 | 15. Results Screen | v2.0 | 0/TBD | Not started | - |
