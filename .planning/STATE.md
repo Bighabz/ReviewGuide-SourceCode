@@ -1,36 +1,36 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
+milestone: v2.0
+milestone_name: Frontend UX Redesign
 status: planning
-stopped_at: "Completed 01-05-PLAN.md — blog article token streaming: product_compose streams tokens via async generator, chat.py registers _on_token callback and forwards token_ready SSE events"
-last_updated: "2026-03-16T02:12:04.484Z"
-last_activity: 2026-03-15 — Roadmap updated; 30 requirements mapped to 11 phases (added PERF-01 through PERF-05)
+stopped_at: ""
+last_updated: "2026-03-16"
+last_activity: 2026-03-16 — Milestone v2.0 started (Frontend UX Redesign)
 progress:
-  total_phases: 11
+  total_phases: 0
   completed_phases: 0
-  total_plans: 9
-  completed_plans: 5
-  percent: 11
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-15)
+See: .planning/PROJECT.md (updated 2026-03-16)
 
 **Core value:** Conversational product discovery that searches live reviews and returns blog-style editorial responses with cross-retailer affiliate links.
-**Current focus:** Phase 1 — Response Experience Overhaul
+**Current focus:** Milestone v2.0 — Frontend UX Redesign
 
 ## Current Position
 
-Phase: 1 of 11 (Response Experience Overhaul)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-03-15 — Roadmap updated; 30 requirements mapped to 11 phases (added PERF-01 through PERF-05)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-16 — Milestone v2.0 started
 
-Progress: [█░░░░░░░░░] 11%
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -39,46 +39,16 @@ Progress: [█░░░░░░░░░] 11%
 - Average duration: -
 - Total execution time: 0 hours
 
-**By Phase:**
-
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| - | - | - | - |
-
-**Recent Trend:**
-- Last 5 plans: -
-- Trend: -
-
-*Updated after each plan completion*
-| Phase 01 P02 | 5 | 3 tasks | 5 files |
-| Phase 01-response-experience-overhaul P01 | 6 | 2 tasks | 4 files |
-| Phase 01-response-experience-overhaul P03 | 8min | 2 tasks | 2 files |
-| Phase 01-response-experience-overhaul P04 | 4m26s | 3 tasks | 3 files |
-| Phase 01-response-experience-overhaul P05 | 533s | 3 tasks | 5 files |
-
 ## Accumulated Context
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
-- [Init]: Fix-first before expanding — broken features undermine trust; fix review links, Amazon, eBay-only before adding verticals
-- [Init]: Skimlinks as catch-all affiliate layer — one integration covers 48,500 merchants vs integrating each network
-- [Init]: Keep direct relationships for top programs — Amazon, Booking, Viator, Expedia get better commission rates than through Skimlinks
-- [Phase 01]: review_search reduced from [:5] to [:3] products — eliminates 2 extra Serper calls on the critical path
-- [Phase 01]: review_search and product_affiliate merged into same parallel plan step — both read product_names from product_search with no mutual dependency
-- [Phase 01-01]: Test stubs use behavioral assertions where behavior is clear, not just pytest.fail() — this gives precise failure messages and stronger RED contracts
-- [Phase 01-01]: Wave 0 scaffolds test_product_affiliate.py, test_chat_streaming.py as new files; test_product_compose.py and test_review_search.py extended in-place
-- [Phase 01-response-experience-overhaul]: Removed opener LLM call: blog_article system prompt now starts with warm intro instruction — single call replaces two
-- [Phase 01-response-experience-overhaul]: Removed conclusion LLM call: Our Verdict section now instructed inline in blog_article prompt
-- [Phase 01-response-experience-overhaul]: Source refs threading: '| Reviews: [SiteName](url)' appended to blog_data product lines, top 3 sources per product
-- [Phase 01-response-experience-overhaul]: Always emit stream_chunk_data from product_affiliate (even empty list) to keep plan_executor contract consistent
-- [Phase 01-response-experience-overhaul]: Synthetic artifact_ready events use the same event_queue as LangGraph events — no second queue needed
-- [Phase 01-response-experience-overhaul]: data_already_streamed=True after early artifact prevents duplicate end-of-workflow re-emit
-- [Phase 01-response-experience-overhaul]: Always stream blog_article with stream=True; tokens forwarded to callbacks when registered, no-op otherwise
-- [Phase 01-response-experience-overhaul]: Module-level model_service import in product_compose enables mcp_server.tools.product_compose.model_service patch target for tests
-- [Phase 01-response-experience-overhaul]: text_already_streamed flag suppresses STREAM_CHUNK_SIZE fake-chunking after real tokens streamed via token callback
+- [v1.0]: Fix-first before expanding — broken features undermine trust
+- [v1.0]: Skimlinks as catch-all affiliate layer — one integration covers 48,500 merchants
+- [v1.0 Phase 01]: review_search reduced from [:5] to [:3] products
+- [v1.0 Phase 01]: blog_article system prompt: single LLM call replaces opener+conclusion calls
+- [v2.0 Init]: Use curated static Amazon data (120+ products) for product images/prices/links — no PA-API needed
+- [v2.0 Init]: Frontend UX redesign as major milestone — editorial luxury evolution + app-like fluidity
 
 ### Pending Todos
 
@@ -86,12 +56,11 @@ None yet.
 
 ### Blockers/Concerns
 
-- [Phase 4]: Amazon PA-API v5 retires May 15, 2026 — hard deadline, schedule this phase before all other elective work
-- [Phase 5-6]: Skimlinks publisher application must be submitted immediately — approval takes ~2 business days and phases 5-6 cannot start until approved. Verify AI content policy with Skimlinks account team before submitting.
-- [Phase 4]: Amazon Creators API requires 10 qualified shipped sales for activation — confirm with Associates Central whether existing account qualifies or whether a 30-day activation window applies post-migration
+- [v1.0 Phase 4]: Amazon PA-API v5 retires May 15, 2026 — hard deadline (paused, not cancelled)
+- [v1.0 Phase 5-6]: Skimlinks publisher application still pending
 
 ## Session Continuity
 
-Last session: 2026-03-16T02:12:04.481Z
-Stopped at: Completed 01-05-PLAN.md — blog article token streaming: product_compose streams tokens via async generator, chat.py registers _on_token callback and forwards token_ready SSE events
+Last session: 2026-03-16
+Stopped at: Milestone v2.0 initialized, defining requirements
 Resume file: None

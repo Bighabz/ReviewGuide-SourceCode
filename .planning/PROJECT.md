@@ -63,6 +63,22 @@ Conversational product discovery that searches live reviews and returns blog-sty
 - Stored product database — live search is the differentiator (always fresh data)
 - Post-purchase support — we're an affiliate, not a retailer
 
+## Current Milestone: v2.0 Frontend UX Redesign
+
+**Goal:** Complete frontend redesign — unified Discover → Chat → Results flow with mobile-first, app-like navigation and structured AI responses, evolving the editorial luxury aesthetic.
+
+**Target features:**
+- Unified Discover screen replacing separate Browse/Chat landing pages
+- Redesigned Chat with structured AI responses (summary → ranked inline product cards → source citations → follow-up chips)
+- Full Results view with desktop split-panel and mobile full-width layouts
+- Bottom tab navigation (mobile) with central FAB for new research
+- App-like fluidity: card-based navigation, suggestion chips, contextual actions
+- New routes: `/saved`, `/compare`, `/profile` (placeholder pages)
+- Responsive breakpoints: mobile (<768px), tablet (768-1023px), desktop (≥1024px)
+- Curated Amazon product images, prices, and affiliate links from existing static data (120+ products in `curated_amazon_links.py`)
+
+**Design reference:** Figma file "ReviewGuide.ai — New UX Concept" + detailed spec in `# ReviewGuide.ai — frontendredesign.txt`
+
 ## Context
 
 ReviewGuide.ai is a brownfield project with a working full-stack deployment. The core chat pipeline, travel features, and browse experience are functional. The main gaps are:
@@ -100,5 +116,8 @@ The existing plan doc (`docs/plans/2026-02-27-cj-integration-and-curated-content
 | Blog-style editorial responses | Differentiates from generic product cards; matches editorial luxury brand | ✓ Good |
 | Keep direct relationships for top programs | Amazon, Booking, Viator, Expedia get better commission rates than through Skimlinks | — Pending |
 
+| Frontend UX redesign as v2.0 milestone | Editorial luxury evolution + app-like fluidity, mobile-first | — Pending |
+| Use curated static Amazon data for product cards | 120+ products with verified images/prices/affiliate links already exist | ✓ Good |
+
 ---
-*Last updated: 2026-03-15 after initialization*
+*Last updated: 2026-03-16 after v2.0 milestone start*
