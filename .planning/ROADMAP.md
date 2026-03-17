@@ -171,9 +171,9 @@ Plans:
 
 ---
 
-### 📋 v2.0 Frontend UX Redesign (Phases 12-16)
+### v2.0 Frontend UX Redesign (Phases 12-16)
 
-**Milestone Goal:** Complete frontend redesign — unified Discover → Chat → Results flow with mobile-first, app-like navigation and structured AI responses, evolving the editorial luxury aesthetic. No backend changes required.
+**Milestone Goal:** Complete frontend redesign — unified Discover -> Chat -> Results flow with mobile-first, app-like navigation and structured AI responses, evolving the editorial luxury aesthetic. No backend changes required.
 
 - [ ] **Phase 12: Navigation Shell** - Mobile bottom tab bar, desktop top nav, central FAB, iOS safe area, layout baseline
 - [ ] **Phase 13: Discover Screen** - Unified entry point replacing Browse/Chat split — hero search, category chips, trending cards
@@ -193,7 +193,11 @@ Plans:
   3. Tapping the central FAB from any screen navigates to `/chat?new=1` and starts a new research session
   4. Animated page transitions play between routes — tabs animate in/out without full white-flash reloads
   5. On an iPhone with a home indicator, the bottom tab bar does not overlap the home swipe gesture area (safe area inset respected)
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 12-01-PLAN.md — Wave 0 test scaffolds for all NAV requirements (NAV-01 through NAV-05)
+- [ ] 12-02-PLAN.md — Core navigation components: NavLayout, MobileTabBar, MobileHeader (NAV-01, NAV-03, NAV-05)
+- [ ] 12-03-PLAN.md — Integration: layout.tsx wiring, template.tsx transitions, UnifiedTopbar labels, cleanup (NAV-02, NAV-04, NAV-05)
 
 ### Phase 13: Discover Screen
 **Goal**: The app's entry point is a single editorial screen where users can start research, explore categories, or tap a trending topic — replacing the current split Browse/Chat landing pages.
@@ -247,7 +251,7 @@ Plans:
 ## Progress
 
 **Execution Order:**
-v2.0 phases execute sequentially: 12 → 13 → 14 → 15 → 16. Phase 12 is a hard prerequisite for all others. Phases 13, 14, 15 chain in order due to component dependencies (NavLayout → Discover → ChatHeader → ResultsPage). Phase 16 runs last as build QA gate.
+v2.0 phases execute sequentially: 12 -> 13 -> 14 -> 15 -> 16. Phase 12 is a hard prerequisite for all others. Phases 13, 14, 15 chain in order due to component dependencies (NavLayout -> Discover -> ChatHeader -> ResultsPage). Phase 16 runs last as build QA gate.
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -262,7 +266,7 @@ v2.0 phases execute sequentially: 12 → 13 → 14 → 15 → 16. Phase 12 is a 
 | 9. Top Pick Block + Help Me Decide | v1.0 | 0/TBD | Not started | - |
 | 10. Impact.com Provider | v1.0 | 0/TBD | Not started | - |
 | 11. Viator + CJ Expansion | v1.0 | 0/TBD | Not started | - |
-| 12. Navigation Shell | v2.0 | 0/TBD | Not started | - |
+| 12. Navigation Shell | v2.0 | 0/3 | Planning | - |
 | 13. Discover Screen | v2.0 | 0/TBD | Not started | - |
 | 14. Chat Screen | v2.0 | 0/TBD | Not started | - |
 | 15. Results Screen | v2.0 | 0/TBD | Not started | - |
