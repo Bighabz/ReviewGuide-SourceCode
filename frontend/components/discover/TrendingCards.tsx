@@ -1,10 +1,10 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { ChevronRight, Headphones, Plane, Laptop2, Bot, Footprints, Speaker } from 'lucide-react'
+import { ChevronRight, Headphones, Plane, Laptop2, Bot, Footprints, Speaker, type LucideIcon } from 'lucide-react'
 import { trendingTopics } from '@/lib/trendingTopics'
 
-const iconMap: Record<string, React.ComponentType<{ size?: number; color?: string; 'aria-hidden'?: string }>> = {
+const iconMap: Record<string, LucideIcon> = {
   Headphones,
   Plane,
   Laptop2,

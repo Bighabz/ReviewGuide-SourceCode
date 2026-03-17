@@ -40,9 +40,13 @@ export default function UnifiedTopbar({
   const pathname = usePathname()
   const router = useRouter()
 
-  const getActiveTab = () => {
+  const getActiveTab = (): 'discover' | 'ask' | 'saved' | 'compare' | 'profile' => {
     if (pathname?.startsWith('/chat')) return 'ask'
-    if (pathname?.startsWith('/browse') || pathname === '/') return 'discover'
+    if (pathname === '/') return 'discover'
+    if (pathname?.startsWith('/browse')) return 'discover'
+    if (pathname?.startsWith('/saved')) return 'saved'
+    if (pathname?.startsWith('/compare')) return 'compare'
+    if (pathname?.startsWith('/profile')) return 'profile'
     return 'discover'
   }
   const activeTab = getActiveTab()

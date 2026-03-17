@@ -71,6 +71,19 @@ export function ExplainabilityPanel({ metadata }: ExplainabilityPanelProps) {
           </span>
         </button>
 
+        {/* Low confidence badge — shown when confidence_score < 0.6 */}
+        {metadata.confidence_score !== undefined && metadata.confidence_score < 0.6 && (
+          <span
+            data-testid="low-confidence-badge"
+            className="text-[10px] px-1.5 py-0.5 rounded font-medium"
+            style={{
+              background: 'var(--warning-bg, #FEF3C7)',
+              color: 'var(--warning-text, #92400E)',
+            }}
+          >
+            Low confidence
+          </span>
+        )}
       </div>
 
       {/* Collapsible detail panel */}
@@ -121,6 +134,16 @@ export function ExplainabilityPanel({ metadata }: ExplainabilityPanelProps) {
                 Missing sections:{' '}
               </span>
               <span>{metadata.omitted_sections.join(', ')}</span>
+            </div>
+          )}
+
+          {/* Confidence score percentage */}
+          {metadata.confidence_score !== undefined && (
+            <div data-testid="confidence-score">
+              <span className="font-semibold" style={{ color: 'var(--text)' }}>
+                Confidence:{' '}
+              </span>
+              <span>{Math.round(metadata.confidence_score * 100)}%</span>
             </div>
           )}
 

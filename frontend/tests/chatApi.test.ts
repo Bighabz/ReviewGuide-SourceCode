@@ -121,7 +121,9 @@ describe('chatApi', () => {
       await vi.runAllTimersAsync()
       await promise
 
-      expect(fetch).toHaveBeenCalledTimes(2) // Initial + 1 retry
+      // 3 calls: (1) initial attempt throws, (2) retry succeeds, (3) sendTelemetry
+      // fires a fire-and-forget fetch to /v1/telemetry/render on completion.
+      expect(fetch).toHaveBeenCalledTimes(3)
       expect(onComplete).toHaveBeenCalled()
       expect(onError).not.toHaveBeenCalled()
     })
