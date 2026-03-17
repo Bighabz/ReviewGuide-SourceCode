@@ -149,7 +149,7 @@ export default function Message({ message, isLast = false }: MessageProps) {
               // Regular user message: editorial bubble
               <>
                 <div className="relative group flex items-start justify-end max-w-full gap-2.5">
-                  <div className="px-4 py-3 rounded-2xl rounded-tr-md bg-[var(--primary)] text-white shadow-card">
+                  <div className="px-4 py-3 rounded-tl-[20px] rounded-tr-[20px] rounded-br-[4px] rounded-bl-[20px] bg-[var(--primary)] text-white shadow-card max-w-[80%]">
                     <p className="whitespace-pre-wrap text-[15px] leading-relaxed">
                       {message.content}
                     </p>
@@ -170,78 +170,104 @@ export default function Message({ message, isLast = false }: MessageProps) {
             )
           ) : (
             <div className="w-full">
-              {/* Status indicator — shown while tools are working */}
-              {!message.content && message.isThinking && (
-                <div className="flex items-center gap-2 py-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-pulse" />
-                  <span className="stream-status-text tracking-tight">
-                    {message.statusText || 'Thinking...'}
-                  </span>
+              {/* AI bubble wrapper */}
+              <div
+                className="rounded-tl-[4px] rounded-tr-[20px] rounded-br-[20px] rounded-bl-[20px] border border-[var(--border)] p-4"
+                style={{ background: 'var(--surface-elevated)', maxWidth: '85%' }}
+              >
+                {/* ReviewGuide byline */}
+                <div className="text-[12px] font-semibold mb-2" style={{ color: 'var(--primary)' }}>
+                  ✦ ReviewGuide
                 </div>
-              )}
 
-              {/* 1. Render text content FIRST (brief summary) */}
-              {message.content && (
-                <div className="w-full">
-                  <div className="prose prose-sm sm:prose-base max-w-none
-                      text-[var(--text)]
-                      prose-headings:font-serif prose-headings:tracking-tight prose-headings:text-[var(--text)]
-                      prose-p:text-[var(--text)] prose-p:leading-relaxed prose-p:text-[15px]
-                      prose-strong:text-[var(--text)] prose-strong:font-semibold
-                      prose-li:text-[var(--text)] prose-li:marker:text-[var(--text-muted)]
-                      prose-pre:bg-[var(--surface)] prose-pre:border prose-pre:border-[var(--border)] prose-pre:rounded-xl
-                      prose-a:text-[var(--primary)] prose-a:no-underline hover:prose-a:underline"
-                  >
-                    <ReactMarkdown>{message.content}</ReactMarkdown>
+                {/* Status indicator — shown while tools are working */}
+                {!message.content && message.isThinking && (
+                  <div className="flex items-center gap-2 py-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-pulse" />
+                    <span className="stream-status-text tracking-tight">
+                      {message.statusText || 'Thinking...'}
+                    </span>
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* 2. Render all UI blocks via registry-driven dispatcher */}
-              <UIBlocks
-                blocks={normalizeBlocks(message.ui_blocks ?? [])}
-                itinerary={message.itinerary}
-              />
-
-              {/* 3. Render clarifier follow-up questions (structured slot-filling) */}
-              {message.followups && typeof message.followups === 'object' && !Array.isArray(message.followups) && (
-                <div className="w-full mt-5">
-                  <div className="border border-[var(--border)] rounded-xl p-4 bg-[var(--surface)]">
-                    {message.followups.intro && (
-                      <p className="text-sm font-medium text-[var(--text)] mb-3">
-                        {message.followups.intro}
-                      </p>
-                    )}
-                    <div className="space-y-1.5">
-                      {message.followups.questions && message.followups.questions.map((q: { slot: string; question: string }, idx: number) => (
-                        <button
-                          key={idx}
-                          className="w-full text-left px-3.5 py-2.5 rounded-lg border border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)] hover:bg-[var(--primary-light)] transition-all text-sm text-[var(--text)] flex items-center justify-between group"
-                          onClick={() => {
-                            const event = new CustomEvent('sendSuggestion', {
-                              detail: { question: q.question }
-                            })
-                            window.dispatchEvent(event)
-                          }}
-                        >
-                          <span>{q.question}</span>
-                          <ArrowRight size={14} strokeWidth={1.5} className="opacity-0 group-hover:opacity-100 transition-opacity text-[var(--primary)]" />
-                        </button>
-                      ))}
+                {/* 1. Render text content FIRST (brief summary) */}
+                {message.content && (
+                  <div className="w-full">
+                    <div className="prose prose-sm sm:prose-base max-w-none
+                        text-[var(--text)]
+                        prose-headings:font-serif prose-headings:tracking-tight prose-headings:text-[var(--text)]
+                        prose-p:text-[var(--text)] prose-p:leading-relaxed prose-p:text-[15px]
+                        prose-strong:text-[var(--text)] prose-strong:font-semibold
+                        prose-li:text-[var(--text)] prose-li:marker:text-[var(--text-muted)]
+                        prose-pre:bg-[var(--surface)] prose-pre:border prose-pre:border-[var(--border)] prose-pre:rounded-xl
+                        prose-a:text-[var(--primary)] prose-a:no-underline hover:prose-a:underline"
+                    >
+                      <ReactMarkdown>{message.content}</ReactMarkdown>
                     </div>
-                    {message.followups.closing && (
-                      <p className="mt-3 text-xs italic text-[var(--text-muted)]">
-                        {message.followups.closing}
-                      </p>
-                    )}
                   </div>
-                </div>
-              )}
+                )}
 
-              {/* RFC §2.4: next_suggestions — sorted suggestion chips with category labels */}
+                {/* 2. Render all UI blocks via registry-driven dispatcher */}
+                <UIBlocks
+                  blocks={normalizeBlocks(message.ui_blocks ?? [])}
+                  itinerary={message.itinerary}
+                />
+
+                {/* 3. Render clarifier follow-up questions (structured slot-filling) */}
+                {message.followups && typeof message.followups === 'object' && !Array.isArray(message.followups) && (
+                  <div className="w-full mt-5">
+                    <div className="border border-[var(--border)] rounded-xl p-4 bg-[var(--surface)]">
+                      {message.followups.intro && (
+                        <p className="text-sm font-medium text-[var(--text)] mb-3">
+                          {message.followups.intro}
+                        </p>
+                      )}
+                      <div className="space-y-1.5">
+                        {message.followups.questions && message.followups.questions.map((q: { slot: string; question: string }, idx: number) => (
+                          <button
+                            key={idx}
+                            className="w-full text-left px-3.5 py-2.5 rounded-lg border border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)] hover:bg-[var(--primary-light)] transition-all text-sm text-[var(--text)] flex items-center justify-between group"
+                            onClick={() => {
+                              const event = new CustomEvent('sendSuggestion', {
+                                detail: { question: q.question }
+                              })
+                              window.dispatchEvent(event)
+                            }}
+                          >
+                            <span>{q.question}</span>
+                            <ArrowRight size={14} strokeWidth={1.5} className="opacity-0 group-hover:opacity-100 transition-opacity text-[var(--primary)]" />
+                          </button>
+                        ))}
+                      </div>
+                      {message.followups.closing && (
+                        <p className="mt-3 text-xs italic text-[var(--text-muted)]">
+                          {message.followups.closing}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* RFC §2.3: degraded completeness indicator */}
+                {message.completeness === 'degraded' && (
+                  <MessageRecoveryUI
+                    completeness="degraded"
+                  />
+                )}
+
+                {/* Timestamp for assistant */}
+                <div
+                  className="text-[10px] text-[var(--text-muted)] mt-2 ml-0.5"
+                  title={formatFullTimestamp(message.timestamp)}
+                >
+                  {relativeTime}
+                </div>
+              </div>
+
+              {/* RFC §2.4: next_suggestions — horizontal pill chips OUTSIDE the bubble */}
               {message.next_suggestions && message.next_suggestions.length > 0 && (
                 <div
-                  className="w-full mt-5 space-y-1.5"
+                  className="flex flex-row flex-wrap gap-2 mt-3"
                   data-testid="next-suggestions-container"
                 >
                   {sortedSuggestions.map((suggestion, idx) => (
@@ -249,7 +275,7 @@ export default function Message({ message, isLast = false }: MessageProps) {
                       key={suggestion.id}
                       data-testid={`suggestion-chip-${idx}`}
                       data-category={suggestion.category}
-                      className="group flex items-start w-full text-left gap-3 px-3.5 py-2.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--primary)] hover:bg-[var(--primary-light)] transition-all"
+                      className="rounded-[20px] border border-[var(--primary)] text-[var(--primary)] bg-transparent px-4 py-2 text-[13px] font-medium transition-all hover:bg-[var(--primary-light)]"
                       onClick={() => {
                         trackSuggestionClick(suggestion, message.id, idx)
                         const event = new CustomEvent('sendSuggestion', {
@@ -258,23 +284,7 @@ export default function Message({ message, isLast = false }: MessageProps) {
                         window.dispatchEvent(event)
                       }}
                     >
-                      {/* Category label — subtle editorial pill */}
-                      {suggestion.category && (
-                        <span
-                          className="flex-shrink-0 mt-0.5 text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--surface-hover)] text-[var(--text-muted)] border border-[var(--border)] whitespace-nowrap"
-                          data-testid={`suggestion-category-label-${idx}`}
-                        >
-                          {CATEGORY_LABELS[suggestion.category] ?? suggestion.category}
-                        </span>
-                      )}
-                      <span className="flex-1 text-sm text-[var(--text)] leading-snug">
-                        {suggestion.question}
-                      </span>
-                      <ArrowRight
-                        size={14}
-                        strokeWidth={1.5}
-                        className="flex-shrink-0 mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity text-[var(--primary)]"
-                      />
+                      {suggestion.question}
                     </button>
                   ))}
                 </div>
@@ -286,24 +296,6 @@ export default function Message({ message, isLast = false }: MessageProps) {
                   or ask me anything
                 </p>
               )}
-
-              {/* RFC §2.3: degraded completeness indicator — shown when partial content was preserved
-                   after a stream interruption. No action buttons here; the recovery UI in
-                   ChatContainer handles the initial recovery actions. Once dismissed (onShowPartial),
-                   the message remains with this subtle indicator to signal incomplete results. */}
-              {message.completeness === 'degraded' && (
-                <MessageRecoveryUI
-                  completeness="degraded"
-                />
-              )}
-
-              {/* Timestamp for assistant */}
-              <div
-                className="text-[10px] text-[var(--text-muted)] mt-2 ml-0.5"
-                title={formatFullTimestamp(message.timestamp)}
-              >
-                {relativeTime}
-              </div>
             </div>
           )}
         </div>

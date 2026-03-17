@@ -16,7 +16,7 @@ export interface NormalizedBlock {
 /** Map old block_type values to canonical type names */
 const BLOCK_TYPE_MAP: Record<string, string> = {
     carousel: 'carousel',
-    product_cards: 'product_cards',
+    product_cards: 'inline_product_card',
     product_review: 'product_review',
     product_recommendations: 'product_recommendations',
     affiliate_links: 'affiliate_links',

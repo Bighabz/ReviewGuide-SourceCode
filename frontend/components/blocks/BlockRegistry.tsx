@@ -23,6 +23,8 @@ import DestinationInfo from '@/components/DestinationInfo'
 import CarRentalCard from '@/components/CarRentalCard'
 import ReviewSources from '@/components/ReviewSources'
 import PriceComparison from '@/components/PriceComparison'
+import InlineProductCard from '@/components/InlineProductCard'
+import SourceCitations from '@/components/SourceCitations'
 import DOMPurify from 'dompurify'
 
 /** Each renderer receives the normalized block and returns JSX or null */
@@ -98,8 +100,11 @@ const BLOCK_RENDERERS: Record<string, BlockRenderer> = {
         <ListBlock title={b.title ?? 'Recommended Restaurants'} items={(b.data as string[]) ?? []} type="restaurants" />
     ),
     destination_info: (b) => <DestinationInfo data={(b.data as any) ?? {}} />,
+    inline_product_card: (b) => (
+        <InlineProductCard products={(b.data as any)?.products ?? []} />
+    ),
     review_sources: (b) => (
-        <ReviewSources data={(b.data as any) ?? { products: [] }} title={b.title} />
+        <SourceCitations data={(b.data as any) ?? { products: [] }} title={b.title} />
     ),
     price_comparison: (b) => (
         <div>
