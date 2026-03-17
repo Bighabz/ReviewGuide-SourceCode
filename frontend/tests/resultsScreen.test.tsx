@@ -53,6 +53,9 @@ vi.mock('lucide-react', () => ({
   Star: () => <span data-testid="icon-star" />,
   BookOpen: () => <span data-testid="icon-bookopen" />,
   ChevronDown: () => <span data-testid="icon-chevron-down" />,
+  Bookmark: () => <span data-testid="icon-bookmark" />,
+  RefreshCw: () => <span data-testid="icon-refresh" />,
+  ShoppingCart: () => <span data-testid="icon-shopping-cart" />,
 }))
 
 // ── Shared mock data ────────────────────────────────────────────────────────
@@ -245,15 +248,7 @@ describe('extractResultsData — source extraction and deduplication', () => {
   })
 })
 
-// ── Component tests — RED until Plan 02 implements the components ─────────────
-// These will fail with "Cannot find module" or render errors.
-
-// Mock the ResultsPage component — it does not exist until Plan 02.
-// Tests that render it will fail with "not a function" / null render errors (RED).
-// This stub lets the file parse and the extractResultsData tests run GREEN.
-vi.mock('@/app/results/[id]/page', () => ({
-  default: null,
-}))
+// ── Component tests — GREEN after Plan 02 implements the components ──────────
 
 import ResultsPage from '@/app/results/[id]/page'
 
