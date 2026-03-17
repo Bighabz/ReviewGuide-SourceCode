@@ -46,8 +46,8 @@
 
 ### Placeholder Routes
 
-- [ ] **PLCH-01**: `/saved` route renders placeholder page indicating feature coming soon
-- [ ] **PLCH-02**: `/compare` route renders placeholder page indicating feature coming soon
+- [x] **PLCH-01**: `/saved` route renders placeholder page indicating feature coming soon
+- [x] **PLCH-02**: `/compare` route renders placeholder page indicating feature coming soon
 
 ## Future Requirements
 
@@ -110,8 +110,8 @@
 | RES-06 | Phase 15 | Complete |
 | RESP-01 | Phase 15 | Complete |
 | RESP-02 | Phase 15 | Complete |
-| PLCH-01 | Phase 16 | Pending |
-| PLCH-02 | Phase 16 | Pending |
+| PLCH-01 | Phase 16 | Complete |
+| PLCH-02 | Phase 16 | Complete |
 
 **Coverage:**
 - v2.0 requirements: 26 total
