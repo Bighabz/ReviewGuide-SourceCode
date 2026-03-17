@@ -259,7 +259,9 @@ Plans:
   2. Navigating to `/compare` shows a polished placeholder page with a "Coming soon" message — no errors, no blank screen, no thrown exceptions
   3. Running `next build` completes without errors and all new routes appear as "(Static)" in the build output (not "ƒ" dynamic)
   4. On a real iOS device, the bottom tab bar does not overlap the keyboard when the chat input is focused, dark mode renders all new components correctly, and carousel swipe works on `/results/:id`
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 16-01-PLAN.md — Placeholder pages (/saved, /compare), nav href updates, build QA (PLCH-01, PLCH-02)
 
 ## Progress
 
@@ -283,4 +285,4 @@ v2.0 phases execute sequentially: 12 -> 13 -> 14 -> 15 -> 16. Phase 12 is a hard
 | 13. Discover Screen | v2.0 | 3/3 | Complete | 2026-03-17 |
 | 14. Chat Screen | 4/4 | Complete    | 2026-03-17 | - |
 | 15. Results Screen | 3/3 | Complete    | 2026-03-17 | - |
-| 16. Placeholder Routes and Build QA | v2.0 | 0/TBD | Not started | - |
+| 16. Placeholder Routes and Build QA | v2.0 | 0/1 | Not started | - |
