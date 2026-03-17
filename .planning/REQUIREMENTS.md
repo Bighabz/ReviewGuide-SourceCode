@@ -32,17 +32,17 @@
 
 ### Results
 
-- [ ] **RES-01**: User can navigate to `/results/:id` to see full results for a completed research session
-- [ ] **RES-02**: Product cards display in 3-column grid on desktop, horizontal scroll on mobile
-- [ ] **RES-03**: Product cards show real Amazon images, prices, and affiliate links from curated static data
-- [ ] **RES-04**: Each product card shows rank badge (#1 Top Pick, #2 Best Value, etc.), score bar, and CTA button
-- [ ] **RES-05**: Quick actions panel shows: Compare side by side, Export to list, Share results
-- [ ] **RES-06**: Sources analyzed section shows colored dots, source names, and clickable article links
+- [x] **RES-01**: User can navigate to `/results/:id` to see full results for a completed research session
+- [x] **RES-02**: Product cards display in 3-column grid on desktop, horizontal scroll on mobile
+- [x] **RES-03**: Product cards show real Amazon images, prices, and affiliate links from curated static data
+- [x] **RES-04**: Each product card shows rank badge (#1 Top Pick, #2 Best Value, etc.), score bar, and CTA button
+- [x] **RES-05**: Quick actions panel shows: Compare side by side, Export to list, Share results
+- [x] **RES-06**: Sources analyzed section shows colored dots, source names, and clickable article links
 
 ### Responsive
 
-- [ ] **RESP-01**: All screens render mobile-first single-column layout below 768px
-- [ ] **RESP-02**: Desktop layout (>=1024px) shows 3-column product grids, persistent sidebar, top nav, max 1200px content
+- [x] **RESP-01**: All screens render mobile-first single-column layout below 768px
+- [x] **RESP-02**: Desktop layout (>=1024px) shows 3-column product grids, persistent sidebar, top nav, max 1200px content
 
 ### Placeholder Routes
 
@@ -102,14 +102,14 @@
 | CHAT-04 | Phase 14 | Complete |
 | CHAT-05 | Phase 14 | Complete |
 | CHAT-06 | Phase 14 | Complete |
-| RES-01 | Phase 15 | Pending |
-| RES-02 | Phase 15 | Pending |
-| RES-03 | Phase 15 | Pending |
-| RES-04 | Phase 15 | Pending |
-| RES-05 | Phase 15 | Pending |
-| RES-06 | Phase 15 | Pending |
-| RESP-01 | Phase 15 | Pending |
-| RESP-02 | Phase 15 | Pending |
+| RES-01 | Phase 15 | Complete |
+| RES-02 | Phase 15 | Complete |
+| RES-03 | Phase 15 | Complete |
+| RES-04 | Phase 15 | Complete |
+| RES-05 | Phase 15 | Complete |
+| RES-06 | Phase 15 | Complete |
+| RESP-01 | Phase 15 | Complete |
+| RESP-02 | Phase 15 | Complete |
 | PLCH-01 | Phase 16 | Pending |
 | PLCH-02 | Phase 16 | Pending |
 
