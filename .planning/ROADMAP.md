@@ -177,7 +177,7 @@ Plans:
 
 - [x] **Phase 12: Navigation Shell** - Mobile bottom tab bar, desktop top nav, central FAB, iOS safe area, layout baseline (completed 2026-03-17)
 - [x] **Phase 13: Discover Screen** - Unified entry point replacing Browse/Chat split — hero search, category chips, trending cards (completed 2026-03-17)
-- [ ] **Phase 14: Chat Screen** - Restructured AI responses, compact inline product cards, suggestion chips, source citations
+- [x] **Phase 14: Chat Screen** - Restructured AI responses, compact inline product cards, suggestion chips, source citations (completed 2026-03-17)
 - [ ] **Phase 15: Results Screen** - Dedicated `/results/:id` route with desktop split panel and mobile full-width layouts
 - [ ] **Phase 16: Placeholder Routes and Build QA** - `/saved`, `/compare` stubs, Suspense wrappers, `next build` clean pass
 
@@ -277,6 +277,6 @@ v2.0 phases execute sequentially: 12 -> 13 -> 14 -> 15 -> 16. Phase 12 is a hard
 | 11. Viator + CJ Expansion | v1.0 | 0/TBD | Not started | - |
 | 12. Navigation Shell | v2.0 | 3/3 | Complete | 2026-03-17 |
 | 13. Discover Screen | v2.0 | 3/3 | Complete | 2026-03-17 |
-| 14. Chat Screen | 3/4 | In Progress|  | - |
+| 14. Chat Screen | 4/4 | Complete   | 2026-03-17 | - |
 | 15. Results Screen | v2.0 | 0/TBD | Not started | - |
 | 16. Placeholder Routes and Build QA | v2.0 | 0/TBD | Not started | - |
