@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { ArrowLeft, User, Maximize2 } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useChatStatus } from '@/lib/chatStatusContext'
+import { CHAT_CONFIG } from '@/lib/constants'
 
 export default function MobileHeader() {
   const pathname = usePathname()
@@ -12,11 +13,20 @@ export default function MobileHeader() {
   const { isStreaming, statusText, sessionTitle } = useChatStatus()
 
   const isChatRoute = pathname?.startsWith('/chat')
+  const isResultsRoute = pathname?.startsWith('/results')
+  const showChatHeader = isChatRoute || isResultsRoute
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null
     setTheme(savedTheme || 'light')
   }, [])
+
+  const handleExpandClick = () => {
+    const sessionId = localStorage.getItem(CHAT_CONFIG.SESSION_STORAGE_KEY)
+    if (sessionId) {
+      router.push(`/results/${sessionId}`)
+    }
+  }
 
   return (
     <header
@@ -26,14 +36,14 @@ export default function MobileHeader() {
         borderBottom: '1px solid var(--border)',
       }}
     >
-      {isChatRoute ? (
+      {showChatHeader ? (
         <>
-          {/* Back arrow */}
+          {/* Back arrow — goes to /chat from results, or / from chat */}
           <button
-            onClick={() => router.push('/')}
+            onClick={() => router.push(isResultsRoute ? '/chat' : '/')}
             className="flex items-center justify-center w-8 h-8 rounded-lg -ml-1"
             style={{ color: 'var(--text)' }}
-            aria-label="Back to Discover"
+            aria-label={isResultsRoute ? 'Back to Chat' : 'Back to Discover'}
           >
             <ArrowLeft size={20} strokeWidth={1.5} />
           </button>
@@ -56,16 +66,22 @@ export default function MobileHeader() {
             )}
           </div>
 
-          {/* Expand icon — Phase 15 placeholder */}
-          <button
-            className="flex items-center justify-center w-8 h-8 rounded-lg"
-            style={{ color: 'var(--text-muted)' }}
-            aria-label="Expand results"
-            title="Results view coming soon"
-            onClick={() => {}}
-          >
-            <Maximize2 size={16} strokeWidth={1.5} />
-          </button>
+          {/* Expand icon — hidden on /results (already on results page) */}
+          {!isResultsRoute && (
+            <button
+              className="flex items-center justify-center w-8 h-8 rounded-lg"
+              style={{ color: 'var(--text-muted)' }}
+              aria-label="Expand results"
+              onClick={handleExpandClick}
+            >
+              <Maximize2 size={16} strokeWidth={1.5} />
+            </button>
+          )}
+
+          {/* Spacer to keep title centered when expand icon hidden */}
+          {isResultsRoute && (
+            <div className="w-8 h-8" />
+          )}
         </>
       ) : (
         <>

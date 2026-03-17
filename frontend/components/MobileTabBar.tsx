@@ -118,7 +118,7 @@ export default function MobileTabBar() {
       return pathname?.startsWith('/browse') || pathname === '/'
     }
     if (tabId === 'ask') {
-      return pathname?.startsWith('/chat')
+      return pathname?.startsWith('/chat') || pathname?.startsWith('/results')
     }
     if (href) {
       return pathname?.startsWith(href)
