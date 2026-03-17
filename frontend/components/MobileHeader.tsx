@@ -1,13 +1,15 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
-import { ArrowLeft, User } from 'lucide-react'
+import { ArrowLeft, User, Maximize2 } from 'lucide-react'
 import { useState, useEffect } from 'react'
+import { useChatStatus } from '@/lib/chatStatusContext'
 
 export default function MobileHeader() {
   const pathname = usePathname()
   const router = useRouter()
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
+  const { isStreaming, statusText, sessionTitle } = useChatStatus()
 
   const isChatRoute = pathname?.startsWith('/chat')
 
@@ -26,9 +28,9 @@ export default function MobileHeader() {
     >
       {isChatRoute ? (
         <>
-          {/* Back arrow for chat routes */}
+          {/* Back arrow */}
           <button
-            onClick={() => router.push('/browse')}
+            onClick={() => router.push('/')}
             className="flex items-center justify-center w-8 h-8 rounded-lg -ml-1"
             style={{ color: 'var(--text)' }}
             aria-label="Back to Discover"
@@ -36,21 +38,39 @@ export default function MobileHeader() {
             <ArrowLeft size={20} strokeWidth={1.5} />
           </button>
 
-          {/* Conversation title — centered */}
-          <span
-            className="flex-1 text-center text-sm font-medium truncate px-2"
-            style={{ color: 'var(--text)' }}
-          >
-            Research Session
-          </span>
+          {/* Dynamic title + status */}
+          <div className="flex-1 text-center px-2 min-w-0">
+            <div
+              className="text-sm font-medium truncate"
+              style={{ color: 'var(--text)' }}
+            >
+              {sessionTitle}
+            </div>
+            {isStreaming && statusText && (
+              <div
+                className="text-[12px] truncate"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                {statusText}
+              </div>
+            )}
+          </div>
 
-          {/* Spacer to balance the back button */}
-          <div className="w-8" />
+          {/* Expand icon — Phase 15 placeholder */}
+          <button
+            className="flex items-center justify-center w-8 h-8 rounded-lg"
+            style={{ color: 'var(--text-muted)' }}
+            aria-label="Expand results"
+            title="Results view coming soon"
+            onClick={() => {}}
+          >
+            <Maximize2 size={16} strokeWidth={1.5} />
+          </button>
         </>
       ) : (
         <>
           {/* Logo */}
-          <a href="/browse" className="flex items-center shrink-0">
+          <a href="/" className="flex items-center shrink-0">
             <img
               src={
                 theme === 'dark'

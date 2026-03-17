@@ -13,6 +13,7 @@ import { saveRecentSearch } from '@/lib/recentSearches'
 import { useStreamReducer } from '@/hooks/useStreamReducer'
 import { TOOL_BLOCK_MAP, BLOCK_SKELETON_CONFIG } from '@/lib/skeletonMap'
 import type { SkeletonBlockType } from '@/components/BlockSkeleton'
+import { useChatStatus } from '@/lib/chatStatusContext'
 
 export interface FollowupQuestion {
   slot: string
@@ -88,6 +89,9 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
   // Track which message ID is currently being updated (can change if create_new_message is sent)
   const currentMessageIdRef = useRef<string>('')
 
+  // ChatStatusContext — publish streaming state and session title to MobileHeader
+  const { setIsStreaming: setCtxStreaming, setStatusText: setCtxStatusText, setSessionTitle } = useChatStatus()
+
   // RFC §2.3: inline recovery UI state
   // interruptedMessageId — the assistant message that was interrupted (null when dismissed)
   const [interruptedMessageId, setInterruptedMessageId] = useState<string | null>(null)
@@ -109,6 +113,30 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
       clearTimeout(timeoutId)
     }
   }, [])
+
+  // Sync isStreaming state to ChatStatusContext (for MobileHeader)
+  useEffect(() => {
+    setCtxStreaming(isStreaming)
+  }, [isStreaming, setCtxStreaming])
+
+  // Sync active statusText to ChatStatusContext (for MobileHeader)
+  useEffect(() => {
+    const thinkingMsg = messages.find(m => m.isThinking && m.statusText)
+    setCtxStatusText(thinkingMsg?.statusText ?? '')
+  }, [messages, setCtxStatusText])
+
+  // Derive session title from first user message (for MobileHeader)
+  useEffect(() => {
+    const firstUserMsg = messages.find(m => m.role === 'user')
+    if (firstUserMsg) {
+      const title = firstUserMsg.content.length > 30
+        ? firstUserMsg.content.slice(0, 30) + '...'
+        : firstUserMsg.content
+      setSessionTitle(title)
+    } else {
+      setSessionTitle('New Research')
+    }
+  }, [messages, setSessionTitle])
 
   // Load from localStorage on mount and fetch from database if needed
   useEffect(() => {
