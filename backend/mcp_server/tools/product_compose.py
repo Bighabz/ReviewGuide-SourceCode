@@ -875,6 +875,37 @@ FORMAT REQUIREMENTS:
 
         logger.info(f"[product_compose] Built {review_card_count} unified product_review cards")
 
+        # ── Restore review_sources UI block (deleted in bd4b5c3) ──
+        if review_data and review_bundles:
+            review_products = []
+            for product_name, bundle in review_bundles.items():
+                review_products.append({
+                    "name": product_name,
+                    "avg_rating": bundle.get("avg_rating", 0),
+                    "total_reviews": bundle.get("total_reviews", 0),
+                    "consensus": "",  # Intentionally empty — blog text handles prose
+                    "editorial_label": editorial_labels.get(product_name),
+                    "sources": [
+                        {
+                            "site_name": s.get("site_name", ""),
+                            "url": s.get("url", ""),
+                            "title": s.get("title", ""),
+                            "snippet": s.get("snippet", ""),
+                            "rating": s.get("rating"),
+                            "favicon_url": s.get("favicon_url", ""),
+                            "date": s.get("date"),
+                        }
+                        for s in bundle.get("sources", [])[:6]
+                    ],
+                })
+            if review_products:
+                ui_blocks.append({
+                    "type": "review_sources",
+                    "title": "Sources",
+                    "data": {"products": review_products}
+                })
+                logger.info(f"[product_compose] Added review_sources block with {len(review_products)} products")
+
         # ── Build blog-style assistant_text ──
 
         blog_article = _get_result('blog_article', '')
