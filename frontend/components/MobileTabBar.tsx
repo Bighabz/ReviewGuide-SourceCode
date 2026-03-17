@@ -14,7 +14,7 @@ const ACCENT_COLORS = [
 ] as const
 
 const TABS = [
-  { id: 'discover', label: 'Discover', icon: Home, href: '/browse' },
+  { id: 'discover', label: 'Discover', icon: Home, href: '/' },
   { id: 'saved', label: 'Saved', icon: Bookmark, href: '/browse' },
   { id: 'ask', label: 'Ask', icon: Plus, href: null },
   { id: 'compare', label: 'Compare', icon: LayoutGrid, href: '/browse' },

@@ -121,7 +121,7 @@ export default function UnifiedTopbar({
           </button>
 
           {/* Logo — Editorial serif wordmark */}
-          <Link href="/browse" className="flex items-center shrink-0 group">
+          <Link href="/" className="flex items-center shrink-0 group">
             <img
               src={theme === 'dark'
                 ? '/images/1815e5dc-c4db-4248-9aeb-0a815fd87a4b.png'
@@ -135,7 +135,7 @@ export default function UnifiedTopbar({
           {/* Navigation — Refined text links */}
           <nav className="hidden sm:flex items-center gap-1 ml-2">
             <Link
-              href="/browse"
+              href="/"
               className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'discover'
                 ? 'text-[var(--text)] bg-[var(--surface)]'
                 : 'text-[var(--text-muted)] hover:text-[var(--text)]'
