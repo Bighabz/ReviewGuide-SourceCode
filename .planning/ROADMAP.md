@@ -266,7 +266,7 @@ v2.0 phases execute sequentially: 12 -> 13 -> 14 -> 15 -> 16. Phase 12 is a hard
 | 9. Top Pick Block + Help Me Decide | v1.0 | 0/TBD | Not started | - |
 | 10. Impact.com Provider | v1.0 | 0/TBD | Not started | - |
 | 11. Viator + CJ Expansion | v1.0 | 0/TBD | Not started | - |
-| 12. Navigation Shell | 1/3 | In Progress|  | - |
+| 12. Navigation Shell | 2/3 | In Progress|  | - |
 | 13. Discover Screen | v2.0 | 0/TBD | Not started | - |
 | 14. Chat Screen | v2.0 | 0/TBD | Not started | - |
 | 15. Results Screen | v2.0 | 0/TBD | Not started | - |
