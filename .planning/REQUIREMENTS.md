@@ -15,11 +15,11 @@
 
 ### Discover
 
-- [ ] **DISC-01**: User sees editorial hero headline with serif italic accent and search bar on `/`
-- [ ] **DISC-02**: User can scroll horizontal category chips (Popular, Tech, Travel, Kitchen, Fitness, etc.)
-- [ ] **DISC-03**: User sees trending research cards with icons, titles, subtitles — tapping navigates to chat
-- [ ] **DISC-04**: User sees personalized "For You" chip based on recent search history
-- [ ] **DISC-05**: Search bar tap navigates to chat screen with input focused
+- [x] **DISC-01**: User sees editorial hero headline with serif italic accent and search bar on `/`
+- [x] **DISC-02**: User can scroll horizontal category chips (Popular, Tech, Travel, Kitchen, Fitness, etc.)
+- [x] **DISC-03**: User sees trending research cards with icons, titles, subtitles — tapping navigates to chat
+- [x] **DISC-04**: User sees personalized "For You" chip based on recent search history
+- [x] **DISC-05**: Search bar tap navigates to chat screen with input focused
 
 ### Chat
 
@@ -91,11 +91,11 @@
 | NAV-03 | Phase 12 | Complete |
 | NAV-04 | Phase 12 | Complete |
 | NAV-05 | Phase 12 | Complete |
-| DISC-01 | Phase 13 | Pending |
-| DISC-02 | Phase 13 | Pending |
-| DISC-03 | Phase 13 | Pending |
-| DISC-04 | Phase 13 | Pending |
-| DISC-05 | Phase 13 | Pending |
+| DISC-01 | Phase 13 | Complete |
+| DISC-02 | Phase 13 | Complete |
+| DISC-03 | Phase 13 | Complete |
+| DISC-04 | Phase 13 | Complete |
+| DISC-05 | Phase 13 | Complete |
 | CHAT-01 | Phase 14 | Pending |
 | CHAT-02 | Phase 14 | Pending |
 | CHAT-03 | Phase 14 | Pending |
