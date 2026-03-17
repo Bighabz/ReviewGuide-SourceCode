@@ -172,17 +172,28 @@ async def product_affiliate(
                 results = []
                 for i, product_name in enumerate(products_to_search):
                     if i < len(curated_amazon_links):
-                        link = curated_amazon_links[i]
+                        curated = curated_amazon_links[i]
+                        # Support both old format (string URL) and new format (dict with metadata)
+                        if isinstance(curated, dict):
+                            link = curated.get("url", "")
+                            title = curated.get("title", product_name)
+                            price = curated.get("price", 0)
+                            image = curated.get("image_url", "")
+                        else:
+                            link = curated
+                            title = product_name
+                            price = 0
+                            image = ""
                         results.append({
                             "product_name": product_name,
                             "offers": [{
                                 "merchant": "Amazon",
-                                "price": 0,
+                                "price": price,
                                 "currency": "USD",
                                 "url": link,
                                 "condition": "new",
-                                "title": product_name,
-                                "image_url": "",
+                                "title": title,
+                                "image_url": image,
                                 "rating": None,
                                 "review_count": None,
                                 "source": "amazon",
