@@ -1,4 +1,4 @@
-import Footer from '@/components/Footer'
+import NavLayout from '@/components/NavLayout'
 import type { Metadata, Viewport } from 'next'
 import { DM_Sans, Instrument_Serif } from 'next/font/google'
 import './globals.css'
@@ -16,6 +16,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
+  viewportFit: 'cover',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#ffffff' },
     { media: '(prefers-color-scheme: dark)', color: '#0a0e1a' }
@@ -42,10 +43,7 @@ export default function RootLayout({
         />
       </head>
       <body className={`${dmSans.variable} ${instrumentSerif.variable} font-sans`} suppressHydrationWarning>
-        <div className="flex flex-col min-h-screen">
-          <div className="flex-1">{children}</div>
-          <Footer />
-        </div>
+        <NavLayout>{children}</NavLayout>
       </body>
     </html>
   )
