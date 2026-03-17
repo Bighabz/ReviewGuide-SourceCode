@@ -8,7 +8,7 @@
 ### Navigation
 
 - [ ] **NAV-01**: User sees bottom tab bar with 5 tabs (Discover, Saved, Ask, Compare, Profile) on mobile (<768px)
-- [ ] **NAV-02**: User sees desktop top navigation bar with logo and nav links on screens ≥1024px
+- [ ] **NAV-02**: User sees desktop top navigation bar with logo and nav links on screens >=1024px
 - [ ] **NAV-03**: User can tap central FAB button to start a new research chat from any screen
 - [ ] **NAV-04**: User sees animated page transitions between routes
 - [ ] **NAV-05**: Bottom tab bar handles iOS safe area insets correctly
@@ -42,7 +42,7 @@
 ### Responsive
 
 - [ ] **RESP-01**: All screens render mobile-first single-column layout below 768px
-- [ ] **RESP-02**: Desktop layout (≥1024px) shows 3-column product grids, persistent sidebar, top nav, max 1200px content
+- [ ] **RESP-02**: Desktop layout (>=1024px) shows 3-column product grids, persistent sidebar, top nav, max 1200px content
 
 ### Placeholder Routes
 
@@ -86,38 +86,38 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| NAV-01 | TBD | Pending |
-| NAV-02 | TBD | Pending |
-| NAV-03 | TBD | Pending |
-| NAV-04 | TBD | Pending |
-| NAV-05 | TBD | Pending |
-| DISC-01 | TBD | Pending |
-| DISC-02 | TBD | Pending |
-| DISC-03 | TBD | Pending |
-| DISC-04 | TBD | Pending |
-| DISC-05 | TBD | Pending |
-| CHAT-01 | TBD | Pending |
-| CHAT-02 | TBD | Pending |
-| CHAT-03 | TBD | Pending |
-| CHAT-04 | TBD | Pending |
-| CHAT-05 | TBD | Pending |
-| CHAT-06 | TBD | Pending |
-| RES-01 | TBD | Pending |
-| RES-02 | TBD | Pending |
-| RES-03 | TBD | Pending |
-| RES-04 | TBD | Pending |
-| RES-05 | TBD | Pending |
-| RES-06 | TBD | Pending |
-| RESP-01 | TBD | Pending |
-| RESP-02 | TBD | Pending |
-| PLCH-01 | TBD | Pending |
-| PLCH-02 | TBD | Pending |
+| NAV-01 | Phase 12 | Pending |
+| NAV-02 | Phase 12 | Pending |
+| NAV-03 | Phase 12 | Pending |
+| NAV-04 | Phase 12 | Pending |
+| NAV-05 | Phase 12 | Pending |
+| DISC-01 | Phase 13 | Pending |
+| DISC-02 | Phase 13 | Pending |
+| DISC-03 | Phase 13 | Pending |
+| DISC-04 | Phase 13 | Pending |
+| DISC-05 | Phase 13 | Pending |
+| CHAT-01 | Phase 14 | Pending |
+| CHAT-02 | Phase 14 | Pending |
+| CHAT-03 | Phase 14 | Pending |
+| CHAT-04 | Phase 14 | Pending |
+| CHAT-05 | Phase 14 | Pending |
+| CHAT-06 | Phase 14 | Pending |
+| RES-01 | Phase 15 | Pending |
+| RES-02 | Phase 15 | Pending |
+| RES-03 | Phase 15 | Pending |
+| RES-04 | Phase 15 | Pending |
+| RES-05 | Phase 15 | Pending |
+| RES-06 | Phase 15 | Pending |
+| RESP-01 | Phase 15 | Pending |
+| RESP-02 | Phase 15 | Pending |
+| PLCH-01 | Phase 16 | Pending |
+| PLCH-02 | Phase 16 | Pending |
 
 **Coverage:**
 - v2.0 requirements: 26 total
-- Mapped to phases: 0
-- Unmapped: 26 ⚠️
+- Mapped to phases: 26
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-16*
-*Last updated: 2026-03-16 after milestone v2.0 definition*
+*Last updated: 2026-03-16 after roadmap creation (phases 12-16)*

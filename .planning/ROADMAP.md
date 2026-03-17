@@ -1,10 +1,14 @@
-# Roadmap: ReviewGuide.ai v1.0
+# Roadmap: ReviewGuide.ai
 
-## Overview
+## Milestones
 
-ReviewGuide.ai is a working product with critical performance and data coverage issues. The roadmap moves in four layers: first, fix the 90-second response time that kills engagement (phase 1); second, fix broken features so every response is trustworthy (phases 2-4, parallelizable); third, secure Amazon's future before the hard API shutdown and add catch-all affiliate monetization (phases 5-7); fourth, upgrade conversational UX and expand providers (phases 8-11). Phases 2-4 can run in parallel. Phases 6-7 are gated on Skimlinks publisher approval — apply immediately.
+- 🚧 **v1.0 Core Platform** - Phases 1-11 (in progress)
+- 📋 **v2.0 Frontend UX Redesign** - Phases 12-16 (planned)
 
 ## Phases
+
+<details>
+<summary>🚧 v1.0 Core Platform (Phases 1-11) — In Progress</summary>
 
 **Phase Numbering:**
 - Integer phases (1, 2, 3): Planned milestone work
@@ -23,8 +27,6 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 9: Top Pick Block + Help Me Decide** - Add editorial top pick UI block and comparison intent detection
 - [ ] **Phase 10: Impact.com Provider** - Integrate Impact.com affiliate catalog for keyword product search
 - [ ] **Phase 11: Viator + CJ Expansion** - Add Viator activity provider and apply to high-value CJ advertisers
-
-## Phase Details
 
 ### Phase 1: Response Experience Overhaul
 **Goal**: Users see product cards within 5 seconds and a streaming blog narrative with buy links — not a 90-second "Thinking..." wall. True token streaming from OpenAI, progressive UI, parallelized backend.
@@ -165,21 +167,103 @@ Plans:
   4. Once a CJ advertiser approves the application, their products appear in CJ search results without any code change
 **Plans**: TBD
 
+</details>
+
+---
+
+### 📋 v2.0 Frontend UX Redesign (Phases 12-16)
+
+**Milestone Goal:** Complete frontend redesign — unified Discover → Chat → Results flow with mobile-first, app-like navigation and structured AI responses, evolving the editorial luxury aesthetic. No backend changes required.
+
+- [ ] **Phase 12: Navigation Shell** - Mobile bottom tab bar, desktop top nav, central FAB, iOS safe area, layout baseline
+- [ ] **Phase 13: Discover Screen** - Unified entry point replacing Browse/Chat split — hero search, category chips, trending cards
+- [ ] **Phase 14: Chat Screen** - Restructured AI responses, compact inline product cards, suggestion chips, source citations
+- [ ] **Phase 15: Results Screen** - Dedicated `/results/:id` route with desktop split panel and mobile full-width layouts
+- [ ] **Phase 16: Placeholder Routes and Build QA** - `/saved`, `/compare` stubs, Suspense wrappers, `next build` clean pass
+
+## Phase Details
+
+### Phase 12: Navigation Shell
+**Goal**: App-like navigation is in place on all screens — mobile gets a fixed bottom tab bar with central FAB, desktop keeps the existing top nav, and every new component is built on the correct `h-dvh` / CSS variable / dark mode baseline from day one.
+**Depends on**: Nothing (first phase — establishes layout context for all subsequent phases)
+**Requirements**: NAV-01, NAV-02, NAV-03, NAV-04, NAV-05
+**Success Criteria** (what must be TRUE):
+  1. On mobile (<768px), user sees a fixed bottom tab bar with 5 tabs (Discover, Saved, Ask, Compare, Profile) and a raised central FAB for Ask
+  2. On desktop (>=1024px), user sees the existing top navigation bar; the bottom tab bar is not visible
+  3. Tapping the central FAB from any screen navigates to `/chat?new=1` and starts a new research session
+  4. Animated page transitions play between routes — tabs animate in/out without full white-flash reloads
+  5. On an iPhone with a home indicator, the bottom tab bar does not overlap the home swipe gesture area (safe area inset respected)
+**Plans**: TBD
+
+### Phase 13: Discover Screen
+**Goal**: The app's entry point is a single editorial screen where users can start research, explore categories, or tap a trending topic — replacing the current split Browse/Chat landing pages.
+**Depends on**: Phase 12 (NavLayout must be in place for the Discover screen to render inside the correct navigation context)
+**Requirements**: DISC-01, DISC-02, DISC-03, DISC-04, DISC-05
+**Success Criteria** (what must be TRUE):
+  1. User lands on `/` and sees an editorial hero headline (serif italic accent) with a centered search bar — no separate Browse or Chat entry pages required
+  2. User can scroll a horizontal row of category chips (Popular, Tech, Travel, Kitchen, Fitness, and others) and tap one to start a focused research session
+  3. User sees at least 3 trending research cards (icon, title, subtitle); tapping any card navigates to chat with that query pre-loaded
+  4. User who has made a prior search sees a "For You" chip as the first chip in the category row
+  5. Tapping the search bar (not typing, just tapping) navigates to the chat screen with the input immediately focused and ready to type
+**Plans**: TBD
+
+### Phase 14: Chat Screen
+**Goal**: AI responses follow a predictable structure users can scan — summary, ranked product cards, source links, follow-up chips — and the chat UI is visually polished with correct bubble alignment and a live status indicator during streaming.
+**Depends on**: Phase 12 (NavLayout for ChatHeader on mobile), Phase 13 (Discover provides the entry path into Chat)
+**Requirements**: CHAT-01, CHAT-02, CHAT-03, CHAT-04, CHAT-05, CHAT-06
+**Success Criteria** (what must be TRUE):
+  1. An AI product response always renders in this order: editorial summary text, then compact inline product cards, then source citation links, then follow-up suggestion chips
+  2. Inline product cards are compact (no taller than 64px) and show image, rank number, product name, price, and a tappable affiliate link — all within one horizontal row
+  3. While the AI is generating a response, the chat header displays a live status string such as "Researching • 4 sources analyzed" that updates as results arrive
+  4. Source citation links are clickable and open the original review article URL in a new tab
+  5. User's own messages appear right-aligned in a blue bubble; AI messages appear left-aligned in a white bubble with a "✦ ReviewGuide" label
+  6. Follow-up suggestion chips appear below each AI response and submitting one (by tap) sends it as the next user message without any typing
+**Plans**: TBD
+
+### Phase 15: Results Screen
+**Goal**: Users can navigate to a dedicated, shareable Results page for any completed research session — with a full product grid, source panel, and quick actions — laid out in a desktop split panel and a mobile full-width view.
+**Depends on**: Phase 14 (ChatHeader expand icon from Phase 14 navigates to Results; source citation fix from Phase 14 must be in place for SourcesPanel to display data)
+**Requirements**: RES-01, RES-02, RES-03, RES-04, RES-05, RES-06, RESP-01, RESP-02
+**Success Criteria** (what must be TRUE):
+  1. User can navigate to `/results/:id` and see a full results view for a completed research session — the URL is shareable and loads correctly on a fresh page visit
+  2. On mobile (<768px), all screens including Results render in a single-column full-width layout; product cards appear in a horizontal scroll row
+  3. On desktop (>=1024px), the Results page shows a 3-column product card grid, a persistent left sidebar, and a max-width 1200px content area — all in a single viewport with no scrolling required to reach any primary content panel
+  4. Product cards on the Results page show real Amazon product images, prices, and working affiliate links sourced from the curated static data (120+ products)
+  5. Each product card displays a rank badge (e.g. "#1 Top Pick", "#2 Best Value") and a score bar
+  6. The Results page includes a quick actions panel with Compare side by side, Export to list, and Share results — and a Sources section listing colored dots, source names, and clickable article links
+**Plans**: TBD
+
+### Phase 16: Placeholder Routes and Build QA
+**Goal**: All bottom tab destinations have working routes that don't throw errors, every new page uses correct Suspense wrappers, and `next build` passes cleanly — confirming the entire milestone is production-deployable.
+**Depends on**: Phases 12-15 (all nav shell and screen work must be complete before build validation)
+**Requirements**: PLCH-01, PLCH-02
+**Success Criteria** (what must be TRUE):
+  1. Navigating to `/saved` shows a polished placeholder page with a "Coming soon" message — no errors, no blank screen, no thrown exceptions
+  2. Navigating to `/compare` shows a polished placeholder page with a "Coming soon" message — no errors, no blank screen, no thrown exceptions
+  3. Running `next build` completes without errors and all new routes appear as "(Static)" in the build output (not "ƒ" dynamic)
+  4. On a real iOS device, the bottom tab bar does not overlap the keyboard when the chat input is focused, dark mode renders all new components correctly, and carousel swipe works on `/results/:id`
+**Plans**: TBD
+
 ## Progress
 
 **Execution Order:**
-Phase 1 executes first (performance is the top priority). Phases 2, 3, 4 can execute in parallel after Phase 1. Phase 5 executes independently but must complete before May 15, 2026. Phases 6-7 are sequential and depend on Skimlinks publisher approval. Phases 8-9 follow phases 2-3. Phases 10-11 are independent.
+v2.0 phases execute sequentially: 12 → 13 → 14 → 15 → 16. Phase 12 is a hard prerequisite for all others. Phases 13, 14, 15 chain in order due to component dependencies (NavLayout → Discover → ChatHeader → ResultsPage). Phase 16 runs last as build QA gate.
 
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. Response Experience Overhaul | 5/6 | In Progress|  |
-| 2. Fix Review Source Links | 0/1 | Not started | - |
-| 3. Serper Shopping Provider | 0/1 | Not started | - |
-| 4. Browse Page Fixes | 0/1 | Not started | - |
-| 5. Amazon Creators API Migration | 0/TBD | Not started | - |
-| 6. Skimlinks Link Wrapper | 0/TBD | Not started | - |
-| 7. Skimlinks Middleware + Editor's Picks | 0/TBD | Not started | - |
-| 8. Clarifier Suggestion Chips | 0/TBD | Not started | - |
-| 9. Top Pick Block + Help Me Decide | 0/TBD | Not started | - |
-| 10. Impact.com Provider | 0/TBD | Not started | - |
-| 11. Viator + CJ Expansion | 0/TBD | Not started | - |
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 1. Response Experience Overhaul | v1.0 | 5/6 | In Progress | - |
+| 2. Fix Review Source Links | v1.0 | 0/1 | Not started | - |
+| 3. Serper Shopping Provider | v1.0 | 0/1 | Not started | - |
+| 4. Browse Page Fixes | v1.0 | 0/1 | Not started | - |
+| 5. Amazon Creators API Migration | v1.0 | 0/TBD | Not started | - |
+| 6. Skimlinks Link Wrapper | v1.0 | 0/TBD | Not started | - |
+| 7. Skimlinks Middleware + Editor's Picks | v1.0 | 0/TBD | Not started | - |
+| 8. Clarifier Suggestion Chips | v1.0 | 0/TBD | Not started | - |
+| 9. Top Pick Block + Help Me Decide | v1.0 | 0/TBD | Not started | - |
+| 10. Impact.com Provider | v1.0 | 0/TBD | Not started | - |
+| 11. Viator + CJ Expansion | v1.0 | 0/TBD | Not started | - |
+| 12. Navigation Shell | v2.0 | 0/TBD | Not started | - |
+| 13. Discover Screen | v2.0 | 0/TBD | Not started | - |
+| 14. Chat Screen | v2.0 | 0/TBD | Not started | - |
+| 15. Results Screen | v2.0 | 0/TBD | Not started | - |
+| 16. Placeholder Routes and Build QA | v2.0 | 0/TBD | Not started | - |
