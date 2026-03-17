@@ -148,7 +148,7 @@ export default function UnifiedTopbar({
               Discover
             </Link>
             <Link
-              href="/browse"
+              href="/saved"
               className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'saved'
                 ? 'text-[var(--text)] bg-[var(--surface)]'
                 : 'text-[var(--text-muted)] hover:text-[var(--text)]'
@@ -166,7 +166,7 @@ export default function UnifiedTopbar({
               Ask
             </Link>
             <Link
-              href="/browse"
+              href="/compare"
               className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'compare'
                 ? 'text-[var(--text)] bg-[var(--surface)]'
                 : 'text-[var(--text-muted)] hover:text-[var(--text)]'
