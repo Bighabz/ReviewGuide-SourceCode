@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Core Platform
 status: planning
-stopped_at: Phase 12 context gathered
-last_updated: "2026-03-17T06:47:37.748Z"
+stopped_at: Completed 12-01-PLAN.md (Wave 0 test scaffolds)
+last_updated: "2026-03-17T07:23:46.643Z"
 last_activity: 2026-03-16 — Roadmap created, 26 requirements mapped to phases 12-16
 progress:
   total_phases: 16
   completed_phases: 0
-  total_plans: 9
-  completed_plans: 5
+  total_plans: 12
+  completed_plans: 6
   percent: 0
 ---
 
@@ -50,6 +50,7 @@ Progress: [░░░░░░░░░░] 0%
 - [v2.0 Phase 12]: SSE stream-on-tab-switch architecture decision must be made in Phase 12 before Chat screen is modified
 - [v2.0 Phase 12]: Use CSS variables exclusively (var(--*)) in all new components — Tailwind dark: utilities are inert with data-theme strategy
 - [v2.0 Phase 12]: Use h-dvh (not h-screen) on all full-height containers — iOS keyboard overlap prevention
+- [Phase 12-navigation-shell]: Wave 0 RED tests written before production code: behavioral contracts for NavLayout, MobileTabBar, template.tsx, and viewport-fit established in 4 test files
 
 ### Pending Todos
 
@@ -63,6 +64,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-17T06:47:37.743Z
-Stopped at: Phase 12 context gathered
-Resume file: .planning/phases/12-navigation-shell/12-CONTEXT.md
+Last session: 2026-03-17T07:23:46.637Z
+Stopped at: Completed 12-01-PLAN.md (Wave 0 test scaffolds)
+Resume file: None

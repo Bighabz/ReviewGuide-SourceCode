@@ -7,11 +7,11 @@
 
 ### Navigation
 
-- [ ] **NAV-01**: User sees bottom tab bar with 5 tabs (Discover, Saved, Ask, Compare, Profile) on mobile (<768px)
-- [ ] **NAV-02**: User sees desktop top navigation bar with logo and nav links on screens >=1024px
-- [ ] **NAV-03**: User can tap central FAB button to start a new research chat from any screen
-- [ ] **NAV-04**: User sees animated page transitions between routes
-- [ ] **NAV-05**: Bottom tab bar handles iOS safe area insets correctly
+- [x] **NAV-01**: User sees bottom tab bar with 5 tabs (Discover, Saved, Ask, Compare, Profile) on mobile (<768px)
+- [x] **NAV-02**: User sees desktop top navigation bar with logo and nav links on screens >=1024px
+- [x] **NAV-03**: User can tap central FAB button to start a new research chat from any screen
+- [x] **NAV-04**: User sees animated page transitions between routes
+- [x] **NAV-05**: Bottom tab bar handles iOS safe area insets correctly
 
 ### Discover
 
@@ -86,11 +86,11 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| NAV-01 | Phase 12 | Pending |
-| NAV-02 | Phase 12 | Pending |
-| NAV-03 | Phase 12 | Pending |
-| NAV-04 | Phase 12 | Pending |
-| NAV-05 | Phase 12 | Pending |
+| NAV-01 | Phase 12 | Complete |
+| NAV-02 | Phase 12 | Complete |
+| NAV-03 | Phase 12 | Complete |
+| NAV-04 | Phase 12 | Complete |
+| NAV-05 | Phase 12 | Complete |
 | DISC-01 | Phase 13 | Pending |
 | DISC-02 | Phase 13 | Pending |
 | DISC-03 | Phase 13 | Pending |
