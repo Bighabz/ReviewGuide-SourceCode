@@ -1,145 +1,123 @@
-# Requirements: ReviewGuide.ai v1.0
+# Requirements: ReviewGuide.ai v2.0 Frontend UX Redesign
 
-**Defined:** 2026-03-15
+**Defined:** 2026-03-16
 **Core Value:** Conversational product discovery that searches live reviews and returns blog-style editorial responses with cross-retailer affiliate links.
 
-## v1 Requirements
+## v2.0 Requirements
 
-### Response Experience
+### Navigation
 
-- [x] **RX-01**: First visible content (product cards) appears within 5 seconds of sending a query
-- [x] **RX-02**: Blog narrative streams token-by-token from OpenAI via SSE (not batch-then-chunk)
-- [x] **RX-03**: Affiliate product searches parallelized within each provider (asyncio.gather instead of sequential for loop)
-- [x] **RX-04**: Review search limited to top 3 products (down from 5) with per-product timeout
-- [x] **RX-05**: Review search and affiliate search run in parallel where data dependencies allow
-- [x] **RX-06**: product_compose eliminates redundant LLM calls (combine where possible, remove unnecessary ones)
-- [x] **RX-07**: Blog-style response includes inline affiliate buy links as markdown (e.g. "Check price on Amazon →")
-- [x] **RX-08**: Product cards render above blog narrative, arriving progressively via stream_chunk_data
+- [ ] **NAV-01**: User sees bottom tab bar with 5 tabs (Discover, Saved, Ask, Compare, Profile) on mobile (<768px)
+- [ ] **NAV-02**: User sees desktop top navigation bar with logo and nav links on screens ≥1024px
+- [ ] **NAV-03**: User can tap central FAB button to start a new research chat from any screen
+- [ ] **NAV-04**: User sees animated page transitions between routes
+- [ ] **NAV-05**: Bottom tab bar handles iOS safe area insets correctly
 
-### Bug Fixes
+### Discover
 
-- [ ] **FIX-01**: Blog-style responses include clickable review source links (Wirecutter, Tom's Guide, Reddit, etc.)
-- [ ] **FIX-02**: Product search returns results from multiple retailers, not just eBay
-- [ ] **FIX-03**: Product cards display images from search results
-- [ ] **FIX-04**: Static Amazon amzn.to affiliate links resolve correctly on browse pages
-- [ ] **FIX-05**: Truncated affiliate link in menopause supplements category is corrected
+- [ ] **DISC-01**: User sees editorial hero headline with serif italic accent and search bar on `/`
+- [ ] **DISC-02**: User can scroll horizontal category chips (Popular, Tech, Travel, Kitchen, Fitness, etc.)
+- [ ] **DISC-03**: User sees trending research cards with icons, titles, subtitles — tapping navigates to chat
+- [ ] **DISC-04**: User sees personalized "For You" chip based on recent search history
+- [ ] **DISC-05**: Search bar tap navigates to chat screen with input focused
 
-### Product Search
+### Chat
 
-- [ ] **SRCH-01**: Serper.dev shopping endpoint integrated as an affiliate provider returning products with images, prices, and merchant info
-- [ ] **SRCH-02**: Serper shopping provider registered in AffiliateProviderRegistry and auto-discovered by loader
-- [ ] **SRCH-03**: Serper shopping results cached in Redis to avoid duplicate API calls
+- [ ] **CHAT-01**: AI responses follow structured format: summary → ranked inline product cards → source citations → follow-up chips
+- [ ] **CHAT-02**: Inline product cards are compact (64px height) with image, rank, name, price, and affiliate link
+- [ ] **CHAT-03**: Chat header shows real-time status ("Researching • 4 sources analyzed") during streaming
+- [ ] **CHAT-04**: Source citations are clickable links to actual review article URLs from search results
+- [ ] **CHAT-05**: User message bubbles are right-aligned blue, AI bubbles are left-aligned white with "✦ ReviewGuide" label
+- [ ] **CHAT-06**: Follow-up suggestion chips appear below AI responses and auto-submit on tap
 
-### Amazon Migration
+### Results
 
-- [ ] **AMZN-01**: Amazon provider migrated from PA-API v5 (AWS Sig V4) to Creators API (OAuth2 client credentials) before May 15, 2026
-- [ ] **AMZN-02**: OAuth2 token refresh with 1-hour expiry and 5-minute buffer implemented
-- [ ] **AMZN-03**: Amazon product images served via direct CDN hotlink (no caching/re-hosting)
-- [ ] **AMZN-04**: Existing Amazon search operations (keyword search, ASIN lookup) work identically after migration
+- [ ] **RES-01**: User can navigate to `/results/:id` to see full results for a completed research session
+- [ ] **RES-02**: Product cards display in 3-column grid on desktop, horizontal scroll on mobile
+- [ ] **RES-03**: Product cards show real Amazon images, prices, and affiliate links from curated static data
+- [ ] **RES-04**: Each product card shows rank badge (#1 Top Pick, #2 Best Value, etc.), score bar, and CTA button
+- [ ] **RES-05**: Quick actions panel shows: Compare side by side, Export to list, Share results
+- [ ] **RES-06**: Sources analyzed section shows colored dots, source names, and clickable article links
 
-### Affiliate Coverage
+### Responsive
 
-- [ ] **AFFL-01**: Skimlinks server-side link wrapper monetizes non-Amazon, non-eBay, non-CJ product URLs
-- [ ] **AFFL-02**: Skimlinks merchant domain list cached in Redis (24h TTL) to avoid per-request API calls
-- [ ] **AFFL-03**: Amazon URLs never passed through Skimlinks wrapper (Amazon not in network)
-- [ ] **AFFL-04**: AffiliateManager applies Skimlinks as post-processing middleware after all providers return
-- [ ] **AFFL-05**: Editor's Picks re-enabled on browse category pages with product images from available providers
+- [ ] **RESP-01**: All screens render mobile-first single-column layout below 768px
+- [ ] **RESP-02**: Desktop layout (≥1024px) shows 3-column product grids, persistent sidebar, top nav, max 1200px content
 
-### Conversational UX
+### Placeholder Routes
 
-- [ ] **UX-01**: Clarifier agent returns 2-4 tappable suggestion chips alongside prose questions
-- [ ] **UX-02**: Suggestion chips rendered as buttons in chat UI, dispatch sendSuggestion event on click
-- [ ] **UX-03**: "Top Pick" editorial block displayed above product carousel with: product name, headline reason, who it's for, who should look elsewhere
-- [ ] **UX-04**: Comparison intent detected on follow-up messages, auto-triggers ComparisonTable for active shortlist
-- [ ] **UX-05**: Product responses capped at 3-5 products (no 10+ product walls)
+- [ ] **PLCH-01**: `/saved` route renders placeholder page indicating feature coming soon
+- [ ] **PLCH-02**: `/compare` route renders placeholder page indicating feature coming soon
 
-### Provider Expansion
+## Future Requirements
 
-- [ ] **PROV-01**: Impact.com affiliate provider integrated with keyword product search (3,000 req/hour)
-- [ ] **PROV-02**: Viator Basic tier provider integrated for activity/experience search
-- [ ] **PROV-03**: CJ advertiser applications submitted for high-value programs (Best Buy, Dell, Target, Wayfair, Nike)
+### Tablet Support
 
-## v2 Requirements
+- **RESP-03**: Tablet breakpoint (768-1023px) with 2-column grid, optional sidebar toggle
 
-### Personalization
+### User Profiles
 
-- **PERS-01**: Optional user accounts with saved search history and preferences
-- **PERS-02**: "More like this / Not interested" feedback buttons on product cards
-- **PERS-03**: Cross-session preference memory ("last time you preferred Sony")
+- **PROF-01**: `/profile` route with user settings, theme toggle, accent picker
+- **PROF-02**: User accounts with login/signup
 
-### Price Intelligence
+### Desktop Split Panel
 
-- **PRICE-01**: Price alerts — user sets target, notified when product drops below
-- **PRICE-02**: 30/90-day price history per product
-- **PRICE-03**: Auto-buy agent for price targets (requires accounts + payment)
+- **RES-07**: Results page shows left conversation sidebar + right content on desktop
 
-### Additional Providers
+### Advanced Features
 
-- **PROV-04**: Awin feed ingestion pipeline for batch product data
-- **PROV-05**: Rakuten Advertising provider with XML product search
-- **PROV-06**: TravelPayouts flights integration
-- **PROV-07**: Skimlinks Product Key API for product images/prices (requires account manager approval)
-
-### Advanced UX
-
-- **UX-06**: Visual threading of shortlist across conversation turns
-- **UX-07**: Guided entry for "I don't know what I need" queries (problem-first framing)
-- **UX-08**: Per-product review sentiment bars with source breakdown
+- **SAVE-01**: User can save products and conversations to a persistent saved list
+- **COMP-01**: User can compare products side by side on the compare page
+- **ALERT-01**: User can set price alerts for tracked products
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| User accounts / login | Anonymous-first for v1, reduces friction |
-| Mobile native app | Web-first, responsive design covers mobile |
-| Stored product database | Live search is the differentiator |
-| Post-purchase support | We're an affiliate, not a retailer |
-| Real-time price monitoring | Requires persistent infrastructure, defer to v2 |
-| Awin real-time search | Awin has no real-time keyword search API; feed-only |
+| User accounts / login | Anonymous-first for v2.0, reduces friction |
+| Price alerts | Requires accounts and notification infrastructure |
+| Voice input | Decorative mic icon only — no speech recognition |
+| Social features | Not a social platform |
+| Backend response restructuring | Separate workstream — v2.0 is frontend-only |
+| Real-time pricing from PA-API | Use curated static Amazon data (120+ products) until key obtained |
+| Mobile app | Web-first, responsive design covers mobile |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| RX-01 | Phase 1 | Complete |
-| RX-02 | Phase 1 | Complete |
-| RX-03 | Phase 1 | Complete |
-| RX-04 | Phase 1 | Complete |
-| RX-05 | Phase 1 | Complete |
-| RX-06 | Phase 1 | Complete |
-| RX-07 | Phase 1 | Complete |
-| RX-08 | Phase 1 | Complete |
-| FIX-01 | Phase 2 | Pending |
-| FIX-02 | Phase 3 | Pending |
-| FIX-03 | Phase 3 | Pending |
-| FIX-04 | Phase 4 | Pending |
-| FIX-05 | Phase 4 | Pending |
-| SRCH-01 | Phase 3 | Pending |
-| SRCH-02 | Phase 3 | Pending |
-| SRCH-03 | Phase 3 | Pending |
-| AMZN-01 | Phase 5 | Pending |
-| AMZN-02 | Phase 5 | Pending |
-| AMZN-03 | Phase 5 | Pending |
-| AMZN-04 | Phase 5 | Pending |
-| AFFL-01 | Phase 6 | Pending |
-| AFFL-02 | Phase 6 | Pending |
-| AFFL-03 | Phase 6 | Pending |
-| AFFL-04 | Phase 7 | Pending |
-| AFFL-05 | Phase 7 | Pending |
-| UX-01 | Phase 8 | Pending |
-| UX-02 | Phase 8 | Pending |
-| UX-03 | Phase 9 | Pending |
-| UX-04 | Phase 9 | Pending |
-| UX-05 | Phase 9 | Pending |
-| PROV-01 | Phase 10 | Pending |
-| PROV-02 | Phase 11 | Pending |
-| PROV-03 | Phase 11 | Pending |
+| NAV-01 | TBD | Pending |
+| NAV-02 | TBD | Pending |
+| NAV-03 | TBD | Pending |
+| NAV-04 | TBD | Pending |
+| NAV-05 | TBD | Pending |
+| DISC-01 | TBD | Pending |
+| DISC-02 | TBD | Pending |
+| DISC-03 | TBD | Pending |
+| DISC-04 | TBD | Pending |
+| DISC-05 | TBD | Pending |
+| CHAT-01 | TBD | Pending |
+| CHAT-02 | TBD | Pending |
+| CHAT-03 | TBD | Pending |
+| CHAT-04 | TBD | Pending |
+| CHAT-05 | TBD | Pending |
+| CHAT-06 | TBD | Pending |
+| RES-01 | TBD | Pending |
+| RES-02 | TBD | Pending |
+| RES-03 | TBD | Pending |
+| RES-04 | TBD | Pending |
+| RES-05 | TBD | Pending |
+| RES-06 | TBD | Pending |
+| RESP-01 | TBD | Pending |
+| RESP-02 | TBD | Pending |
+| PLCH-01 | TBD | Pending |
+| PLCH-02 | TBD | Pending |
 
 **Coverage:**
-- v1 requirements: 33 total
-- Mapped to phases: 33
-- Unmapped: 0
+- v2.0 requirements: 26 total
+- Mapped to phases: 0
+- Unmapped: 26 ⚠️
 
 ---
-*Requirements defined: 2026-03-15*
-*Last updated: 2026-03-15 after adding PERF requirements*
+*Requirements defined: 2026-03-16*
+*Last updated: 2026-03-16 after milestone v2.0 definition*
