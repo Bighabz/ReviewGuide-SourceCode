@@ -16,7 +16,7 @@
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Response Experience Overhaul** - True token streaming, progressive product cards, parallelized backend, blog narrative with buy links
+- [x] **Phase 1: Response Experience Overhaul** - True token streaming, progressive product cards, parallelized backend, blog narrative with buy links (completed 2026-03-17)
 - [ ] **Phase 2: Fix Review Source Links** - Restore clickable review citations in blog-style responses
 - [ ] **Phase 3: Serper Shopping Provider** - Add multi-retailer product search with images as a new affiliate provider
 - [ ] **Phase 4: Browse Page Fixes** - Fix broken amzn.to links and truncated affiliate URL on browse pages
@@ -270,7 +270,7 @@ v2.0 phases execute sequentially: 12 -> 13 -> 14 -> 15 -> 16. Phase 12 is a hard
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 1. Response Experience Overhaul | v1.0 | 5/6 | In Progress | - |
+| 1. Response Experience Overhaul | 6/6 | Complete   | 2026-03-17 | - |
 | 2. Fix Review Source Links | v1.0 | 0/1 | Not started | - |
 | 3. Serper Shopping Provider | v1.0 | 0/1 | Not started | - |
 | 4. Browse Page Fixes | v1.0 | 0/1 | Not started | - |
