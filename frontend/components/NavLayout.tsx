@@ -1,0 +1,71 @@
+'use client'
+
+import { usePathname, useRouter } from 'next/navigation'
+import UnifiedTopbar from './UnifiedTopbar'
+import MobileHeader from './MobileHeader'
+import MobileTabBar from './MobileTabBar'
+import Footer from './Footer'
+
+const EXCLUDED_PREFIXES = ['/admin', '/privacy', '/terms', '/affiliate-disclosure', '/login']
+
+interface NavLayoutProps {
+  children: React.ReactNode
+}
+
+export default function NavLayout({ children }: NavLayoutProps) {
+  const pathname = usePathname()
+  const router = useRouter()
+
+  const isExcluded = EXCLUDED_PREFIXES.some((prefix) => pathname?.startsWith(prefix))
+
+  if (isExcluded) {
+    // Excluded routes render children with no layout chrome.
+    // Each excluded route manages its own topbar (or none).
+    return <>{children}</>
+  }
+
+  const handleSearch = (query: string) => {
+    router.push(`/chat?q=${encodeURIComponent(query)}&new=1`)
+  }
+
+  const handleNewChat = () => {
+    router.push('/chat?new=1')
+  }
+
+  const handleHistory = () => {
+    router.push('/chat')
+  }
+
+  return (
+    <div className="flex flex-col min-h-dvh">
+      {/* Desktop: UnifiedTopbar (hidden on mobile) */}
+      <div className="hidden md:block">
+        <UnifiedTopbar
+          onSearch={handleSearch}
+          onNewChat={handleNewChat}
+          onHistoryClick={handleHistory}
+        />
+      </div>
+
+      {/* Mobile: MobileHeader (hidden on desktop) */}
+      <div className="block md:hidden">
+        <MobileHeader />
+      </div>
+
+      {/* Content area — padded bottom on mobile for 64px tab bar + safe area */}
+      <main className="flex-1 pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-0">
+        {children}
+      </main>
+
+      {/* Desktop: Footer (hidden on mobile) */}
+      <div className="hidden md:block">
+        <Footer />
+      </div>
+
+      {/* Mobile: MobileTabBar (hidden on desktop) */}
+      <div className="block md:hidden">
+        <MobileTabBar />
+      </div>
+    </div>
+  )
+}
