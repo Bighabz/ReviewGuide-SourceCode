@@ -1,0 +1,494 @@
+/**
+ * Phase 15 — Results Screen
+ *
+ * Tests covering:
+ *   extractResultsData — data extraction utility (GREEN after Task 1)
+ *   RES-01 — Route and data loading
+ *   RES-02, RESP-01, RESP-02 — Responsive layout
+ *   RES-03, RES-04 — Product cards
+ *   RES-05 — Quick actions
+ *   RES-06 — Sources section
+ *
+ * extractResultsData tests are GREEN (utility implemented in Task 1).
+ * Component tests (RES-01 through RES-06) are RED — ResultsPage,
+ * ResultsProductCard, and ResultsQuickActions do not exist until Plan 02.
+ */
+
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
+
+// ── Per-test navigation overrides ─────────────────────────────────────────────
+// These variables are set in beforeEach so each describe block can override them.
+let currentPathname = '/results/test-session-id'
+let currentParams: Record<string, string> = { id: 'test-session-id' }
+let mockRouterReplace = vi.fn()
+let mockRouterPush = vi.fn()
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({
+    push: mockRouterPush,
+    replace: mockRouterReplace,
+    prefetch: vi.fn(),
+    back: vi.fn(),
+  }),
+  usePathname: () => currentPathname,
+  useParams: () => currentParams,
+  useSearchParams: () => new URLSearchParams(),
+}))
+
+vi.mock('framer-motion', () => ({
+  motion: {
+    div: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+    span: ({ children, ...props }: any) => <span {...props}>{children}</span>,
+  },
+  AnimatePresence: ({ children }: any) => <>{children}</>,
+}))
+
+vi.mock('lucide-react', () => ({
+  ArrowLeft: () => <span data-testid="icon-arrow-left" />,
+  Share2: () => <span data-testid="icon-share" />,
+  BarChart2: () => <span data-testid="icon-compare" />,
+  Download: () => <span data-testid="icon-export" />,
+  ExternalLink: () => <span data-testid="icon-external" />,
+  Star: () => <span data-testid="icon-star" />,
+  BookOpen: () => <span data-testid="icon-bookopen" />,
+  ChevronDown: () => <span data-testid="icon-chevron-down" />,
+}))
+
+// ── Shared mock data ────────────────────────────────────────────────────────
+
+const mockProducts = [
+  {
+    name: 'Sony WH-1000XM5',
+    price: 348,
+    url: 'https://amazon.com/dp/B09XS7JWHH',
+    image_url: 'https://example.com/sony.jpg',
+    merchant: 'Amazon',
+    description: 'Industry-leading noise cancellation',
+  },
+  {
+    name: 'Bose QC45',
+    price: 279,
+    url: 'https://amazon.com/dp/B098FKXT8L',
+    image_url: 'https://example.com/bose.jpg',
+    merchant: 'Amazon',
+    description: 'High-fidelity audio with ANC',
+  },
+  {
+    name: 'AirPods Max',
+    price: 549,
+    url: 'https://amazon.com/dp/B08PZHYWJS',
+    image_url: 'https://example.com/airpods.jpg',
+    merchant: 'Amazon',
+    description: 'Apple premium over-ear headphones',
+  },
+]
+
+const mockSources = [
+  {
+    site_name: 'Wirecutter',
+    url: 'https://wirecutter.com/reviews/best-noise-canceling-headphones',
+    title: 'The Best Noise-Canceling Headphones',
+    snippet: 'After 200+ hours of testing...',
+  },
+  {
+    site_name: "Tom's Guide",
+    url: 'https://tomsguide.com/best-picks/best-headphones',
+    title: 'Best Headphones 2026',
+    snippet: 'We tested 50 pairs of headphones...',
+  },
+  {
+    site_name: 'RTINGS',
+    url: 'https://rtings.com/headphones/reviews/best',
+    title: 'Best Headphones of 2026',
+    snippet: 'Our top picks based on objective testing...',
+  },
+]
+
+const mockMessages = [
+  {
+    id: 'u1',
+    role: 'user',
+    content: 'Best noise cancelling headphones',
+    timestamp: '2026-01-01',
+  },
+  {
+    id: 'a1',
+    role: 'assistant',
+    content: 'I researched 5 sources to find the best options.',
+    timestamp: '2026-01-01',
+    ui_blocks: [
+      {
+        type: 'inline_product_card',
+        data: { products: mockProducts },
+      },
+      {
+        type: 'review_sources',
+        data: {
+          products: [
+            { name: 'Sony WH-1000XM5', sources: [mockSources[0], mockSources[1]] },
+            { name: 'Bose QC45', sources: [mockSources[2], mockSources[0]] }, // Wirecutter duplicate
+          ],
+        },
+      },
+    ],
+  },
+]
+
+// ── extractResultsData — GREEN tests (utility implemented in Task 1) ──────────
+
+import extractResultsData from '@/lib/extractResultsData'
+
+describe('extractResultsData — empty messages', () => {
+  it('returns default ResultsData when given empty array', () => {
+    const result = extractResultsData([])
+    expect(result.sessionTitle).toBe('Research Results')
+    expect(result.summaryText).toBe('')
+    expect(result.products).toEqual([])
+    expect(result.sources).toEqual([])
+  })
+})
+
+describe('extractResultsData — sessionTitle and summaryText', () => {
+  it('uses first user message content as sessionTitle', () => {
+    const result = extractResultsData(mockMessages as any)
+    expect(result.sessionTitle).toBe('Best noise cancelling headphones')
+  })
+
+  it('uses first assistant message content as summaryText', () => {
+    const result = extractResultsData(mockMessages as any)
+    expect(result.summaryText).toBe('I researched 5 sources to find the best options.')
+  })
+
+  it('falls back to "Research Results" when no user message', () => {
+    const assistantOnly = [
+      { id: 'a1', role: 'assistant', content: 'Here are the results.', timestamp: '2026-01-01', ui_blocks: [] },
+    ]
+    const result = extractResultsData(assistantOnly as any)
+    expect(result.sessionTitle).toBe('Research Results')
+  })
+})
+
+describe('extractResultsData — product extraction', () => {
+  it('extracts products from inline_product_card blocks', () => {
+    const result = extractResultsData(mockMessages as any)
+    expect(result.products).toHaveLength(3)
+    expect(result.products[0].name).toBe('Sony WH-1000XM5')
+    expect(result.products[1].name).toBe('Bose QC45')
+    expect(result.products[2].name).toBe('AirPods Max')
+  })
+
+  it('extracted product has name, price, url, image_url fields', () => {
+    const result = extractResultsData(mockMessages as any)
+    const first = result.products[0]
+    expect(first.name).toBe('Sony WH-1000XM5')
+    expect(first.price).toBe(348)
+    expect(first.url).toContain('amazon.com')
+    expect(first.image_url).toContain('sony.jpg')
+  })
+
+  it('extracts products from "products" block type', () => {
+    const msgs = [
+      {
+        id: 'u1', role: 'user', content: 'Test query', timestamp: '2026-01-01',
+      },
+      {
+        id: 'a1', role: 'assistant', content: 'Results.', timestamp: '2026-01-01',
+        ui_blocks: [
+          { type: 'products', data: { products: [{ name: 'Widget Pro', price: 99 }] } },
+        ],
+      },
+    ]
+    const result = extractResultsData(msgs as any)
+    expect(result.products).toHaveLength(1)
+    expect(result.products[0].name).toBe('Widget Pro')
+  })
+
+  it('handles blocks where products are at block.products (no .data wrapper)', () => {
+    const msgs = [
+      {
+        id: 'u1', role: 'user', content: 'Test query', timestamp: '2026-01-01',
+      },
+      {
+        id: 'a1', role: 'assistant', content: 'Results.', timestamp: '2026-01-01',
+        ui_blocks: [
+          { type: 'inline_product_card', products: [{ name: 'Flat Widget', price: 49 }] },
+        ],
+      },
+    ]
+    const result = extractResultsData(msgs as any)
+    expect(result.products).toHaveLength(1)
+    expect(result.products[0].name).toBe('Flat Widget')
+  })
+})
+
+describe('extractResultsData — source extraction and deduplication', () => {
+  it('extracts sources from review_sources blocks', () => {
+    const result = extractResultsData(mockMessages as any)
+    // 3 unique sources (Wirecutter duplicate removed)
+    expect(result.sources.length).toBeGreaterThanOrEqual(3)
+  })
+
+  it('deduplicates sources by URL', () => {
+    const result = extractResultsData(mockMessages as any)
+    const urls = result.sources.map(s => s.url)
+    const uniqueUrls = new Set(urls)
+    expect(urls.length).toBe(uniqueUrls.size)
+  })
+
+  it('extracted source has site_name, url, title fields', () => {
+    const result = extractResultsData(mockMessages as any)
+    const wire = result.sources.find(s => s.site_name === 'Wirecutter')
+    expect(wire).toBeDefined()
+    expect(wire!.url).toContain('wirecutter.com')
+    expect(wire!.title).toBeTruthy()
+  })
+})
+
+// ── Component tests — RED until Plan 02 implements the components ─────────────
+// These will fail with "Cannot find module" or render errors.
+
+// Mock the ResultsPage component — it does not exist until Plan 02.
+// Tests that render it will fail with "not a function" / null render errors (RED).
+// This stub lets the file parse and the extractResultsData tests run GREEN.
+vi.mock('@/app/results/[id]/page', () => ({
+  default: null,
+}))
+
+import ResultsPage from '@/app/results/[id]/page'
+
+// ── Mock localStorage with session data for component tests ──────────────────
+
+function setupLocalStorageMock(returnNull = false) {
+  const localStorageMock = (window as any).localStorage
+  if (returnNull) {
+    localStorageMock.getItem.mockReturnValue(null)
+  } else {
+    localStorageMock.getItem.mockReturnValue(JSON.stringify(mockMessages))
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RES-01: Route and data loading
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('RES-01: Route and data loading', () => {
+  beforeEach(() => {
+    currentPathname = '/results/test-session-id'
+    currentParams = { id: 'test-session-id' }
+    mockRouterReplace = vi.fn()
+    mockRouterPush = vi.fn()
+    setupLocalStorageMock()
+  })
+
+  it('renders results page with session title from first user message', () => {
+    render(<ResultsPage params={{ id: 'test-session-id' }} />)
+    // The session title should be rendered as a heading with font-serif class
+    const heading = screen.getByText('Best noise cancelling headphones')
+    expect(heading).toBeTruthy()
+    const hasSerifClass =
+      heading.className?.includes('font-serif') ||
+      heading.closest('[class*="font-serif"]') !== null
+    expect(hasSerifClass).toBe(true)
+  })
+
+  it('redirects to / when session not found in localStorage', () => {
+    setupLocalStorageMock(true)
+    render(<ResultsPage params={{ id: 'nonexistent-id' }} />)
+    expect(mockRouterReplace).toHaveBeenCalledWith('/')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RES-02, RESP-01, RESP-02: Responsive layout
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('RES-02: Responsive layout', () => {
+  beforeEach(() => {
+    currentPathname = '/results/test-session-id'
+    currentParams = { id: 'test-session-id' }
+    mockRouterReplace = vi.fn()
+    setupLocalStorageMock()
+  })
+
+  it('renders 3-column grid container on desktop', () => {
+    const { container } = render(<ResultsPage params={{ id: 'test-session-id' }} />)
+    const hasGridCols3 =
+      container.querySelector('.grid-cols-3') !== null ||
+      container.querySelector('[class*="grid-cols-3"]') !== null
+    expect(hasGridCols3).toBe(true)
+  })
+
+  it('renders horizontal scroll container on mobile', () => {
+    const { container } = render(<ResultsPage params={{ id: 'test-session-id' }} />)
+    const hasOverflowX =
+      container.querySelector('.overflow-x-auto') !== null ||
+      container.querySelector('[class*="overflow-x-auto"]') !== null
+    expect(hasOverflowX).toBe(true)
+  })
+
+  it('renders sidebar on desktop with session title and Back to Chat link', () => {
+    render(<ResultsPage params={{ id: 'test-session-id' }} />)
+    const backLink = screen.getByText('Back to Chat')
+    expect(backLink).toBeTruthy()
+  })
+
+  it('content area has max-width 1200px constraint', () => {
+    const { container } = render(<ResultsPage params={{ id: 'test-session-id' }} />)
+    const hasMaxWidth =
+      container.querySelector('.max-w-\\[1200px\\]') !== null ||
+      container.querySelector('[class*="max-w-"]') !== null ||
+      (() => {
+        const allEls = Array.from(container.querySelectorAll('*'))
+        return allEls.some(
+          (el) =>
+            (el as HTMLElement).style?.maxWidth === '1200px' ||
+            (el as HTMLElement).className?.includes('max-w-[1200px]')
+        )
+      })()
+    expect(hasMaxWidth).toBe(true)
+  })
+})
+
+describe('RESP-01: Mobile horizontal scroll', () => {
+  beforeEach(() => {
+    setupLocalStorageMock()
+  })
+
+  it('mobile product scroll container has snap-x behavior', () => {
+    const { container } = render(<ResultsPage params={{ id: 'test-session-id' }} />)
+    const hasSnap =
+      container.querySelector('.snap-x') !== null ||
+      container.querySelector('[class*="snap"]') !== null
+    expect(hasSnap).toBe(true)
+  })
+})
+
+describe('RESP-02: Desktop grid layout', () => {
+  beforeEach(() => {
+    setupLocalStorageMock()
+  })
+
+  it('desktop product grid has grid layout with column classes', () => {
+    const { container } = render(<ResultsPage params={{ id: 'test-session-id' }} />)
+    const hasGrid =
+      container.querySelector('.grid') !== null ||
+      container.querySelector('[class*="grid"]') !== null
+    expect(hasGrid).toBe(true)
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RES-03 + RES-04: Product cards
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('RES-03: Product cards render', () => {
+  beforeEach(() => {
+    setupLocalStorageMock()
+  })
+
+  it('renders product cards with names from extracted data', () => {
+    render(<ResultsPage params={{ id: 'test-session-id' }} />)
+    expect(screen.getByText('Sony WH-1000XM5')).toBeTruthy()
+  })
+
+  it('product card shows score bar (progressbar or width-percentage div)', () => {
+    const { container } = render(<ResultsPage params={{ id: 'test-session-id' }} />)
+    const hasScoreBar =
+      container.querySelector('[role="progressbar"]') !== null ||
+      (() => {
+        const allEls = Array.from(container.querySelectorAll('*'))
+        return allEls.some((el) => {
+          const style = (el as HTMLElement).style
+          return style?.width && style.width.includes('%')
+        })
+      })()
+    expect(hasScoreBar).toBe(true)
+  })
+
+  it('product card shows Buy on Amazon CTA', () => {
+    render(<ResultsPage params={{ id: 'test-session-id' }} />)
+    const ctaLinks = screen.getAllByText('Buy on Amazon')
+    expect(ctaLinks.length).toBeGreaterThan(0)
+    const link = ctaLinks[0] as HTMLAnchorElement
+    const href = link.href || link.getAttribute('href') || ''
+    expect(href).toContain('amazon')
+  })
+
+  it('product card shows price', () => {
+    const { container } = render(<ResultsPage params={{ id: 'test-session-id' }} />)
+    const allText = container.textContent ?? ''
+    expect(allText).toContain('$348')
+  })
+})
+
+describe('RES-04: Product card rank badges', () => {
+  beforeEach(() => {
+    setupLocalStorageMock()
+  })
+
+  it('product card shows rank badge "#1 Top Pick"', () => {
+    const { container } = render(<ResultsPage params={{ id: 'test-session-id' }} />)
+    const allText = container.textContent ?? ''
+    expect(allText).toContain('#1')
+    expect(allText).toContain('Top Pick')
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RES-05: Quick actions
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('RES-05: Quick actions', () => {
+  beforeEach(() => {
+    setupLocalStorageMock()
+    // Mock clipboard
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: vi.fn().mockResolvedValue(undefined) },
+      writable: true,
+      configurable: true,
+    })
+  })
+
+  it('renders Compare, Export, and Share quick action buttons', () => {
+    render(<ResultsPage params={{ id: 'test-session-id' }} />)
+    expect(screen.getByText('Compare')).toBeTruthy()
+    expect(screen.getByText('Export')).toBeTruthy()
+    expect(screen.getByText('Share')).toBeTruthy()
+  })
+
+  it('Share button copies URL to clipboard when clicked', async () => {
+    render(<ResultsPage params={{ id: 'test-session-id' }} />)
+    const shareBtn = screen.getByText('Share')
+    fireEvent.click(shareBtn)
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      expect.stringContaining('results')
+    )
+  })
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RES-06: Sources section
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('RES-06: Sources section', () => {
+  beforeEach(() => {
+    setupLocalStorageMock()
+  })
+
+  it('renders sources with site names', () => {
+    render(<ResultsPage params={{ id: 'test-session-id' }} />)
+    expect(screen.getByText('Wirecutter')).toBeTruthy()
+    expect(screen.getByText("Tom's Guide")).toBeTruthy()
+    expect(screen.getByText('RTINGS')).toBeTruthy()
+  })
+
+  it('renders colored dot indicators next to sources', () => {
+    const { container } = render(<ResultsPage params={{ id: 'test-session-id' }} />)
+    // Colored dots: either a rounded div with background color or a specific class
+    const hasColoredDots =
+      container.querySelector('.rounded-full') !== null ||
+      container.querySelector('[class*="rounded-full"]') !== null
+    expect(hasColoredDots).toBe(true)
+  })
+})
