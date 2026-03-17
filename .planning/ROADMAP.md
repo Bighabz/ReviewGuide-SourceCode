@@ -244,7 +244,11 @@ Plans:
   4. Product cards on the Results page show real Amazon product images, prices, and working affiliate links sourced from the curated static data (120+ products)
   5. Each product card displays a rank badge (e.g. "#1 Top Pick", "#2 Best Value") and a score bar
   6. The Results page includes a quick actions panel with Compare side by side, Export to list, and Share results — and a Sources section listing colored dots, source names, and clickable article links
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 15-01-PLAN.md — Wave 0 RED tests, extractResultsData utility, CSS card accent variables (RES-01 through RES-06, RESP-01, RESP-02)
+- [ ] 15-02-PLAN.md — ResultsProductCard, ResultsQuickActions, ResultsHeader components (RES-02, RES-03, RES-04, RES-05, RESP-01, RESP-02)
+- [ ] 15-03-PLAN.md — Results page.tsx, MobileHeader wiring, MobileTabBar active state, human verification (RES-01, RES-02, RES-06, RESP-01, RESP-02)
 
 ### Phase 16: Placeholder Routes and Build QA
 **Goal**: All bottom tab destinations have working routes that don't throw errors, every new page uses correct Suspense wrappers, and `next build` passes cleanly — confirming the entire milestone is production-deployable.
@@ -278,5 +282,5 @@ v2.0 phases execute sequentially: 12 -> 13 -> 14 -> 15 -> 16. Phase 12 is a hard
 | 12. Navigation Shell | v2.0 | 3/3 | Complete | 2026-03-17 |
 | 13. Discover Screen | v2.0 | 3/3 | Complete | 2026-03-17 |
 | 14. Chat Screen | 4/4 | Complete    | 2026-03-17 | - |
-| 15. Results Screen | v2.0 | 0/TBD | Not started | - |
+| 15. Results Screen | v2.0 | 0/3 | Not started | - |
 | 16. Placeholder Routes and Build QA | v2.0 | 0/TBD | Not started | - |
