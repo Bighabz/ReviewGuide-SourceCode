@@ -195,9 +195,9 @@ Plans:
   5. On an iPhone with a home indicator, the bottom tab bar does not overlap the home swipe gesture area (safe area inset respected)
 **Plans**: 3 plans
 Plans:
-- [ ] 12-01-PLAN.md — Wave 0 test scaffolds for all NAV requirements (NAV-01 through NAV-05)
-- [ ] 12-02-PLAN.md — Core navigation components: NavLayout, MobileTabBar, MobileHeader (NAV-01, NAV-03, NAV-05)
-- [ ] 12-03-PLAN.md — Integration: layout.tsx wiring, template.tsx transitions, UnifiedTopbar labels, cleanup (NAV-02, NAV-04, NAV-05)
+- [x] 12-01-PLAN.md — Wave 0 test scaffolds for all NAV requirements (NAV-01 through NAV-05)
+- [x] 12-02-PLAN.md — Core navigation components: NavLayout, MobileTabBar, MobileHeader (NAV-01, NAV-03, NAV-05)
+- [x] 12-03-PLAN.md — Integration: layout.tsx wiring, template.tsx transitions, UnifiedTopbar labels, cleanup (NAV-02, NAV-04, NAV-05)
 
 ### Phase 13: Discover Screen
 **Goal**: The app's entry point is a single editorial screen where users can start research, explore categories, or tap a trending topic — replacing the current split Browse/Chat landing pages.
@@ -209,7 +209,11 @@ Plans:
   3. User sees at least 3 trending research cards (icon, title, subtitle); tapping any card navigates to chat with that query pre-loaded
   4. User who has made a prior search sees a "For You" chip as the first chip in the category row
   5. Tapping the search bar (not typing, just tapping) navigates to the chat screen with the input immediately focused and ready to type
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 13-01-PLAN.md — Wave 0 test scaffolds for all DISC requirements (DISC-01 through DISC-05)
+- [ ] 13-02-PLAN.md — Discover screen components: trendingTopics data, DiscoverSearchBar, CategoryChipRow, TrendingCards, page.tsx orchestrator (DISC-01 through DISC-05)
+- [ ] 13-03-PLAN.md — Route migration: update MobileTabBar/UnifiedTopbar hrefs, /browse redirect, visual verification (DISC-01, DISC-02, DISC-05)
 
 ### Phase 14: Chat Screen
 **Goal**: AI responses follow a predictable structure users can scan — summary, ranked product cards, source links, follow-up chips — and the chat UI is visually polished with correct bubble alignment and a live status indicator during streaming.
@@ -266,8 +270,8 @@ v2.0 phases execute sequentially: 12 -> 13 -> 14 -> 15 -> 16. Phase 12 is a hard
 | 9. Top Pick Block + Help Me Decide | v1.0 | 0/TBD | Not started | - |
 | 10. Impact.com Provider | v1.0 | 0/TBD | Not started | - |
 | 11. Viator + CJ Expansion | v1.0 | 0/TBD | Not started | - |
-| 12. Navigation Shell | 3/3 | Complete    | 2026-03-17 | - |
-| 13. Discover Screen | v2.0 | 0/TBD | Not started | - |
+| 12. Navigation Shell | v2.0 | 3/3 | Complete | 2026-03-17 |
+| 13. Discover Screen | v2.0 | 0/3 | Planning | - |
 | 14. Chat Screen | v2.0 | 0/TBD | Not started | - |
 | 15. Results Screen | v2.0 | 0/TBD | Not started | - |
 | 16. Placeholder Routes and Build QA | v2.0 | 0/TBD | Not started | - |
