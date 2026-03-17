@@ -48,6 +48,12 @@
   --shadow-xl: 0 16px 40px rgba(28, 25, 23, 0.10);
   --shadow-float: 0 12px 32px rgba(27, 77, 255, 0.08);
 
+  /* Card accent tints for Results page */
+  --card-accent-1: #FFF8F0;
+  --card-accent-2: #F0F4FF;
+  --card-accent-3: #F0FFF4;
+  --card-accent-4: #FDF0FF;
+
   /* Legacy Mappings */
   --gpt-accent: var(--primary);
   --gpt-accent-hover: var(--primary-hover);
@@ -122,6 +128,12 @@
   --text: #F5F0EB;
   --text-secondary: #A8A29E;
   --text-muted: #78716C;
+
+  /* Card accent tints for Results page — dark mode */
+  --card-accent-1: #2A2218;
+  --card-accent-2: #181E2A;
+  --card-accent-3: #182218;
+  --card-accent-4: #22182A;
 
   /* Borders */
   --border: #3D3A36;
