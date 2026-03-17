@@ -1,27 +1,13 @@
 'use client'
 
 import React, { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import UnifiedTopbar from '../UnifiedTopbar'
 import CategorySidebar from '../CategorySidebar'
 
 export default function BrowseLayout({ children }: { children: React.ReactNode }) {
-  const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = useState(false)
-
-  const handleSearch = (query: string) => {
-    router.push(`/chat?q=${encodeURIComponent(query)}&new=1`)
-  }
 
   return (
     <div className="min-h-screen bg-[var(--background)] text-[var(--text)]">
-      {/* Unified Navigation */}
-      <UnifiedTopbar
-        onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-        onSearch={handleSearch}
-        onNewChat={() => router.push('/chat?new=1')}
-        onHistoryClick={() => router.push('/chat')}
-      />
 
       {/* Category Sidebar (desktop) */}
       <aside className="hidden lg:block fixed left-0 top-14 sm:top-16 bottom-0 w-56 z-30">

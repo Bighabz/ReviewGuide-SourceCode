@@ -40,7 +40,12 @@ export default function UnifiedTopbar({
   const pathname = usePathname()
   const router = useRouter()
 
-  const activeTab = pathname?.startsWith('/chat') ? 'chat' : 'browse'
+  const getActiveTab = () => {
+    if (pathname?.startsWith('/chat')) return 'ask'
+    if (pathname?.startsWith('/browse') || pathname === '/') return 'discover'
+    return 'discover'
+  }
+  const activeTab = getActiveTab()
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null
@@ -131,21 +136,48 @@ export default function UnifiedTopbar({
           <nav className="hidden sm:flex items-center gap-1 ml-2">
             <Link
               href="/browse"
-              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'browse'
+              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'discover'
                 ? 'text-[var(--text)] bg-[var(--surface)]'
                 : 'text-[var(--text-muted)] hover:text-[var(--text)]'
                 }`}
             >
-              Browse
+              Discover
+            </Link>
+            <Link
+              href="/browse"
+              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'saved'
+                ? 'text-[var(--text)] bg-[var(--surface)]'
+                : 'text-[var(--text-muted)] hover:text-[var(--text)]'
+                }`}
+            >
+              Saved
             </Link>
             <Link
               href="/chat?new=1"
-              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'chat'
+              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'ask'
                 ? 'text-[var(--text)] bg-[var(--surface)]'
                 : 'text-[var(--text-muted)] hover:text-[var(--text)]'
                 }`}
             >
-              Chat
+              Ask
+            </Link>
+            <Link
+              href="/browse"
+              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'compare'
+                ? 'text-[var(--text)] bg-[var(--surface)]'
+                : 'text-[var(--text-muted)] hover:text-[var(--text)]'
+                }`}
+            >
+              Compare
+            </Link>
+            <Link
+              href="/browse"
+              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'profile'
+                ? 'text-[var(--text)] bg-[var(--surface)]'
+                : 'text-[var(--text-muted)] hover:text-[var(--text)]'
+                }`}
+            >
+              Profile
             </Link>
           </nav>
 
@@ -208,28 +240,6 @@ export default function UnifiedTopbar({
             >
               <Plus size={20} />
             </button>
-
-            {/* Mobile Nav Pills */}
-            <div className="sm:hidden flex items-center gap-0.5 border border-[var(--border)] rounded-lg p-0.5 bg-[var(--surface)]">
-              <Link
-                href="/browse"
-                className={`px-2 py-1 rounded-md text-xs font-medium transition-all ${activeTab === 'browse'
-                  ? 'bg-[var(--primary)] text-white'
-                  : 'text-[var(--text-secondary)]'
-                  }`}
-              >
-                Browse
-              </Link>
-              <Link
-                href="/chat"
-                className={`px-2 py-1 rounded-md text-xs font-medium transition-all ${activeTab === 'chat'
-                  ? 'bg-[var(--primary)] text-white'
-                  : 'text-[var(--text-secondary)]'
-                  }`}
-              >
-                Chat
-              </Link>
-            </div>
 
             <div className="hidden sm:block w-px h-5 bg-[var(--border)] mx-0.5" />
 

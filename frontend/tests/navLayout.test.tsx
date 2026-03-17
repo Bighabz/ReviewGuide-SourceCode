@@ -35,18 +35,20 @@ describe('NavLayout — mobile tab bar visibility (NAV-01)', () => {
   it('renders MobileTabBar on mobile viewport (default route)', () => {
     render(<NavLayout><div>content</div></NavLayout>)
     // At least one of the 5 tab labels must be visible on the default route.
+    // Both MobileTabBar and UnifiedTopbar render these labels, so use queryAllByText.
     const tabLabels = ['Discover', 'Saved', 'Ask', 'Compare', 'Profile']
-    const found = tabLabels.some((label) => screen.queryByText(label) !== null)
+    const found = tabLabels.some((label) => screen.queryAllByText(label).length > 0)
     expect(found).toBe(true)
   })
 
   it('renders Discover, Saved, Ask, Compare, Profile tab labels', () => {
     render(<NavLayout><div>page content</div></NavLayout>)
-    expect(screen.getByText('Discover')).toBeTruthy()
-    expect(screen.getByText('Saved')).toBeTruthy()
-    expect(screen.getByText('Ask')).toBeTruthy()
-    expect(screen.getByText('Compare')).toBeTruthy()
-    expect(screen.getByText('Profile')).toBeTruthy()
+    // Both MobileTabBar and UnifiedTopbar render these labels — getAllByText handles multiple matches.
+    expect(screen.getAllByText('Discover').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Saved').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Ask').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Compare').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Profile').length).toBeGreaterThan(0)
   })
 })
 

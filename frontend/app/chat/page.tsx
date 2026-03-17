@@ -5,7 +5,6 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import CategorySidebar from '@/components/CategorySidebar'
 import ChatContainer from '@/components/ChatContainer'
 import ConversationSidebar from '@/components/ConversationSidebar'
-import UnifiedTopbar from '@/components/UnifiedTopbar'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import { CHAT_CONFIG } from '@/lib/constants'
 
@@ -128,14 +127,7 @@ function ChatPageContent() {
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden bg-[var(--background)] text-[var(--text)]">
-      {/* Full-width topbar — identical to BrowseLayout */}
-      <UnifiedTopbar
-        onMenuClick={() => setSidebarOpen(true)}
-        onNewChat={handleNewConversation}
-        onHistoryClick={() => setConversationSidebarOpen(true)}
-        onSearch={handleSearch}
-      />
+    <div className="h-dvh flex flex-col overflow-hidden bg-[var(--background)] text-[var(--text)]">
 
       {/* Content area below topbar */}
       <div className="flex-1 flex overflow-hidden relative">
@@ -214,7 +206,7 @@ function ChatPageContent() {
 export default function ChatPage() {
   return (
     <Suspense fallback={
-      <div className="h-screen flex items-center justify-center bg-[var(--background)]">
+      <div className="h-dvh flex items-center justify-center bg-[var(--background)]">
         <div className="text-center text-[var(--text-secondary)]">
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-current mb-2"></div>
           <p>Loading chat...</p>
