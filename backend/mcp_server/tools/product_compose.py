@@ -857,6 +857,7 @@ FORMAT REQUIREMENTS:
 
             card_data = {
                 "product_name": pname,
+                "image_url": best_image,
                 "rating": f"{avg_rating}/5" if avg_rating else "",
                 "summary": consensus if consensus else "",
                 "features": [label] if label else [],

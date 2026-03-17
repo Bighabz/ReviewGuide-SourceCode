@@ -19,6 +19,7 @@ interface ProductReviewProps {
     product_name: string
     rating: string
     summary: string
+    image_url?: string
     features: string[]
     pros: Array<{
       description: string
@@ -48,6 +49,7 @@ export default function ProductReview({ product }: ProductReviewProps) {
     product_name,
     rating,
     summary,
+    image_url,
     features,
     pros,
     cons,
@@ -56,20 +58,34 @@ export default function ProductReview({ product }: ProductReviewProps) {
 
   return (
     <div className="border border-[var(--border)] rounded-xl p-6 bg-[var(--surface-elevated)] shadow-card">
-      {/* Product Header */}
+      {/* Product Header with Image */}
       <div className="mb-4">
-        <div className="flex items-start justify-between">
-          <h3 className="text-xl font-semibold font-serif text-[var(--text)]">{product_name}</h3>
-          {rating && rating !== 'N/A' && (
-            <div className="flex items-center gap-1 text-amber-500">
-              <Star size={16} fill="currentColor" />
-              <span className="text-sm font-medium">{rating}</span>
+        <div className="flex gap-4">
+          {image_url && (
+            <div className="flex-shrink-0">
+              <img
+                src={image_url}
+                alt={product_name}
+                className="w-24 h-24 object-contain rounded-lg bg-white"
+                loading="lazy"
+              />
             </div>
           )}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between">
+              <h3 className="text-xl font-semibold font-serif text-[var(--text)]">{product_name}</h3>
+              {rating && rating !== 'N/A' && rating !== '0/5' && (
+                <div className="flex items-center gap-1 text-amber-500">
+                  <Star size={16} fill="currentColor" />
+                  <span className="text-sm font-medium">{rating}</span>
+                </div>
+              )}
+            </div>
+            {summary && (
+              <p className="mt-2 text-[var(--text-secondary)] text-sm">{summary}</p>
+            )}
+          </div>
         </div>
-        {summary && (
-          <p className="mt-2 text-[var(--text-secondary)] text-sm">{summary}</p>
-        )}
       </div>
 
       {/* Features */}
@@ -148,7 +164,7 @@ export default function ProductReview({ product }: ProductReviewProps) {
                   </div>
                   <p className="text-sm font-semibold text-[var(--text)] truncate">{link.title}</p>
                   <p className="text-lg font-bold text-[var(--text)] mt-1">
-                    {link.currency} {link.price.toFixed(2)}
+                    {link.price > 0 ? `${link.currency} ${link.price.toFixed(2)}` : 'Check price →'}
                   </p>
                 </div>
                 <ExternalLink size={16} className="text-[var(--text-muted)] group-hover:text-[var(--text-secondary)] flex-shrink-0 ml-2" />

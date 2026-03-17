@@ -99,6 +99,19 @@ async def product_affiliate(
                 "success": True
             }
 
+        # Check for curated Amazon links matching the user's query
+        user_message = state.get("user_message", "")
+        curated_amazon_links = None
+        try:
+            from app.services.affiliate.providers.curated_amazon_links import find_curated_links
+            curated_amazon_links = find_curated_links(user_message)
+            if not curated_amazon_links and category:
+                curated_amazon_links = find_curated_links(category)
+            if curated_amazon_links:
+                logger.info(f"[product_affiliate] Found {len(curated_amazon_links)} curated Amazon links for query")
+        except Exception as e:
+            logger.warning(f"[product_affiliate] Curated link lookup failed: {e}")
+
         # Get all available providers from the manager
         available_providers = affiliate_manager.get_available_providers()
         # Filter out "mock" provider - we want real affiliate providers
@@ -154,6 +167,30 @@ async def product_affiliate(
         # Helper function to search a provider for all products (in parallel)
         async def search_provider(provider_name: str) -> Dict[str, Any]:
             """Search all products on a single provider using asyncio.gather."""
+            # For Amazon: use curated links if available (matched against user query)
+            if provider_name == "amazon" and curated_amazon_links:
+                results = []
+                for i, product_name in enumerate(products_to_search):
+                    if i < len(curated_amazon_links):
+                        link = curated_amazon_links[i]
+                        results.append({
+                            "product_name": product_name,
+                            "offers": [{
+                                "merchant": "Amazon",
+                                "price": 0,
+                                "currency": "USD",
+                                "url": link,
+                                "condition": "new",
+                                "title": product_name,
+                                "image_url": "",
+                                "rating": None,
+                                "review_count": None,
+                                "source": "amazon",
+                            }]
+                        })
+                logger.info(f"[product_affiliate] Amazon: used {len(results)} curated links (matched user query)")
+                return {"provider": provider_name, "results": results}
+
             provider = affiliate_manager.get_provider(provider_name)
             if not provider:
                 return {"provider": provider_name, "results": []}
