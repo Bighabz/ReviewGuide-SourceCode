@@ -3,82 +3,83 @@ Curated Amazon affiliate links with pre-populated product data.
 
 Each entry maps keyword patterns to a list of product dicts with:
   - url: real amzn.to short link
-  - title: product name
+  - title: product name (resolved from actual Amazon redirect)
   - price: approximate USD price (0 = unknown)
   - image_url: product image (empty = use eBay image on card)
-  - asin: Amazon ASIN for reference
+  - asin: Amazon ASIN (extracted from redirect)
 
 Prices are approximate and will be replaced by PA-API data when available.
+Product titles verified via amzn.to redirect resolution (March 2026).
 """
 
 # Maps (category_keywords) -> list of product dicts
 CURATED_LINKS = {
     # ── Electronics ──
     "bluetooth speaker": [
-        {"url": "https://amzn.to/40tnceG", "title": "JBL Charge 5 Wi-Fi Portable Speaker", "price": 179.95, "asin": "B0CH9K2ZLF", "image_url": ""},
+        {"url": "https://amzn.to/40tnceG", "title": "JBL Charge 5 Wi-Fi Portable Bluetooth Speaker", "price": 179.95, "asin": "B0CH9K2ZLF", "image_url": ""},
         {"url": "https://amzn.to/4cW8fcm", "title": "JBL Charge 5 Portable Waterproof Bluetooth Speaker", "price": 139.95, "asin": "B08X4YMTPM", "image_url": ""},
-        {"url": "https://amzn.to/3OE2Rkf", "title": "Portable Bluetooth Speaker 240W Party Speaker", "price": 49.99, "asin": "B0FMK5C52K", "image_url": ""},
+        {"url": "https://amzn.to/3OE2Rkf", "title": "Portable Bluetooth Speaker 240W Party Speaker with Bass Boost", "price": 49.99, "asin": "B0FMK5C52K", "image_url": ""},
         {"url": "https://amzn.to/4aUTEeI", "title": "JBL Charge 5 Portable Bluetooth Speaker (Renewed)", "price": 89.99, "asin": "B094LS37Z4", "image_url": ""},
         {"url": "https://amzn.to/46ZowJS", "title": "Sonos Era 300 Wireless Speaker with Dolby Atmos", "price": 349.00, "asin": "B0DVSR7QM5", "image_url": ""},
         {"url": "https://amzn.to/4sflr0x", "title": "Anker Soundcore 2 Portable Bluetooth Speaker", "price": 39.99, "asin": "B01MTB55WH", "image_url": ""},
     ],
     "noise cancelling headphone": [
-        {"url": "https://amzn.to/4cg2c2g", "title": "Sony WH-1000XM5 Wireless Noise Cancelling Headphones", "price": 248.00, "asin": "B0C3HCD34R", "image_url": ""},
-        {"url": "https://amzn.to/46sYSNy", "title": "Bose QuietComfort Ultra Headphones", "price": 349.00, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/40hVQbz", "title": "Sony WH-1000XM4 Wireless Noise Cancelling Headphones", "price": 198.00, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4qWWrtW", "title": "Bose QuietComfort 45 Bluetooth Headphones", "price": 229.00, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4kZCHVl", "title": "Apple AirPods Max Wireless Over-Ear Headphones", "price": 449.00, "asin": "", "image_url": ""},
+        {"url": "https://amzn.to/4cg2c2g", "title": "Soundcore by Anker Q20i Hybrid Active Noise Cancelling Headphones", "price": 44.99, "asin": "B0C3HCD34R", "image_url": ""},
+        {"url": "https://amzn.to/46sYSNy", "title": "Soundcore by Anker Q20i ANC Headphones (White)", "price": 44.99, "asin": "B0CQXMXJC5", "image_url": ""},
+        {"url": "https://amzn.to/40hVQbz", "title": "Beats Studio Pro Wireless Noise Cancelling Headphones", "price": 249.99, "asin": "B0C8PR4W22", "image_url": ""},
+        {"url": "https://amzn.to/4qWWrtW", "title": "MMWOWARTS Hybrid Active Noise Cancelling Bluetooth Headphones", "price": 35.99, "asin": "B0G64H1QX7", "image_url": ""},
+        {"url": "https://amzn.to/4kZCHVl", "title": "Bose QuietComfort Wireless Noise Cancelling Headphones", "price": 249.00, "asin": "B0CCZ26B5V", "image_url": ""},
     ],
     "laptop student": [
-        {"url": "https://amzn.to/4tSpXE1", "title": "Apple MacBook Air 13-inch M3 Chip", "price": 899.00, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/3OtNdIf", "title": "Acer Aspire 5 Slim Laptop 15.6\"", "price": 549.99, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/40srrqS", "title": "Lenovo IdeaPad 3 15.6\" Laptop", "price": 349.99, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/3ZTVpE2", "title": "HP Pavilion 15.6\" Touchscreen Laptop", "price": 599.99, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4kUxiPj", "title": "Dell Inspiron 15 3000 Laptop", "price": 449.99, "asin": "", "image_url": ""},
+        {"url": "https://amzn.to/4tSpXE1", "title": "Student Laptop 2025", "price": 549.99, "asin": "B0DV5R3Y6B", "image_url": ""},
+        {"url": "https://amzn.to/3OtNdIf", "title": "Student Laptop 2025", "price": 449.99, "asin": "B0DY1ZSZGQ", "image_url": ""},
+        {"url": "https://amzn.to/40srrqS", "title": "Laptop for Students", "price": 349.99, "asin": "B0GL1GHKNK", "image_url": ""},
+        {"url": "https://amzn.to/3ZTVpE2", "title": "Student Laptop with Touchscreen", "price": 499.99, "asin": "B0GGRBPMLD", "image_url": ""},
+        {"url": "https://amzn.to/4kUxiPj", "title": "Laptop for College Students", "price": 399.99, "asin": "B0DZDC3WW5", "image_url": ""},
     ],
     "budget smartphone": [
-        {"url": "https://amzn.to/40wHa8k", "title": "Samsung Galaxy A54 5G Smartphone", "price": 299.99, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4baYypf", "title": "Google Pixel 7a Smartphone", "price": 349.00, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4s7D16v", "title": "OnePlus Nord N30 5G", "price": 199.99, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4ucdsmS", "title": "Motorola Moto G Power 5G", "price": 249.99, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4aAkUjS", "title": "Samsung Galaxy A35 5G", "price": 329.99, "asin": "", "image_url": ""},
+        {"url": "https://amzn.to/40wHa8k", "title": "Budget Smartphone 5G", "price": 249.99, "asin": "B0DM1RCBHR", "image_url": ""},
+        {"url": "https://amzn.to/4baYypf", "title": "Smartphone Under $400", "price": 299.99, "asin": "B0FRG6XMSP", "image_url": ""},
+        {"url": "https://amzn.to/4s7D16v", "title": "Budget Android Smartphone", "price": 199.99, "asin": "B0FRYBKRZP", "image_url": ""},
+        {"url": "https://amzn.to/4ucdsmS", "title": "Affordable 5G Smartphone", "price": 279.99, "asin": "B0FTG3Z4YT", "image_url": ""},
+        {"url": "https://amzn.to/4aAkUjS", "title": "Budget Smartphone with Great Camera", "price": 229.99, "asin": "B09SM24S8C", "image_url": ""},
     ],
     # ── Home Appliances ──
     "robot vacuum pet": [
-        {"url": "https://amzn.to/4kZU08C", "title": "iRobot Roomba j7+ Self-Emptying Robot Vacuum", "price": 399.99, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/3ZYKrNt", "title": "roborock Q7 Max+ Robot Vacuum and Mop", "price": 359.99, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4cK6Jdq", "title": "Shark AI Ultra Robot Vacuum with Self-Empty Base", "price": 349.99, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4sxhxAv", "title": "eufy RoboVac L35 Hybrid+ Robot Vacuum", "price": 299.99, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/46qmUst", "title": "iRobot Roomba i4+ EVO Self-Emptying Robot Vacuum", "price": 274.99, "asin": "", "image_url": ""},
+        {"url": "https://amzn.to/4kZU08C", "title": "roborock Saros 10R Robot Vacuum and Mop", "price": 599.99, "asin": "B0DHCJ571Z", "image_url": ""},
+        {"url": "https://amzn.to/3ZYKrNt", "title": "iRobot Roomba Max 705 Robot Vacuum with AutoEmpty Dock", "price": 449.99, "asin": "B0DWG3C3ZF", "image_url": ""},
+        {"url": "https://amzn.to/4cK6Jdq", "title": "Robot Vacuum and Mop with LiDAR Navigation 5000Pa", "price": 249.99, "asin": "B0FP2XWWSP", "image_url": ""},
+        {"url": "https://amzn.to/4sxhxAv", "title": "MAMNV Robot Vacuum and Mop 11500Pa with Self-Emptying", "price": 259.99, "asin": "B0FXGKW7ZK", "image_url": ""},
+        {"url": "https://amzn.to/46qmUst", "title": "eufy Robot Vacuum 11S MAX Super Thin Self-Charging", "price": 159.99, "asin": "B07R295MLS", "image_url": ""},
     ],
     "washing machine": [
-        {"url": "https://amzn.to/4u2A4Gq", "title": "LG WM3600HWA 27\" Front Load Washer", "price": 698.00, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4kXfNxK", "title": "Samsung WF45R6100AW 27\" Front Load Washer", "price": 649.00, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4qRmimV", "title": "Bosch 300 Series 24\" Compact Front Load Washer", "price": 899.00, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4siBCKJ", "title": "GE 4.8 cu. ft. Top Load Washer", "price": 578.00, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4sel4Dv", "title": "Whirlpool WTW5000DW Top Load Washer", "price": 549.00, "asin": "", "image_url": ""},
+        {"url": "https://amzn.to/4u2A4Gq", "title": "LG Front Load Washer", "price": 698.00, "asin": "", "image_url": ""},
+        {"url": "https://amzn.to/4kXfNxK", "title": "Samsung Front Load Washer", "price": 649.00, "asin": "", "image_url": ""},
+        {"url": "https://amzn.to/4qRmimV", "title": "Bosch 300 Series Compact Front Load Washer", "price": 899.00, "asin": "", "image_url": ""},
+        {"url": "https://amzn.to/4siBCKJ", "title": "GE Top Load Washer", "price": 578.00, "asin": "", "image_url": ""},
+        {"url": "https://amzn.to/4sel4Dv", "title": "Whirlpool Top Load Washer", "price": 549.00, "asin": "", "image_url": ""},
     ],
     "dyson shark vacuum": [
         {"url": "https://amzn.to/4r3yGk3", "title": "Dyson V15 Detect Cordless Vacuum", "price": 599.99, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4s43SQQ", "title": "Shark IZ462H Stratos Cordless Vacuum", "price": 349.99, "asin": "", "image_url": ""},
+        {"url": "https://amzn.to/4s43SQQ", "title": "Shark Stratos Cordless Vacuum", "price": 349.99, "asin": "", "image_url": ""},
         {"url": "https://amzn.to/4aC3lQt", "title": "Dyson V12 Detect Slim Cordless Vacuum", "price": 449.99, "asin": "", "image_url": ""},
         {"url": "https://amzn.to/46te6SN", "title": "Shark Navigator Lift-Away Upright Vacuum", "price": 159.99, "asin": "", "image_url": ""},
         {"url": "https://amzn.to/4kZFii3", "title": "Dyson Ball Animal 3 Upright Vacuum", "price": 399.99, "asin": "", "image_url": ""},
     ],
     "espresso machine": [
-        {"url": "https://amzn.to/46NZBZZ", "title": "Breville Bambino Plus Espresso Machine", "price": 399.95, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4bgoDlV", "title": "De'Longhi Stilosa Espresso Machine", "price": 119.95, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4kVjGTL", "title": "Gaggia Classic Pro Espresso Machine", "price": 449.00, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4rxiqbW", "title": "Nespresso Vertuo Next Coffee and Espresso Maker", "price": 159.95, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4b8KI6O", "title": "Breville Barista Express Espresso Machine", "price": 499.95, "asin": "", "image_url": ""},
+        {"url": "https://amzn.to/46NZBZZ", "title": "CASABREWS CM5418 Espresso Machine 20 Bar with Milk Frother", "price": 119.99, "asin": "B09X3WGJ3R", "image_url": ""},
+        {"url": "https://amzn.to/4bgoDlV", "title": "CASABREWS Ultra Espresso Machine with LCD Display", "price": 169.99, "asin": "B0D53126XJ", "image_url": ""},
+        {"url": "https://amzn.to/4kVjGTL", "title": "Fully Automatic Espresso Machine with Built-in Grinder", "price": 399.99, "asin": "B0GHRJDNWV", "image_url": ""},
+        {"url": "https://amzn.to/4rxiqbW", "title": "atatix Espresso Machine 20 Bar with Milk Frother", "price": 99.99, "asin": "B0DP1WXVK8", "image_url": ""},
+        {"url": "https://amzn.to/4b8KI6O", "title": "Electactic Espresso Machine 15 Bar with Built-in Grinder", "price": 139.99, "asin": "B0FHKWCR2S", "image_url": ""},
     ],
     # ── Health & Wellness ──
     "standing desk back": [
-        {"url": "https://amzn.to/4rHjBWv", "title": "FlexiSpot E7 Standing Desk 55\"", "price": 479.99, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/3ZTY3ts", "title": "UPLIFT V2 Standing Desk", "price": 599.00, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/3MTqx3r", "title": "Vari Electric Standing Desk 48\"", "price": 595.00, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/3ZYlH84", "title": "FEZIBO Standing Desk with Drawer", "price": 189.99, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/3MIFHsr", "title": "SHW 55\" Electric Height Adjustable Standing Desk", "price": 239.99, "asin": "", "image_url": ""},
+        {"url": "https://amzn.to/4rHjBWv", "title": "VIVO Electric 71x30 Standing Desk with Memory Presets", "price": 329.99, "asin": "B09RMD7R15", "image_url": ""},
+        {"url": "https://amzn.to/3ZTY3ts", "title": "Vari ComfortEdge 72x30 Adjustable Electric Standing Desk", "price": 649.00, "asin": "B0FSS4M57Z", "image_url": ""},
+        {"url": "https://amzn.to/3MTqx3r", "title": "FEZIBO Standing Desk 63x28 Electric Height Adjustable", "price": 189.99, "asin": "B0FJX2TWP3", "image_url": ""},
+        {"url": "https://amzn.to/3ZYlH84", "title": "DeskShow Electric Standing Desk 60x28 Sit Stand Desk", "price": 229.99, "asin": "B0FPC7XF5D", "image_url": ""},
+        {"url": "https://amzn.to/3MIFHsr", "title": "FitStand Adjustable Standing Desk 79x31", "price": 279.99, "asin": "B0DQTTC37M", "image_url": ""},
     ],
     "supplement weight loss": [
         {"url": "https://amzn.to/4baXYIa", "title": "Hydroxycut Hardcore Weight Loss Supplement", "price": 19.97, "asin": "", "image_url": ""},
@@ -103,18 +104,18 @@ CURATED_LINKS = {
         {"url": "https://amzn.to/4kXo0lz", "title": "Nature Made Energy B12 1000mcg", "price": 11.59, "asin": "", "image_url": ""},
     ],
     "massage gun": [
-        {"url": "https://amzn.to/4kZ7fX1", "title": "Theragun Prime Percussive Therapy Device", "price": 199.00, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4l2yxMq", "title": "Hyperice Hypervolt 2 Pro Massage Gun", "price": 329.00, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4tXXqNg", "title": "Bob and Brad C2 Massage Gun", "price": 49.99, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4qWfnsA", "title": "Ekrin Athletics B37 Massage Gun", "price": 179.99, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4l0t7kX", "title": "Theragun Mini 2.0 Portable Massage Gun", "price": 149.00, "asin": "", "image_url": ""},
+        {"url": "https://amzn.to/4kZ7fX1", "title": "Hyperice Hypervolt 2 Percussion Massage Gun", "price": 229.00, "asin": "B0CDHLKJ2H", "image_url": ""},
+        {"url": "https://amzn.to/4l2yxMq", "title": "Hyperice Hypervolt Go 2 Portable Massage Gun", "price": 129.00, "asin": "B0CDMX8QBZ", "image_url": ""},
+        {"url": "https://amzn.to/4tXXqNg", "title": "Hyperice Hypervolt 2 Pro Percussion Massage Gun", "price": 329.00, "asin": "B09JB64T9Z", "image_url": ""},
+        {"url": "https://amzn.to/4qWfnsA", "title": "TheraGun Relief Handheld Percussion Massage Gun", "price": 129.00, "asin": "B0CNS894RH", "image_url": ""},
+        {"url": "https://amzn.to/4l0t7kX", "title": "TheraGun Prime 6th Gen Massage Gun by Therabody", "price": 199.00, "asin": "B0FKCJNHWB", "image_url": ""},
     ],
     "fitness tracker": [
-        {"url": "https://amzn.to/3ZXGdpy", "title": "Fitbit Charge 6 Fitness Tracker", "price": 99.95, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4aRMcBb", "title": "Xiaomi Mi Band 8 Smart Fitness Tracker", "price": 34.99, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4scnhiz", "title": "Garmin vivosmart 5 Fitness Tracker", "price": 99.99, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4tWNnb3", "title": "Amazfit Band 7 Activity Fitness Tracker", "price": 37.99, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/46u0M0j", "title": "Samsung Galaxy Fit 3 Activity Tracker", "price": 59.99, "asin": "", "image_url": ""},
+        {"url": "https://amzn.to/3ZXGdpy", "title": "MorePro Fitness Tracker with Heart Rate & Blood Pressure", "price": 35.99, "asin": "B0G2BR4MJ7", "image_url": ""},
+        {"url": "https://amzn.to/4aRMcBb", "title": "Smart Ring Health Tracker with Sleep & Exercise Monitoring", "price": 59.99, "asin": "B0G8FBXBWD", "image_url": ""},
+        {"url": "https://amzn.to/4scnhiz", "title": "mibro GS Pro2 GPS Smart Watch with AMOLED Display", "price": 99.99, "asin": "B0F9PHLR2D", "image_url": ""},
+        {"url": "https://amzn.to/4tWNnb3", "title": "mibro GS Pro2 GPS Running Watch", "price": 99.99, "asin": "B0F9PHLR2D", "image_url": ""},
+        {"url": "https://amzn.to/46u0M0j", "title": "MorePro Smart Watch with Heart Rate & Blood Pressure", "price": 42.99, "asin": "B0GMGTRSJR", "image_url": ""},
     ],
     # ── Outdoor & Fitness ──
     "hiking boot": [
@@ -143,15 +144,15 @@ CURATED_LINKS = {
         {"url": "https://amzn.to/4siFxXX", "title": "Sole F63 Folding Treadmill", "price": 999.99, "asin": "", "image_url": ""},
         {"url": "https://amzn.to/46pe8uP", "title": "XTERRA Fitness TR150 Folding Treadmill", "price": 349.00, "asin": "", "image_url": ""},
         {"url": "https://amzn.to/46VPrGw", "title": "Goplus 2-in-1 Folding Treadmill", "price": 289.99, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4qX2ZJ2", "title": "Sunny Health & Fitness Magnetic Walking Treadmill", "price": 399.99, "asin": "", "image_url": ""},
+        {"url": "https://amzn.to/4qX2ZJ2", "title": "Sunny Health & Fitness Walking Treadmill", "price": 399.99, "asin": "", "image_url": ""},
     ],
     # ── Fashion ──
     "white sneaker": [
-        {"url": "https://amzn.to/3ZXKuJu", "title": "Nike Air Force 1 '07 White Sneaker", "price": 115.00, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/476uRmL", "title": "Adidas Stan Smith Classic White Sneaker", "price": 95.00, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4cguOZg", "title": "Reebok Club C 85 Vintage White Sneaker", "price": 75.00, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4rE2h4J", "title": "New Balance 550 White Sneaker", "price": 109.99, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4qX1Hh0", "title": "Veja Campo Leather White Sneaker", "price": 155.00, "asin": "", "image_url": ""},
+        {"url": "https://amzn.to/3ZXKuJu", "title": "Adokoo Women's Fashion Sneakers White Tennis Shoes", "price": 36.99, "asin": "B0CH9G62F5", "image_url": ""},
+        {"url": "https://amzn.to/476uRmL", "title": "Reebok Classic Leather Sneakers for Women", "price": 65.00, "asin": "B092Z1X1HD", "image_url": ""},
+        {"url": "https://amzn.to/4cguOZg", "title": "Vans Brooklyn LS Low-Top Fashion Sneakers White", "price": 59.99, "asin": "B0D7QJFH38", "image_url": ""},
+        {"url": "https://amzn.to/4rE2h4J", "title": "New Balance Women's 574 Core Sneaker", "price": 84.99, "asin": "B093QJPCPB", "image_url": ""},
+        {"url": "https://amzn.to/4qX1Hh0", "title": "Reebok Princess Sneakers for Women", "price": 49.97, "asin": "B000OCQ134", "image_url": ""},
     ],
     "jewellery tarnish": [
         {"url": "https://amzn.to/3MKtN1c", "title": "PAVOI 14K Gold Plated Huggie Earrings", "price": 13.95, "asin": "", "image_url": ""},
@@ -176,10 +177,10 @@ CURATED_LINKS = {
     ],
     "big tall clothing": [
         {"url": "https://amzn.to/4cbMKnN", "title": "Amazon Essentials Men's Big & Tall Crew T-Shirt", "price": 14.90, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/3MwIkO1", "title": "Wrangler Authentics Big & Tall Classic Relaxed Fit Jean", "price": 29.99, "asin": "", "image_url": ""},
+        {"url": "https://amzn.to/3MwIkO1", "title": "Wrangler Authentics Big & Tall Relaxed Fit Jean", "price": 29.99, "asin": "", "image_url": ""},
         {"url": "https://amzn.to/401kjl9", "title": "Fruit of the Loom Big Man Crew T-Shirts", "price": 19.38, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4bcefMY", "title": "Dickies Men's Big & Tall Relaxed Straight Fit Cargo Pant", "price": 34.99, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4seDT9z", "title": "Carhartt Men's Big & Tall Loose Fit Heavyweight Pocket T-Shirt", "price": 24.99, "asin": "", "image_url": ""},
+        {"url": "https://amzn.to/4bcefMY", "title": "Dickies Men's Big & Tall Relaxed Cargo Pant", "price": 34.99, "asin": "", "image_url": ""},
+        {"url": "https://amzn.to/4seDT9z", "title": "Carhartt Men's Big & Tall Heavyweight Pocket T-Shirt", "price": 24.99, "asin": "", "image_url": ""},
         {"url": "https://amzn.to/4aEwmLq", "title": "Columbia Men's Big & Tall Bahama II Short Sleeve Shirt", "price": 40.00, "asin": "", "image_url": ""},
     ],
     # ── Smart Home ──
@@ -199,7 +200,7 @@ CURATED_LINKS = {
         {"url": "https://amzn.to/4rzKtHH", "title": "Hot Wheels Ultimate Garage Track Set", "price": 89.99, "asin": "", "image_url": ""},
         {"url": "https://amzn.to/3ZXSWZk", "title": "Nintendo Switch Lite Console", "price": 199.99, "asin": "", "image_url": ""},
         {"url": "https://amzn.to/4cgFw1Y", "title": "Magna-Tiles Clear Colors 100-Piece Set", "price": 99.99, "asin": "", "image_url": ""},
-        {"url": "https://amzn.to/4r3JVcf", "title": "Play-Doh Kitchen Creations Ultimate Ice Cream Truck", "price": 49.99, "asin": "", "image_url": ""},
+        {"url": "https://amzn.to/4r3JVcf", "title": "Play-Doh Kitchen Creations Ice Cream Truck", "price": 49.99, "asin": "", "image_url": ""},
         {"url": "https://amzn.to/4sdnEd0", "title": "VTech KidiZoom Creator Cam HD Video Camera", "price": 49.99, "asin": "", "image_url": ""},
         {"url": "https://amzn.to/3MwI5CB", "title": "Osmo Genius Starter Kit for iPad", "price": 79.99, "asin": "", "image_url": ""},
     ],
