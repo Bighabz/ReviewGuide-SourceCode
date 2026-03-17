@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Core Platform
 status: completed
-stopped_at: Completed 15-02-PLAN.md
-last_updated: "2026-03-17T18:51:32.717Z"
-last_activity: 2026-03-17 — Phase 15 Plan 01 complete; extractResultsData utility GREEN (11 tests), RED scaffolds for RES-01 through RES-06/RESP-01/RESP-02; CSS card accent variables added
+stopped_at: Completed 15-03-PLAN.md
+last_updated: "2026-03-17T19:05:00.000Z"
+last_activity: 2026-03-17 — Phase 15 Plan 03 complete; /results/:id page wired, MobileHeader expand navigates to results, MobileTabBar Ask tab active on /results; human verification APPROVED
 progress:
   total_phases: 16
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 22
-  completed_plans: 17
-  percent: 84
+  completed_plans: 18
+  percent: 88
 ---
 
 # Project State
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 
 ## Current Position
 
-Phase: 15 of 16 (Results Screen) — IN PROGRESS
-Plan: 02 of 03 — COMPLETE
-Status: Phase 15 Plan 02 complete — ResultsProductCard, ResultsQuickActions, ResultsHeader built; ResultsPage functional; 28/28 tests GREEN. Ready for Plan 03.
-Last activity: 2026-03-17 — Phase 15 Plan 02 complete; 3 presentational components + working ResultsPage; 17 RED Wave-0 tests turned GREEN; 254 total suite GREEN
+Phase: 15 of 16 (Results Screen) — COMPLETE
+Plan: 03 of 03 — COMPLETE
+Status: Phase 15 Plan 03 complete — /results/:id page assembled, MobileHeader expand wired, MobileTabBar Ask tab active on /results. Human verification APPROVED.
+Last activity: 2026-03-17 — Phase 15 Plan 03 complete; Results page integrated with all components; navigation wiring functional; all 8 requirements confirmed
 
 Progress: [████████░░] 84%
 
@@ -74,6 +74,10 @@ Progress: [████████░░] 84%
 - [Phase 15-02]: useState lazy initializer for localStorage avoids useEffect async timing in tests — synchronous init ensures data available on first render
 - [Phase 15-02]: Single-grid responsive pattern: combine grid-cols-3 + overflow-x-auto + snap-x on one container — jsdom renders all hidden elements so avoid desktop/mobile duplicates
 - [Phase 15-02]: ResultsHeader Share relabeled Copy Link to avoid duplicate getByText conflict with ResultsQuickActions Share button
+- [Phase 15-03]: Results page uses 'use client' with useEffect localStorage read — avoids SSR/hydration issues since session data is client-side only
+- [Phase 15-03]: MobileHeader expand icon hidden on /results route (already on results page), wired to /results/:sessionId on /chat
+- [Phase 15-03]: MobileHeader back arrow navigates to /chat when on /results route — preserves chat→results flow
+- [Phase 15-03]: Human verification of complete Phase 15 Results screen APPROVED — all 8 requirements (RES-01 through RES-06, RESP-01, RESP-02) confirmed on mobile and desktop
 
 ### Pending Todos
 
@@ -87,6 +91,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-17T18:51:32.712Z
-Stopped at: Completed 15-02-PLAN.md
-Resume file: .planning/phases/15-results-screen/15-03-PLAN.md
+Last session: 2026-03-17T19:05:00.000Z
+Stopped at: Completed 15-03-PLAN.md
+Resume file: .planning/phases/16-profile-and-settings/ (Phase 15 complete, Phase 16 next)
