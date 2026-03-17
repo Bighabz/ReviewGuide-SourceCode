@@ -23,12 +23,12 @@
 
 ### Chat
 
-- [ ] **CHAT-01**: AI responses follow structured format: summary → ranked inline product cards → source citations → follow-up chips
-- [ ] **CHAT-02**: Inline product cards are compact (64px height) with image, rank, name, price, and affiliate link
-- [ ] **CHAT-03**: Chat header shows real-time status ("Researching • 4 sources analyzed") during streaming
-- [ ] **CHAT-04**: Source citations are clickable links to actual review article URLs from search results
-- [ ] **CHAT-05**: User message bubbles are right-aligned blue, AI bubbles are left-aligned white with "✦ ReviewGuide" label
-- [ ] **CHAT-06**: Follow-up suggestion chips appear below AI responses and auto-submit on tap
+- [x] **CHAT-01**: AI responses follow structured format: summary → ranked inline product cards → source citations → follow-up chips
+- [x] **CHAT-02**: Inline product cards are compact (64px height) with image, rank, name, price, and affiliate link
+- [x] **CHAT-03**: Chat header shows real-time status ("Researching • 4 sources analyzed") during streaming
+- [x] **CHAT-04**: Source citations are clickable links to actual review article URLs from search results
+- [x] **CHAT-05**: User message bubbles are right-aligned blue, AI bubbles are left-aligned white with "✦ ReviewGuide" label
+- [x] **CHAT-06**: Follow-up suggestion chips appear below AI responses and auto-submit on tap
 
 ### Results
 
@@ -96,12 +96,12 @@
 | DISC-03 | Phase 13 | Complete |
 | DISC-04 | Phase 13 | Complete |
 | DISC-05 | Phase 13 | Complete |
-| CHAT-01 | Phase 14 | Pending |
-| CHAT-02 | Phase 14 | Pending |
-| CHAT-03 | Phase 14 | Pending |
-| CHAT-04 | Phase 14 | Pending |
-| CHAT-05 | Phase 14 | Pending |
-| CHAT-06 | Phase 14 | Pending |
+| CHAT-01 | Phase 14 | Complete |
+| CHAT-02 | Phase 14 | Complete |
+| CHAT-03 | Phase 14 | Complete |
+| CHAT-04 | Phase 14 | Complete |
+| CHAT-05 | Phase 14 | Complete |
+| CHAT-06 | Phase 14 | Complete |
 | RES-01 | Phase 15 | Pending |
 | RES-02 | Phase 15 | Pending |
 | RES-03 | Phase 15 | Pending |
