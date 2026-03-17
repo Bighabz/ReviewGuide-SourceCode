@@ -777,62 +777,98 @@ FORMAT REQUIREMENTS:
                 except (json.JSONDecodeError, Exception) as desc_error:
                     logger.warning(f"[product_compose] Failed to parse descriptions: {desc_error}")
 
-        # Cross-retailer price comparison (keep as structured UI block)
-        # Filter to only products that appear in the blog article
-        price_comparisons_raw = _find_price_comparisons(products_by_provider) if len(products_by_provider) >= 2 else {}
-        price_comparisons = {}
-        for comp_key, comp_data in price_comparisons_raw.items():
-            if any(_fuzzy_product_match(comp_key, bname, threshold=0.4) for bname in blog_product_names):
-                price_comparisons[comp_key] = comp_data
-            else:
-                logger.debug(f"[product_compose] Filtered price comparison '{comp_key}' — not in blog article")
-        if price_comparisons:
-            logger.info(f"[product_compose] Found {len(price_comparisons)} cross-retailer price comparisons")
-            # Tag products with best_price badges
-            for provider_name, data in products_by_provider.items():
-                for product in data["products"]:
-                    title = product.get("title", "")
-                    for comp_key, comp_data in price_comparisons.items():
-                        if _fuzzy_product_match(title, comp_key, threshold=0.5):
-                            if comp_data["best_retailer"] == provider_name:
-                                product["best_price"] = True
-                                product["savings"] = comp_data["savings"]
-                                if comp_data["other_prices"]:
-                                    product["compared_retailer"] = comp_data["other_prices"][0]["retailer"].title()
-                            break
+        # ── Build unified product_review cards (one per product, multi-retailer) ──
+        # Only include products that have offers from 2+ providers (e.g., both Amazon + eBay)
+        # Skip products with placeholder/mock images or hallucinated data
 
-            # Build price comparison UI block
-            comparison_items = []
-            for comp_key, comp_data in price_comparisons.items():
-                offers = []
-                for provider_name, data in products_by_provider.items():
-                    for product in data["products"]:
-                        if _fuzzy_product_match(product.get("title", ""), comp_key, threshold=0.5):
-                            offers.append({
-                                "merchant": provider_name.title(),
-                                "price": product.get("price", 0),
-                                "url": product.get("url", ""),
-                                "image_url": product.get("image_url", ""),
-                                "rating": product.get("rating"),
-                                "review_count": product.get("review_count"),
-                                "best": provider_name == comp_data["best_retailer"],
-                            })
-                            break
-                if len(offers) >= 2:
-                    comparison_items.append({
-                        "product_name": comp_key,
-                        "image_url": offers[0].get("image_url", ""),
-                        "savings": comp_data["savings"],
-                        "offers": sorted(offers, key=lambda x: x["price"]),
+        review_card_count = 0
+        seen_card_names = set()
+
+        for idx, product in enumerate(products_with_offers, 1):
+            pname = product.get("name", "")
+            all_offers = product.get("all_offers", [])
+            if not all_offers:
+                continue
+
+            # Filter out offers with placeholder images (mock Amazon data)
+            real_offers = [
+                o for o in all_offers
+                if o.get("url") and "placehold.co" not in o.get("image_url", "")
+            ]
+
+            # Require at least 2 providers (e.g., both eBay + Amazon)
+            providers_in_offers = set(o.get("source", "") for o in real_offers)
+            if len(providers_in_offers) < 2:
+                # Fallback: include if at least 1 real offer exists (for curated Amazon links)
+                curated_offers = [o for o in real_offers if "amzn.to" in o.get("url", "")]
+                ebay_offers = [o for o in real_offers if o.get("source") == "ebay"]
+                if not (curated_offers or ebay_offers):
+                    continue
+
+            if pname in seen_card_names:
+                continue
+            seen_card_names.add(pname)
+
+            # Build affiliate_links array for the card
+            affiliate_links = []
+            best_image = ""
+            for o in real_offers:
+                affiliate_links.append({
+                    "product_id": f"{o.get('source', 'unknown')}-{idx}",
+                    "title": o.get("merchant", "") + " - " + pname,
+                    "price": o.get("price", 0),
+                    "currency": o.get("currency", "USD"),
+                    "affiliate_link": o.get("url", ""),
+                    "merchant": o.get("merchant", ""),
+                    "image_url": o.get("image_url", ""),
+                    "rating": o.get("rating"),
+                    "review_count": o.get("review_count"),
+                })
+                if not best_image and o.get("image_url"):
+                    best_image = o["image_url"]
+
+            if not affiliate_links:
+                continue
+
+            # Get review summary for this product
+            review_bundle = review_data.get(pname, {})
+            consensus = _get_result(f'consensus:{pname}', '')
+            avg_rating = review_bundle.get("avg_rating", 0)
+            total_reviews = review_bundle.get("total_reviews", 0)
+            label = editorial_labels.get(pname, "")
+
+            # Build sources list for citations
+            sources = review_bundle.get("sources", [])
+            pros = []
+            cons = []
+            for s in sources[:3]:
+                snippet = s.get("snippet", "")
+                site = s.get("site_name", "")
+                url = s.get("url", "")
+                if snippet:
+                    pros.append({
+                        "description": snippet[:150],
+                        "citations": [{"id": 1, "url": url, "title": site}] if url else []
                     })
 
-            if comparison_items:
-                ui_blocks.insert(0, {
-                    "type": "price_comparison",
-                    "title": "Price Comparison",
-                    "data": comparison_items,
-                })
-                logger.info(f"[product_compose] Added price_comparison block with {len(comparison_items)} products")
+            card_data = {
+                "product_name": pname,
+                "rating": f"{avg_rating}/5" if avg_rating else "",
+                "summary": consensus if consensus else "",
+                "features": [label] if label else [],
+                "pros": pros,
+                "cons": cons,
+                "affiliate_links": affiliate_links,
+                "rank": idx,
+            }
+
+            ui_blocks.append({
+                "type": "product_review",
+                "data": card_data,
+            })
+            review_card_count += 1
+
+        logger.info(f"[product_compose] Built {review_card_count} unified product_review cards")
 
         # ── Build blog-style assistant_text ──
 
