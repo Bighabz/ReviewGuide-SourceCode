@@ -17,7 +17,7 @@
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Response Experience Overhaul** - True token streaming, progressive product cards, parallelized backend, blog narrative with buy links (completed 2026-03-17)
-- [ ] **Phase 2: Fix Review Source Links** - Restore clickable review citations in blog-style responses
+- [x] **Phase 2: Fix Review Source Links** - Restore clickable review citations in blog-style responses (completed 2026-03-25)
 - [ ] **Phase 3: Serper Shopping Provider** - Add multi-retailer product search with images as a new affiliate provider
 - [ ] **Phase 4: Browse Page Fixes** - Fix broken amzn.to links and truncated affiliate URL on browse pages
 - [ ] **Phase 5: Amazon Creators API Migration** - Migrate Amazon provider from PA-API v5 to Creators API before May 15, 2026 deadline
@@ -61,7 +61,7 @@ Plans:
   4. At least two sources are cited per product response when review data is available
 **Plans**: 1 plan
 Plans:
-- [ ] 02-01-PLAN.md — Thread source URLs into LLM context, update system prompt, fix citations (FIX-01)
+- [x] 02-01-PLAN.md — Thread source URLs into LLM context, update system prompt, fix citations (FIX-01)
 
 ### Phase 3: Serper Shopping Provider
 **Goal**: Product search returns results from multiple retailers with product images, prices, and merchant names — not eBay alone
@@ -295,7 +295,7 @@ v2.0 phases execute sequentially: 12 -> 13 -> 14 -> 15 -> 16. Phase 12 is a hard
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 1. Response Experience Overhaul | 6/6 | Complete   | 2026-03-17 | - |
-| 2. Fix Review Source Links | v1.0 | 0/1 | Not started | - |
+| 2. Fix Review Source Links | 1/1 | Complete   | 2026-03-25 | - |
 | 3. Serper Shopping Provider | v1.0 | 0/1 | Not started | - |
 | 4. Browse Page Fixes | v1.0 | 0/1 | Not started | - |
 | 5. Amazon Creators API Migration | v1.0 | 0/TBD | Not started | - |

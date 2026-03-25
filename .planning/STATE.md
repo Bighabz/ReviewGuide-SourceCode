@@ -85,6 +85,8 @@ Progress: [█████░░░░░] 50%
 - [Phase 04-browse-page-fixes]: amzn.to URLs skip health checker HEAD requests — Amazon returns 403 to bot User-Agents, treated as always-healthy
 - [Phase 04-browse-page-fixes]: Added 5th product to menopause supplements topic from existing weight loss topic for parity
 - [Phase 04-browse-page-fixes]: Editor's Picks section inserted between editorial rule and Popular Questions on category pages
+- [Phase 02-fix-review-source-links]: Citations prefer review_source_urls (Wirecutter, RTINGS) with fallback to normalized_products — backward compatible
+- [Phase 02-fix-review-source-links]: source_refs already threaded from Phase 1 work — only "never invent URLs" guard and citations fix were missing
 
 ### Pending Todos
 
@@ -104,6 +106,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T23:44:51.150Z
-Stopped at: Completed 04-01-PLAN.md
+Last session: 2026-03-25T23:45:00Z
+Stopped at: Completed 02-01-PLAN.md (Phase 2 Fix Review Source Links)
 Resume file: None
