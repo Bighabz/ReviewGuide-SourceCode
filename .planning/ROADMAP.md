@@ -99,7 +99,10 @@ Plans:
   3. Amazon product images are displayed via direct hotlink to Amazon CDN URLs — no caching or re-hosting
   4. The amazon_provider.py file contains no AWS Signature V4 credential logic after migration
   5. Amazon integration is live on Railway before May 15, 2026
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 05-01-PLAN.md — Wave 0 RED test scaffolds, python-amazon-paapi dependency, config + loader updates (AMZN-01, AMZN-02, AMZN-03, AMZN-04)
+- [ ] 05-02-PLAN.md — Rewrite amazon_provider.py: replace PA-API v5 with Creators API library (AMZN-01, AMZN-02, AMZN-03, AMZN-04)
 
 ### Phase 6: Skimlinks Link Wrapper
 **Goal**: Product URLs from Serper Shopping and other non-Amazon, non-eBay sources are monetized via Skimlinks affiliate tracking
@@ -298,7 +301,7 @@ v2.0 phases execute sequentially: 12 -> 13 -> 14 -> 15 -> 16. Phase 12 is a hard
 | 2. Fix Review Source Links | 1/1 | Complete   | 2026-03-25 | - |
 | 3. Serper Shopping Provider | v1.0 | 0/1 | Not started | - |
 | 4. Browse Page Fixes | v1.0 | 0/1 | Not started | - |
-| 5. Amazon Creators API Migration | v1.0 | 0/TBD | Not started | - |
+| 5. Amazon Creators API Migration | v1.0 | 0/2 | Not started | - |
 | 6. Skimlinks Link Wrapper | v1.0 | 0/3 | Not started | - |
 | 7. Skimlinks Middleware + Editor's Picks | v1.0 | 0/3 | Not started | - |
 | 8. Clarifier Suggestion Chips | v1.0 | 0/3 | Not started | - |
