@@ -339,6 +339,7 @@ async def generate_chat_stream(
             "next_suggestions": [],  # Follow-up questions from next_step_suggestion tool
             "agent_statuses": [],
             "tool_citations": [],  # Initialize tool citations list
+            "speculative_results": None,  # Phase B: pre-fetched search from speculative execution
             "last_search_context": halt_state_data.get("last_search_context", {}) if halt_state_data else {},
             "search_history": halt_state_data.get("search_history", []) if halt_state_data else [],
             "errors": [],

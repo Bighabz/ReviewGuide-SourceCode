@@ -9,7 +9,7 @@ from langgraph.graph import StateGraph, END
 from app.schemas.graph_state import GraphState
 from app.core.config import settings
 from app.core.colored_logging import get_colored_logger
-from app.services.fast_router import fast_router_sync
+from app.services.fast_router import fast_router_sync, fast_router_with_speculation
 
 # Import the 5 main agent classes
 from app.agents.safety_agent import SafetyAgent
@@ -167,11 +167,24 @@ async def safety_node(state: GraphState) -> Dict[str, Any]:
         and update.get("next_agent") == "intent"
     ):
         try:
-            router_result = fast_router_sync(
-                state.get("user_message", ""),
-                state.get("conversation_history", []),
-                state.get("last_search_context"),
-            )
+            if settings.USE_SPECULATIVE_SEARCH:
+                # Phase B: async speculation — runs product_search in parallel with classification
+                router_result = await fast_router_with_speculation(
+                    state.get("user_message", ""),
+                    state.get("conversation_history", []),
+                    state.get("last_search_context"),
+                    state,
+                )
+                if router_result.speculative_results:
+                    update["speculative_results"] = router_result.speculative_results
+                    logger.info("Speculative search results attached to state")
+            else:
+                router_result = fast_router_sync(
+                    state.get("user_message", ""),
+                    state.get("conversation_history", []),
+                    state.get("last_search_context"),
+                )
+
             update["intent"] = router_result.intent
             # Existing state slots (e.g. country_code) take precedence over regex extraction
             update["slots"] = {**router_result.slots, **state.get("slots", {})}

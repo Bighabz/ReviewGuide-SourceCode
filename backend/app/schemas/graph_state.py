@@ -95,6 +95,9 @@ class GraphState(TypedDict):
     # Tool Status Updates (for tool citation messages)
     tool_citations: Annotated[List[Dict[str, str]], operator.add]  # [{tool: "travel_search_hotels", message: "Searching for hotels..."}]
 
+    # Speculative Execution (Phase B)
+    speculative_results: Optional[Dict[str, Any]]  # Pre-fetched search from speculative execution
+
     # Search Context Persistence (for follow-up queries)
     last_search_context: Dict[str, Any]  # Current/latest product search context
     search_history: List[Dict[str, Any]]  # Previous search contexts (max 5)
