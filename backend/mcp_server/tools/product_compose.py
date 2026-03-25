@@ -444,7 +444,7 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
 
             llm_tasks['concierge'] = model_service.generate(
                 messages=[
-                    {"role": "system", "content": "You are ReviewGuide, a friendly and knowledgeable AI shopping assistant. Never open with phrases like 'Based on X sources' or mention how many sources you searched. Never describe your process. Write 2-3 SHORT sentences (max 60 words). If the user introduced themselves or shared their name earlier in the conversation, always address them by name. Explain WHY these products match the user's needs. Reference their criteria from the conversation (budget, features, use case). Do NOT list products — they are shown in cards below. End with a brief, warm follow-up that shows you remember the user's context."},
+                    {"role": "system", "content": "You are ReviewGuide, a friendly and knowledgeable AI shopping assistant. Never open with phrases like 'Based on X sources' or mention how many sources you searched. Never describe your process. Write 2-3 SHORT sentences (max 60 words) explaining WHY these products match the user's needs. Reference their criteria from the conversation (budget, features, use case). Do NOT list products — they are shown in cards below. End with 2-3 specific follow-up questions like 'Want to compare the top two?' or 'Looking for budget alternatives?' — make them relevant to the specific products shown."},
                     {"role": "user", "content": f'User asked: "{user_message}"\nContext:\n{context_summary}{pref_note}\nProducts: {", ".join(product_name_list)}\nSources: {", ".join(provider_names)}'}
                 ],
                 model=settings.COMPOSER_MODEL,
@@ -681,21 +681,34 @@ Products to describe:
 
         llm_tasks['blog_article'] = model_service.generate(
             messages=[
-                {"role": "system", "content": """You are an expert product journalist writing a buying guide intro. Write in a warm, authoritative voice — like a Wirecutter or The Verge review.
+                {"role": "system", "content": """You are an expert product journalist writing a buying guide for ReviewGuide.ai. Write in a warm, authoritative voice — like a Wirecutter or The Verge review.
 
-FORMAT REQUIREMENTS:
-- Write a 3-5 paragraph editorial summary of the product category
+FORMAT — FOLLOW THIS EXACT STRUCTURE EVERY TIME:
+
+**SECTION 1: Blog Review (3-5 paragraphs)**
 - Paragraph 1: What the user is looking for and what matters most in this category
 - Paragraph 2-3: Summarize what reviewers say — reference specific reviewer insights using inline citations (e.g., "[Wirecutter](url) highlights..." or "According to [RTINGS](url)..."). Name the top picks and WHY reviewers recommend them.
 - Paragraph 4: Brief mention of what to watch out for — common tradeoffs, things reviewers flag
 - Final paragraph: A short verdict/recommendation summary
+
+**SECTION 2: Follow-up Questions (MANDATORY)**
+After your review, ALWAYS end with exactly 3 conversational follow-up questions to help the user explore further. Write them as a short paragraph starting with something like "Want to dig deeper?" followed by questions like:
+- "Want to compare the top two head-to-head?"
+- "Looking for budget alternatives under $X?"
+- "Want more details on battery life and durability?"
+- "Interested in seeing what real users say about these?"
+- "Need help picking between [Product A] and [Product B]?"
+Make the questions SPECIFIC to the products and category — not generic.
+
+RULES:
 - DO NOT write per-product ## headings or sections — the individual products are shown as interactive cards below your text
 - DO NOT include product images, prices, or buy links — those are in the cards
 - DO include review source names and citation links throughout the text
 - Write naturally — vary sentence structure, don't be formulaic
 - NEVER invent features or specs not in the data
 - NEVER mention personal details unless the user provided them
-- Keep the total response under 350 words"""},
+- Keep the total response under 400 words
+- The follow-up questions at the end are REQUIRED — never skip them"""},
                 {"role": "user", "content": blog_data}
             ],
             model=settings.COMPOSER_MODEL,
@@ -786,6 +799,8 @@ FORMAT REQUIREMENTS:
         seen_card_names = set()
 
         for idx, product in enumerate(products_with_offers, 1):
+            if review_card_count >= 5:
+                break
             pname = product.get("name", "")
             all_offers = product.get("all_offers", [])
             if not all_offers:
@@ -958,7 +973,7 @@ FORMAT REQUIREMENTS:
             for provider_name, data in products_by_provider.items():
                 for product in data["products"]:
                     title = product.get("title", "")
-                    if title in seen_products or product_idx >= 8:
+                    if title in seen_products or product_idx >= 5:
                         continue
                     seen_products.add(title)
                     product_idx += 1
