@@ -259,6 +259,10 @@ class Settings(BaseSettings):
     EBAY_MKEVT: str = Field(default="1", description="eBay marketing event (1=Click, 2=Impression)")
     MAX_AFFILIATE_OFFERS_PER_PRODUCT: int = Field(default=3, description="Maximum number of affiliate offers to fetch per product")
     USE_MOCK_AFFILIATE: bool = Field(default=True, description="Use mock affiliate provider")
+    USE_CURATED_LINKS: bool = Field(
+        default=True,
+        description="Use curated Amazon affiliate links as primary product source (bypasses live product search APIs)"
+    )
 
     # Amazon Associates / Product Advertising API
     AMAZON_API_ENABLED: bool = Field(default=False, description="Enable real Amazon PA-API (requires API credentials)")

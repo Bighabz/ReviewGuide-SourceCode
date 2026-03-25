@@ -112,6 +112,46 @@ async def product_affiliate(
         except Exception as e:
             logger.warning(f"[product_affiliate] Curated link lookup failed: {e}")
 
+        # When USE_CURATED_LINKS is on, curated links are the ONLY source.
+        # Skip all live API provider searches.
+        if curated_amazon_links and settings.USE_CURATED_LINKS:
+            results = []
+            for i, product_name in enumerate(products_to_search):
+                if i < min(len(curated_amazon_links), 5):
+                    curated = curated_amazon_links[i]
+                    if isinstance(curated, dict):
+                        link = curated.get("url", "")
+                        title = curated.get("title", product_name)
+                        price = curated.get("price", 0)
+                        image = curated.get("image_url", "")
+                    else:
+                        link = curated
+                        title = product_name
+                        price = 0
+                        image = ""
+                    results.append({
+                        "product_name": product_name,
+                        "offers": [{
+                            "product_id": f"curated-{curated.get('asin', i)}" if isinstance(curated, dict) else f"curated-{i}",
+                            "title": title,
+                            "price": price,
+                            "currency": "USD",
+                            "url": link,
+                            "image_url": image,
+                            "merchant": "Amazon",
+                            "rating": None,
+                            "review_count": None,
+                            "source": "amazon",
+                        }]
+                    })
+            # Cap at 5 products
+            results = results[:5]
+            logger.info(f"[product_affiliate] USE_CURATED_LINKS=true: returning {len(results)} curated Amazon links (skipping live APIs)")
+            return {
+                "affiliate_products": {"amazon": results} if results else {},
+                "success": True
+            }
+
         # Get all available providers from the manager
         available_providers = affiliate_manager.get_available_providers()
         # Filter out "mock" provider - we want real affiliate providers
@@ -171,7 +211,7 @@ async def product_affiliate(
             if provider_name == "amazon" and curated_amazon_links:
                 results = []
                 for i, product_name in enumerate(products_to_search):
-                    if i < len(curated_amazon_links):
+                    if i < min(len(curated_amazon_links), 5):
                         curated = curated_amazon_links[i]
                         # Support both old format (string URL) and new format (dict with metadata)
                         if isinstance(curated, dict):
