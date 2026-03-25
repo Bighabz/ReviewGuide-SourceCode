@@ -274,3 +274,109 @@ async def test_blog_includes_source_inline_links(capturing_model_service):
     assert "[Wirecutter]" in user_content, (
         f"Expected '[Wirecutter]' markdown link in blog_data, but got:\n{user_content[:500]}"
     )
+
+
+# ---------------------------------------------------------------------------
+# FIX-01: System prompt must forbid inventing URLs
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_system_prompt_forbids_inventing_urls(capturing_model_service):
+    """
+    FIX-01: The blog system prompt must explicitly instruct the LLM to never
+    invent URLs — only link to sources provided in the data.
+    """
+    import copy
+    fake_service, captured_calls = capturing_model_service
+    state = copy.deepcopy(_REVIEW_STATE_WITH_DATA)
+
+    result = await product_compose(state)
+    assert result["success"] is True
+
+    # Find the blog_article generate call
+    blog_calls = [c for c in captured_calls if c.get("agent_name") == "blog_article_composer"]
+    assert len(blog_calls) >= 1, "Expected at least one blog_article_composer call"
+
+    blog_call = blog_calls[0]
+    messages = blog_call.get("messages", [])
+    system_content = next(
+        (m["content"] for m in messages if m.get("role") == "system"),
+        ""
+    )
+
+    assert "never invent" in system_content.lower(), (
+        f"System prompt must contain 'never invent URLs' guard, but got:\n{system_content[:500]}"
+    )
+    assert "url" in system_content.lower().split("never invent")[1][:20], (
+        "The 'never invent' instruction must specifically mention URLs"
+    )
+
+
+# ---------------------------------------------------------------------------
+# FIX-01: Citations must prefer review source URLs
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_citations_contain_review_source_urls(capturing_model_service):
+    """
+    FIX-01: When review_bundles have sources with URLs, the citations array
+    must contain those review source URLs (e.g. Wirecutter, RTINGS) — not
+    just product buy-page URLs from normalized_products.
+    """
+    import copy
+    fake_service, captured_calls = capturing_model_service
+    state = copy.deepcopy(_REVIEW_STATE_WITH_DATA)
+
+    result = await product_compose(state)
+    assert result["success"] is True
+
+    citations = result.get("citations", [])
+    assert len(citations) >= 2, (
+        f"Expected at least 2 citations from review sources, got {len(citations)}: {citations}"
+    )
+    # Should contain review source URLs, not product page URLs
+    review_urls = {"https://wirecutter.com/sony", "https://theverge.com/sony", "https://rtings.com/bose"}
+    product_urls = {"https://example.com/sony", "https://example.com/bose"}
+    # At least one review source URL must be in citations
+    assert any(url in review_urls for url in citations), (
+        f"Expected review source URLs in citations, but got only: {citations}"
+    )
+    # Product page URLs should NOT be the primary citations when review sources exist
+    assert not all(url in product_urls for url in citations), (
+        f"Citations should prefer review source URLs over product page URLs: {citations}"
+    )
+
+
+@pytest.mark.asyncio
+async def test_citations_fallback_to_product_urls_without_review_sources(capturing_model_service):
+    """
+    FIX-01: When no review source URLs exist, citations must fall back to
+    normalized_products URLs (backward compatibility).
+    """
+    fake_service, captured_calls = capturing_model_service
+    state = {
+        "user_message": "best wireless earbuds",
+        "intent": "product",
+        "slots": {},
+        "normalized_products": [
+            {"name": "AirPods Pro", "price": 249, "url": "https://example.com/airpods"},
+            {"name": "Galaxy Buds", "price": 149, "url": "https://example.com/galaxy"},
+        ],
+        "affiliate_products": {},
+        "review_data": {},
+        "comparison_html": None,
+        "comparison_data": None,
+        "general_product_info": "",
+        "conversation_history": [],
+        "last_search_context": {},
+        "search_history": [],
+    }
+    result = await product_compose(state)
+    assert result["success"] is True
+    citations = result.get("citations", [])
+    assert len(citations) >= 1, (
+        f"Expected at least 1 citation from normalized_products, got {len(citations)}"
+    )
+    assert "https://example.com/airpods" in citations or "https://example.com/galaxy" in citations, (
+        f"Expected product URLs as fallback citations, got: {citations}"
+    )
