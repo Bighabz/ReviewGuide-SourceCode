@@ -328,6 +328,7 @@ class FastRouterResult:
     confidence: float
     tier: int  # 1 = keyword, 2 = Haiku LLM
     needs_clarification: bool = False
+    speculative_results: Optional[Dict[str, Any]] = None  # Pre-fetched search results
 
 
 # ---------------------------------------------------------------------------
@@ -731,3 +732,60 @@ async def fast_router(
         tier=2,
         needs_clarification=False,
     )
+
+
+# ---------------------------------------------------------------------------
+# Phase B: Speculative search helpers
+# ---------------------------------------------------------------------------
+
+
+async def run_speculative_search(query: str, state: dict) -> Dict[str, Any]:
+    """Run product_search speculatively using the raw query."""
+    from mcp_server.tools.product_search import product_search
+    minimal_state = {
+        "user_message": query,
+        "slots": state.get("slots", {}),
+        "conversation_history": state.get("conversation_history", []),
+        "last_search_context": state.get("last_search_context"),
+    }
+    return await product_search(minimal_state)
+
+
+async def fast_router_with_speculation(
+    query: str,
+    conversation_history: list,
+    last_search_context: Optional[dict],
+    state: dict,
+) -> FastRouterResult:
+    """
+    Async fast router with speculative product_search.
+    Fires search in parallel with classification. If intent is
+    product/comparison/service, results are reused. Otherwise discarded.
+    """
+    import asyncio
+    import contextlib
+
+    # Fire speculative search + classification in parallel
+    search_task = asyncio.create_task(run_speculative_search(query, state))
+
+    # Run the normal async fast_router (Tier 1 + Tier 2)
+    router_result = await fast_router(query, conversation_history, last_search_context)
+
+    # Check if speculative results are useful for this intent
+    if router_result.intent in ("product", "comparison", "service"):
+        try:
+            spec_results = await asyncio.wait_for(search_task, timeout=10.0)
+            router_result.speculative_results = spec_results
+            logger.info(f"Speculative search hit: {len(spec_results.get('product_names', []))} products")
+        except (asyncio.TimeoutError, Exception) as e:
+            logger.warning(f"Speculative search failed/timed out: {e}")
+            router_result.speculative_results = None
+    else:
+        # Wrong intent — cancel and cleanup
+        search_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await search_task
+        router_result.speculative_results = None
+        logger.info(f"Speculative search discarded: intent={router_result.intent}")
+
+    return router_result

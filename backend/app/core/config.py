@@ -269,6 +269,10 @@ class Settings(BaseSettings):
         default=False,
         description="Bypass intent/planner/clarifier agents with deterministic fast router"
     )
+    USE_SPECULATIVE_SEARCH: bool = Field(
+        default=False,
+        description="Start product_search before intent classification (Phase B)"
+    )
     ANTHROPIC_API_KEY: str = Field(
         default="",
         description="Anthropic API key for Haiku fallback in fast router"
