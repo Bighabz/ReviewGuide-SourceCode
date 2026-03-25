@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Core Platform
 status: completed
-stopped_at: Completed 01-06-PLAN.md
-last_updated: "2026-03-17T20:07:55Z"
-last_activity: 2026-03-17 — Phase 01 Plan 06 complete; all 8 RX requirements human-verified against live stack; Phase 1 Response Experience Overhaul COMPLETE
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-03-25T23:44:51.154Z"
+last_activity: "2026-03-25 — Phase 04 Plan 01 complete: Browse page affiliate link fixes"
 progress:
   total_phases: 16
-  completed_phases: 5
-  total_plans: 23
-  completed_plans: 19
-  percent: 83
+  completed_phases: 6
+  total_plans: 42
+  completed_plans: 21
+  percent: 50
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 
 ## Current Position
 
-Phase: 01 of 16 (Response Experience Overhaul) — COMPLETE
-Plan: 06 of 06 — COMPLETE
-Status: Phase 01 Plan 06 complete — all 8 RX requirements (product cards within 5s, token streaming, inline affiliate links, parallel backend, reduced LLM calls) human-verified against live stack. Phase 1 COMPLETE.
-Last activity: 2026-03-25 — Completed quick task 1: Uncle Mike Response Format and Curated Links Fallback
+Phase: 04 of 16 (Browse Page Fixes) — COMPLETE
+Plan: 01 of 01 — COMPLETE
+Status: Phase 04 Plan 01 complete — amzn.to health checker guard, menopause supplement URLs verified, CuratedProductCard wired into browse category pages.
+Last activity: 2026-03-25 — Phase 04 Plan 01 complete: Browse page affiliate link fixes
 
-Progress: [████████░░] 83%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
@@ -82,6 +82,9 @@ Progress: [████████░░] 83%
 - [Phase 16-placeholder-routes-and-build-qa]: Placeholder pages are pure Server Components (no use-client) — zero interactivity means Static prerender at 189 B each
 - [Phase 01-response-experience-overhaul]: All 8 RX requirements verified passing against live stack — no gap-closure plans required
 - [Phase 01-response-experience-overhaul]: Phase 1 Response Experience Overhaul accepted as complete by human reviewer on 2026-03-17
+- [Phase 04-browse-page-fixes]: amzn.to URLs skip health checker HEAD requests — Amazon returns 403 to bot User-Agents, treated as always-healthy
+- [Phase 04-browse-page-fixes]: Added 5th product to menopause supplements topic from existing weight loss topic for parity
+- [Phase 04-browse-page-fixes]: Editor's Picks section inserted between editorial rule and Popular Questions on category pages
 
 ### Pending Todos
 
@@ -101,6 +104,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-25T17:11:45Z
-Stopped at: Completed quick task 1
+Last session: 2026-03-25T23:44:51.150Z
+Stopped at: Completed 04-01-PLAN.md
 Resume file: None
