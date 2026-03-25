@@ -384,3 +384,199 @@ async def test_citations_fallback_to_product_urls_without_review_sources(capturi
     assert "https://example.com/airpods" in citations or "https://example.com/galaxy" in citations, (
         f"Expected product URLs as fallback citations, got: {citations}"
     )
+
+
+# ---------------------------------------------------------------------------
+# UX-03 / UX-04 / UX-05: Top Pick, 5-product cap, comparison follow-up
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def capturing_model_service_v2():
+    """
+    Extended model service mock that handles top_pick_composer and comparison_composer
+    agent names in addition to the originals.
+    """
+    captured_calls = []
+
+    async def fake_generate(**kwargs):
+        captured_calls.append(kwargs)
+        agent_name = kwargs.get("agent_name", "")
+        if agent_name == "blog_article_composer":
+            return "## Sony WH-1000XM5\nGreat headphones.\n\n## Our Verdict\nBuy the Sony."
+        if agent_name == "review_consensus":
+            return "Excellent product praised by experts."
+        if agent_name == "product_compose_descriptions":
+            return '{"descriptions": ["desc1", "desc2"]}'
+        if agent_name == "top_pick_composer":
+            return '{"headline": "Best noise cancellation in its class", "best_for": "Commuters and frequent flyers who want silence", "not_for": "Audiophiles who prioritize pure sound quality over ANC"}'
+        if agent_name == "comparison_composer":
+            return '{"products": [{"title": "Sony WH-1000XM5", "price": 299, "pros": ["Great ANC"], "cons": ["Heavy"]}, {"title": "Bose QC 45", "price": 279, "pros": ["Comfortable"], "cons": ["Older codec"]}], "criteria": ["ANC", "Comfort"], "summary": "Both are excellent."}'
+        return "mock response"
+
+    fake_service = MagicMock()
+    fake_service.generate = fake_generate
+    fake_service.generate_compose = fake_generate
+
+    with patch("app.services.model_service.model_service", fake_service):
+        yield fake_service, captured_calls
+
+
+@pytest.mark.asyncio
+async def test_top_pick_block_present(capturing_model_service_v2):
+    """
+    UX-03: When review_data has products with quality_score, product_compose must
+    produce a top_pick block at the beginning of ui_blocks with product_name,
+    headline, best_for, not_for fields.
+    """
+    import copy
+    fake_service, captured_calls = capturing_model_service_v2
+    state = copy.deepcopy(_REVIEW_STATE_WITH_DATA)
+
+    result = await product_compose(state)
+
+    assert result["success"] is True
+
+    # Find top_pick block
+    top_pick_blocks = [b for b in result["ui_blocks"] if b.get("type") == "top_pick"]
+    assert len(top_pick_blocks) >= 1, (
+        f"Expected at least one top_pick block in ui_blocks, got types: "
+        f"{[b.get('type') for b in result['ui_blocks']]}"
+    )
+
+    tp = top_pick_blocks[0]
+    tp_data = tp.get("data", {})
+    assert "product_name" in tp_data, "top_pick block missing product_name"
+    assert "headline" in tp_data, "top_pick block missing headline"
+    assert "best_for" in tp_data, "top_pick block missing best_for"
+    assert "not_for" in tp_data, "top_pick block missing not_for"
+
+    # top_pick must appear BEFORE any product_review block
+    top_pick_idx = next(
+        i for i, b in enumerate(result["ui_blocks"]) if b.get("type") == "top_pick"
+    )
+    product_review_indices = [
+        i for i, b in enumerate(result["ui_blocks"]) if b.get("type") == "product_review"
+    ]
+    if product_review_indices:
+        assert top_pick_idx < product_review_indices[0], (
+            f"top_pick (index {top_pick_idx}) must appear before first product_review "
+            f"(index {product_review_indices[0]})"
+        )
+
+
+@pytest.mark.asyncio
+async def test_max_five_products(capturing_model_service_v2):
+    """
+    UX-04: Even with 8 products in affiliate_products, product_compose must not
+    return more than 5 product_review blocks or more than 5 items in any
+    products/carousel block.
+    """
+    fake_service, captured_calls = capturing_model_service_v2
+
+    # Build state with 8 products
+    product_names = [
+        "Product Alpha", "Product Beta", "Product Gamma", "Product Delta",
+        "Product Epsilon", "Product Zeta", "Product Eta", "Product Theta"
+    ]
+    state = {
+        "user_message": "best wireless headphones",
+        "intent": "product",
+        "slots": {"category": "headphones"},
+        "normalized_products": [
+            {"name": name, "price": 100 + i * 50, "url": f"https://example.com/{name.lower().replace(' ', '-')}"}
+            for i, name in enumerate(product_names)
+        ],
+        "affiliate_products": {
+            "amazon": [
+                {
+                    "product_name": name,
+                    "offers": [{
+                        "title": name,
+                        "price": 100 + i * 50,
+                        "currency": "USD",
+                        "url": f"https://amazon.com/{name.lower().replace(' ', '-')}",
+                        "merchant": "Amazon",
+                        "image_url": f"https://example.com/img/{i}.jpg"
+                    }]
+                }
+                for i, name in enumerate(product_names)
+            ]
+        },
+        "review_data": {
+            name: {
+                "avg_rating": 4.5 - i * 0.1,
+                "total_reviews": 1000 - i * 100,
+                "quality_score": 0.95 - i * 0.05,
+                "sources": [
+                    {"site_name": "Wirecutter", "url": f"https://wirecutter.com/{i}", "snippet": f"Good product {name}"}
+                ]
+            }
+            for i, name in enumerate(product_names)
+        },
+        "comparison_html": None,
+        "comparison_data": None,
+        "general_product_info": "",
+        "conversation_history": [],
+        "last_search_context": {},
+        "search_history": [],
+    }
+
+    result = await product_compose(state)
+    assert result["success"] is True
+
+    # Count product_review blocks
+    review_blocks = [b for b in result["ui_blocks"] if b.get("type") == "product_review"]
+    assert len(review_blocks) <= 5, (
+        f"Expected at most 5 product_review blocks, got {len(review_blocks)}"
+    )
+
+    # Check that no products or carousel block has more than 5 items
+    for block in result["ui_blocks"]:
+        if block.get("type") in ("products", "carousel"):
+            items = block.get("data", {})
+            if isinstance(items, dict):
+                products_list = items.get("products", items.get("items", []))
+            elif isinstance(items, list):
+                products_list = items
+            else:
+                products_list = []
+            assert len(products_list) <= 5, (
+                f"Block type '{block['type']}' has {len(products_list)} items, expected <= 5"
+            )
+
+
+@pytest.mark.asyncio
+async def test_comparison_follow_up(capturing_model_service_v2):
+    """
+    UX-05: When user_message is a comparison follow-up and last_search_context
+    has product_names, product_compose must return a product_comparison block.
+    """
+    fake_service, captured_calls = capturing_model_service_v2
+    state = {
+        "user_message": "how do these compare?",
+        "intent": "product",
+        "slots": {},
+        "normalized_products": [],
+        "affiliate_products": {},
+        "review_data": {},
+        "comparison_html": None,
+        "comparison_data": None,
+        "general_product_info": "",
+        "conversation_history": [],
+        "last_search_context": {
+            "product_names": ["Sony WH-1000XM5", "Bose QC 45"],
+            "category": "headphones",
+            "top_prices": {"Sony WH-1000XM5": 299, "Bose QC 45": 279},
+            "avg_rating": {"Sony WH-1000XM5": 4.7, "Bose QC 45": 4.5},
+        },
+        "search_history": [],
+    }
+
+    result = await product_compose(state)
+    assert result["success"] is True
+
+    comparison_blocks = [b for b in result["ui_blocks"] if b.get("type") == "product_comparison"]
+    assert len(comparison_blocks) >= 1, (
+        f"Expected at least one product_comparison block, got types: "
+        f"{[b.get('type') for b in result['ui_blocks']]}"
+    )
