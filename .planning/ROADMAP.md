@@ -184,7 +184,12 @@ Plans:
   2. Viator results are auto-discovered by the provider loader and registered in AffiliateProviderRegistry
   3. CJ advertiser applications for at least 3 of the target programs (Best Buy, Dell, Target, Wayfair, Nike) are submitted and confirmation emails received
   4. Once a CJ advertiser approves the application, their products appear in CJ search results without any code change
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 11-01-PLAN.md — Wave 0 RED test scaffolds for all PROV-02 behaviors
+- [ ] 11-02-PLAN.md — ViatorActivityProvider class, config settings, loader registration (PROV-02)
+- [ ] 11-03-PLAN.md — MCP tool, GraphState wiring, travel_compose integration (PROV-02)
+- [ ] 11-04-PLAN.md — CJ advertiser applications + Viator API credentials (PROV-03)
 
 </details>
 
@@ -299,7 +304,7 @@ v2.0 phases execute sequentially: 12 -> 13 -> 14 -> 15 -> 16. Phase 12 is a hard
 | 8. Clarifier Suggestion Chips | v1.0 | 0/3 | Not started | - |
 | 9. Top Pick Block + Help Me Decide | v1.0 | 0/3 | Not started | - |
 | 10. Impact.com Provider | v1.0 | 0/2 | Not started | - |
-| 11. Viator + CJ Expansion | v1.0 | 0/TBD | Not started | - |
+| 11. Viator + CJ Expansion | v1.0 | 0/4 | Not started | - |
 | 12. Navigation Shell | v2.0 | 3/3 | Complete | 2026-03-17 |
 | 13. Discover Screen | v2.0 | 3/3 | Complete | 2026-03-17 |
 | 14. Chat Screen | 4/4 | Complete    | 2026-03-17 | - |
