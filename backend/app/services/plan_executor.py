@@ -282,10 +282,20 @@ class PlanExecutor:
 
             tasks = []
             for tool_name in tool_names:
-                # Direct tool call - pass serializable state
-                # Note: Callbacks are NOT in state - they're inherited from LangGraph context
-                serializable_state = self._make_serializable(self.state)
-                tasks.append(self._call_tool_direct(tool_name, serializable_state))
+                # Phase B: use pre-fetched speculative results for product_search
+                if tool_name == "product_search" and self.state.get("speculative_results"):
+                    logger.info("  ⚡ Using pre-fetched speculative search results in parallel step (saved ~2-3s)")
+                    spec = self.state["speculative_results"]
+                    self.state["speculative_results"] = None  # Clear so not reused
+                    # Wrap in a resolved coroutine for gather compatibility
+                    async def _return_spec(s=spec):
+                        return s
+                    tasks.append(_return_spec())
+                else:
+                    # Direct tool call - pass serializable state
+                    # Note: Callbacks are NOT in state - they're inherited from LangGraph context
+                    serializable_state = self._make_serializable(self.state)
+                    tasks.append(self._call_tool_direct(tool_name, serializable_state))
 
             # Gather results (with step-level timeout)
             try:
@@ -328,6 +338,21 @@ class PlanExecutor:
             # Execute tools sequentially
             for tool_name in tool_names:
                 logger.info(f"  🔧 Calling tool: {tool_name}")
+
+                # Phase B: use pre-fetched speculative results for product_search
+                if tool_name == "product_search" and self.state.get("speculative_results"):
+                    logger.info("  ⚡ Using pre-fetched speculative search results (saved ~2-3s)")
+                    spec_results = self.state["speculative_results"]
+                    result = spec_results
+                    # RFC §3.4 — validate output contract before writing to state
+                    result = ToolOutputValidator.validate(tool_name, result)
+                    self.context[f"{step_id}.{tool_name}"] = result
+                    logger.info(f"  ✓ Tool {tool_name} completed (speculative)")
+                    # Write tool outputs back to state
+                    self._write_tool_outputs_to_state(tool_name, result, contracts.get(tool_name))
+                    # Clear speculative results so they aren't reused on retry
+                    self.state["speculative_results"] = None
+                    continue
 
                 # Emit citation message before calling tool
                 contract = contracts.get(tool_name)
