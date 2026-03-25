@@ -627,3 +627,123 @@ class TestWorkflowIntegration:
             assert isinstance(step["tools"], list), "Step 'tools' must be a list"
             for tool in step["tools"]:
                 assert isinstance(tool, str), f"Tool must be string, got {type(tool)}"
+
+
+# ---------------------------------------------------------------------------
+# End-to-end validation
+# ---------------------------------------------------------------------------
+
+
+class TestEndToEnd:
+    """End-to-end: verify the fast router produces valid state for all intents."""
+
+    def test_fast_router_produces_valid_state_for_all_intents(self):
+        """Every intent must produce a valid plan with at least one step."""
+        from app.services.fast_router import fast_router_sync, TOOL_CHAINS
+
+        test_queries = {
+            "product": "best noise cancelling headphones under $300",
+            "comparison": "sony xm5 vs bose qc ultra",
+            "service": "best vpn service for streaming",
+            "travel": "plan a 5 day trip to Tokyo",
+            "general": "how does noise cancellation work",
+            "intro": "hello",
+        }
+
+        for expected_intent, query in test_queries.items():
+            result = fast_router_sync(query, [], None)
+            assert result.intent == expected_intent, (
+                f"Query '{query}' got intent '{result.intent}', expected '{expected_intent}'"
+            )
+            assert len(result.plan["steps"]) > 0, (
+                f"Intent '{result.intent}' has empty plan"
+            )
+            # Verify all tools in plan exist in tool chain
+            plan_tools = []
+            for step in result.plan["steps"]:
+                plan_tools.extend(step["tools"])
+            for tool in plan_tools:
+                assert tool in TOOL_CHAINS[result.intent], (
+                    f"Tool '{tool}' in plan but not in chain for '{result.intent}'"
+                )
+
+    def test_slot_extraction_integrated(self):
+        """Slots should be populated when query has extractable data."""
+        from app.services.fast_router import fast_router_sync
+
+        result = fast_router_sync("best sony headphones under $200", [], None)
+        assert result.intent == "product"
+        assert result.slots.get("brand") == "sony"
+        assert result.slots.get("max_budget") == 200
+        assert result.slots.get("category") == "headphones"
+
+    def test_follow_up_with_product_context(self):
+        """Follow-up query with active product context should route to product."""
+        from app.services.fast_router import fast_router_sync
+
+        context = {"product_names": ["Sony WH-1000XM5", "Bose QC Ultra"]}
+        result = fast_router_sync("what about a cheaper one", [], context)
+        assert result.intent == "product"
+
+    def test_all_plan_steps_have_valid_format(self):
+        """Every plan step across all intents must have id, tools (list of str)."""
+        from app.services.fast_router import fast_router_sync, PLAN_TEMPLATES
+
+        for intent, template in PLAN_TEMPLATES.items():
+            for step in template:
+                assert "id" in step, f"Step missing 'id' in {intent}"
+                assert "tools" in step, f"Step missing 'tools' in {intent}"
+                assert isinstance(step["tools"], list), f"'tools' not a list in {intent}"
+                for tool in step["tools"]:
+                    assert isinstance(tool, str), f"Tool not a string in {intent}: {tool}"
+
+    def test_product_plan_dependency_order(self):
+        """product_search must come before product_normalize in all product-like plans."""
+        from app.services.fast_router import fast_router_sync
+
+        for query, expected in [
+            ("best laptop", "product"),
+            ("best vpn service", "service"),
+        ]:
+            result = fast_router_sync(query, [], None)
+            tools_in_order = []
+            for step in result.plan["steps"]:
+                tools_in_order.extend(step["tools"])
+            if "product_search" in tools_in_order and "product_normalize" in tools_in_order:
+                search_idx = tools_in_order.index("product_search")
+                normalize_idx = tools_in_order.index("product_normalize")
+                assert search_idx < normalize_idx, (
+                    f"product_search must come before product_normalize for {expected}"
+                )
+
+    def test_travel_plan_dependency_order(self):
+        """travel_compose must come after search tools."""
+        from app.services.fast_router import fast_router_sync
+
+        result = fast_router_sync("plan a trip to Tokyo", [], None)
+        tools_in_order = []
+        for step in result.plan["steps"]:
+            tools_in_order.extend(step["tools"])
+        compose_idx = tools_in_order.index("travel_compose")
+        for search_tool in ["travel_search_hotels", "travel_search_flights"]:
+            if search_tool in tools_in_order:
+                search_idx = tools_in_order.index(search_tool)
+                assert search_idx < compose_idx, (
+                    f"{search_tool} must come before travel_compose"
+                )
+
+    def test_unclear_intent_has_low_confidence(self):
+        """Queries that match nothing should get low confidence."""
+        from app.services.fast_router import fast_router_sync
+
+        result = fast_router_sync("asdfghjkl random gibberish", [], None)
+        assert result.confidence < 0.5
+
+    def test_multiple_slot_extraction(self):
+        """Query with multiple extractable slots."""
+        from app.services.fast_router import fast_router_sync
+
+        result = fast_router_sync("best samsung laptop under $1000", [], None)
+        assert result.slots.get("brand") == "samsung"
+        assert result.slots.get("max_budget") == 1000
+        assert result.slots.get("category") == "laptop"
