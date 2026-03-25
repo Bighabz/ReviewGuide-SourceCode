@@ -68,6 +68,13 @@ class LinkHealthChecker:
         if not self.session:
             raise RuntimeError("LinkHealthChecker must be used as async context manager")
 
+        # amzn.to short links do not support server-side HEAD requests (Amazon returns 403
+        # to bot User-Agents). They work correctly as anchor href values in the browser.
+        # Treat them as always-healthy — they only go stale if the product is delisted.
+        if "amzn.to" in url:
+            logger.debug(f"Skipping amzn.to health check (treated as healthy): {url[:80]}")
+            return True
+
         try:
             async with self.session.head(url, allow_redirects=True) as response:
                 # Consider 2xx and 3xx status codes as healthy

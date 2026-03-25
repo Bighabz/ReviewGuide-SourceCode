@@ -184,6 +184,7 @@ export const curatedLinks: CuratedCategory = {
         { asin: 'B0DPXTNW68', url: 'https://amzn.to/46P16aj' },
         { asin: 'B089V9WXYL', url: 'https://amzn.to/46uZPVx' },
         { asin: 'B07N813336', url: 'https://amzn.to/4qY1JVW' },
+        { asin: 'B0BKDM7JRG', url: 'https://amzn.to/4cPmL5G' },
       ],
     },
   ],
