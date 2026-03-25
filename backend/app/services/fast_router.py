@@ -1,15 +1,19 @@
 """
-Fast Router - Tier 1 Keyword Classification
+Fast Router - Tier 1 Keyword Classification + Tier 2 Haiku Fallback
 
 Deterministic, zero-latency intent classification and slot extraction.
-No LLM calls — pure keyword/regex matching. This is the Tier 1 layer of
-the two-tier fast router (Tier 2 Haiku fallback added in Task 3).
+Tier 1: pure keyword/regex matching (no LLM calls).
+Tier 2: Haiku LLM fallback for ambiguous queries that Tier 1 cannot classify.
 """
 from __future__ import annotations
 
+import json
+import logging
 import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Tool chains — flat ordered lists of tools per intent
@@ -540,5 +544,190 @@ def fast_router_sync(
         plan={"steps": PLAN_TEMPLATES[intent]},
         confidence=confidence,
         tier=1,
+        needs_clarification=False,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Tier 2 — Haiku LLM fallback
+# ---------------------------------------------------------------------------
+
+_HAIKU_SYSTEM_PROMPT = """You are an intent classifier for a product/travel review assistant.
+
+Classify the user query into exactly one of these intents:
+- product: user wants product recommendations, reviews, or to buy something
+- comparison: user wants to compare products or options
+- service: user asks about services (VPN, streaming, insurance, etc.)
+- travel: user asks about travel, hotels, flights, destinations, itineraries
+- general: user wants information/explanation (what is X, how does Y work)
+- intro: user is greeting or asking what the assistant can do
+- unclear: query is too vague to classify
+
+Also extract these slots (only if clearly present, otherwise omit):
+- category: product/service category (e.g. "headphones", "laptop")
+- brand: brand name (e.g. "sony", "apple")
+- max_budget: maximum budget as integer (e.g. 200)
+- min_budget: minimum budget as integer (e.g. 100)
+- destination: travel destination (e.g. "Tokyo")
+- duration_days: trip duration in days as integer (e.g. 7)
+
+Respond with ONLY valid JSON in this exact format:
+{"intent": "<intent>", "slots": {<slot_key>: <slot_value>, ...}}
+
+If no slots are present, use: {"intent": "<intent>", "slots": {}}"""
+
+
+async def _call_haiku(
+    query: str,
+    conversation_history: Optional[List[Dict[str, str]]] = None,
+) -> Optional[Dict[str, Any]]:
+    """
+    Call Claude Haiku to classify the intent of an ambiguous query.
+
+    Returns a dict with 'intent' and 'slots' keys, or None on failure.
+    """
+    from app.core.config import settings
+
+    api_key = settings.ANTHROPIC_API_KEY
+    if not api_key:
+        logger.warning("fast_router: ANTHROPIC_API_KEY not set — skipping Tier 2")
+        return None
+
+    try:
+        import anthropic
+
+        client = anthropic.AsyncAnthropic(api_key=api_key)
+
+        # Build messages: last 4 conversation turns + current query
+        messages: List[Dict[str, str]] = []
+        history = conversation_history or []
+        for turn in history[-4:]:
+            role = turn.get("role", "user")
+            content = turn.get("content", "")
+            if role in ("user", "assistant") and content:
+                messages.append({"role": role, "content": content})
+
+        messages.append({"role": "user", "content": query})
+
+        response = await client.messages.create(
+            model=settings.FAST_ROUTER_MODEL,
+            max_tokens=150,
+            system=_HAIKU_SYSTEM_PROMPT,
+            messages=messages,
+        )
+
+        raw_text = response.content[0].text.strip()
+        result = json.loads(raw_text)
+
+        # Validate structure
+        if "intent" not in result:
+            logger.warning("fast_router: Haiku response missing 'intent' key: %s", raw_text)
+            return None
+
+        if result["intent"] not in TOOL_CHAINS:
+            logger.warning("fast_router: Haiku returned unknown intent '%s'", result["intent"])
+            return None
+
+        return result
+
+    except Exception as exc:
+        logger.error("fast_router: Haiku Tier 2 call failed: %s", exc)
+        return None
+
+
+# ---------------------------------------------------------------------------
+# Public async entry point
+# ---------------------------------------------------------------------------
+
+
+async def fast_router(
+    query: str,
+    conversation_history: Optional[List[Dict[str, str]]] = None,
+    last_search_context: Optional[Dict[str, Any]] = None,
+) -> FastRouterResult:
+    """
+    Async entry point for the two-tier fast router.
+
+    Tier 1: deterministic keyword classification (zero latency).
+    Tier 2: Haiku LLM fallback when Tier 1 cannot determine intent.
+
+    Args:
+        query: The raw user message.
+        conversation_history: Prior turns, each {"role": ..., "content": ...}.
+        last_search_context: The last search context dict from GraphState.
+
+    Returns:
+        FastRouterResult with intent, slots, tool_chain, plan, confidence, tier.
+    """
+    # --- Tier 1: keyword classification ---
+    tier1_intent = _classify_tier1(query, conversation_history, last_search_context)
+    tier1_slots = extract_slots(query)
+
+    if tier1_intent is not None:
+        logger.debug("fast_router: Tier 1 hit — intent=%s", tier1_intent)
+
+        q_lower = query.strip().lower()
+        if tier1_intent == "intro":
+            confidence = 0.99
+        elif tier1_intent == "comparison":
+            confidence = 0.95
+        elif tier1_intent == "travel":
+            confidence = 0.92 if "destination" in tier1_slots else 0.82
+        elif tier1_intent == "general":
+            confidence = 0.85
+        elif tier1_intent in ("product", "service"):
+            has_slot = "brand" in tier1_slots or "category" in tier1_slots
+            confidence = 0.92 if has_slot else 0.80
+        else:
+            confidence = 0.75
+
+        return FastRouterResult(
+            intent=tier1_intent,
+            slots=tier1_slots,
+            tool_chain=TOOL_CHAINS[tier1_intent],
+            plan={"steps": PLAN_TEMPLATES[tier1_intent]},
+            confidence=confidence,
+            tier=1,
+            needs_clarification=False,
+        )
+
+    # --- Tier 2: Haiku LLM fallback ---
+    logger.debug("fast_router: Tier 1 miss — falling back to Tier 2 (Haiku)")
+
+    try:
+        haiku_result = await _call_haiku(query, conversation_history)
+    except Exception as exc:
+        logger.error("fast_router: Unexpected error calling Haiku: %s", exc)
+        haiku_result = None
+
+    if haiku_result is not None:
+        intent = haiku_result.get("intent", "general")
+        haiku_slots: Dict[str, Any] = haiku_result.get("slots", {}) or {}
+
+        # Merge slots: regex (Tier 1) wins on conflict for precision
+        merged_slots = {**haiku_slots, **tier1_slots}
+
+        logger.debug("fast_router: Tier 2 hit — intent=%s slots=%s", intent, merged_slots)
+
+        return FastRouterResult(
+            intent=intent,
+            slots=merged_slots,
+            tool_chain=TOOL_CHAINS.get(intent, TOOL_CHAINS["general"]),
+            plan={"steps": PLAN_TEMPLATES.get(intent, PLAN_TEMPLATES["general"])},
+            confidence=0.75,
+            tier=2,
+            needs_clarification=False,
+        )
+
+    # --- Final fallback: general intent with low confidence ---
+    logger.debug("fast_router: Tier 2 failed — using general fallback")
+
+    return FastRouterResult(
+        intent="general",
+        slots=tier1_slots,
+        tool_chain=TOOL_CHAINS["general"],
+        plan={"steps": PLAN_TEMPLATES["general"]},
+        confidence=0.3,
+        tier=2,
         needs_clarification=False,
     )

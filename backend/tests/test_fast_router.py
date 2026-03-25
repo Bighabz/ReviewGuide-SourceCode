@@ -1,5 +1,5 @@
 """
-Tests for Fast Router — Tier 1 Keyword Classification
+Tests for Fast Router — Tier 1 Keyword Classification + Tier 2 Haiku Fallback
 
 Covers:
     - Intent classification for all intents
@@ -9,8 +9,10 @@ Covers:
     - Plan structure and step ordering
     - Ambiguous / low-confidence queries
     - Follow-up query handling via last_search_context
+    - Tier 2 Haiku LLM fallback
 """
 import pytest
+from unittest.mock import AsyncMock, patch
 from app.services.fast_router import (
     TOOL_CHAINS,
     PLAN_TEMPLATES,
@@ -538,3 +540,63 @@ class TestEdgeCases:
         result = _classify_tier1("best headphones")
         assert isinstance(result, str)
         assert result == "product"
+
+
+# ---------------------------------------------------------------------------
+# Tier 2 Haiku LLM fallback
+# ---------------------------------------------------------------------------
+
+
+class TestTier2HaikuFallback:
+    """Tier 2: Haiku LLM fallback for ambiguous queries."""
+
+    @pytest.mark.asyncio
+    async def test_ambiguous_query_uses_tier2(self):
+        """Queries that don't match Tier 1 keywords should hit Tier 2."""
+        from app.services.fast_router import fast_router
+
+        mock_response = {"intent": "product", "slots": {"category": "headphones"}}
+        with patch("app.services.fast_router._call_haiku", new_callable=AsyncMock, return_value=mock_response):
+            result = await fast_router("those listening devices for your head", [], None)
+            assert result.intent == "product"
+            assert result.tier == 2
+
+    @pytest.mark.asyncio
+    async def test_tier1_hit_skips_tier2(self):
+        """Clear product queries should NOT call Haiku."""
+        from app.services.fast_router import fast_router
+
+        with patch("app.services.fast_router._call_haiku", new_callable=AsyncMock) as mock_haiku:
+            result = await fast_router("best headphones under $200", [], None)
+            mock_haiku.assert_not_called()
+            assert result.tier == 1
+
+    @pytest.mark.asyncio
+    async def test_tier2_failure_falls_back_to_general(self):
+        """If Haiku call fails, fall back to general intent."""
+        from app.services.fast_router import fast_router
+
+        with patch("app.services.fast_router._call_haiku", new_callable=AsyncMock, side_effect=Exception("API error")):
+            result = await fast_router("something weird and ambiguous", [], None)
+            assert result.intent == "general"
+            assert result.confidence < 0.5
+
+    @pytest.mark.asyncio
+    async def test_tier2_merges_slots(self):
+        """Haiku slots should be merged with regex slots, regex taking precedence."""
+        from app.services.fast_router import fast_router
+
+        mock_response = {"intent": "product", "slots": {"category": "audio", "brand": "wrong_brand"}}
+        with patch("app.services.fast_router._call_haiku", new_callable=AsyncMock, return_value=mock_response):
+            # "sony" is in KNOWN_BRANDS, regex should override "wrong_brand"
+            result = await fast_router("find me some sony things for ears", [], None)
+            assert result.slots.get("brand") == "sony"  # regex wins
+
+    @pytest.mark.asyncio
+    async def test_tier2_no_api_key_falls_back(self):
+        """If ANTHROPIC_API_KEY is empty, Tier 2 should gracefully skip."""
+        from app.services.fast_router import fast_router
+
+        with patch("app.services.fast_router._call_haiku", new_callable=AsyncMock, return_value=None):
+            result = await fast_router("ambiguous query about stuff", [], None)
+            assert result.intent == "general"  # fallback
