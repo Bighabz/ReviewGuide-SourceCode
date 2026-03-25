@@ -323,6 +323,23 @@ class Settings(BaseSettings):
     CJ_CACHE_TTL: int = Field(default=28800, description="CJ search cache TTL in seconds (8 hours)")
     CJ_MAX_RESULTS: int = Field(default=20, description="Max CJ products per search request")
 
+    # Impact.com Affiliate
+    IMPACT_API_ENABLED: bool = Field(default=False, description="Enable Impact.com Catalog Search API")
+    IMPACT_ACCOUNT_SID: str = Field(default="", description="Impact.com Account SID (starts with 'IR')")
+    IMPACT_AUTH_TOKEN: str = Field(default="", description="Impact.com Auth Token")
+    IMPACT_API_TIMEOUT: float = Field(default=10.0, description="Impact.com API request timeout in seconds")
+    IMPACT_CACHE_TTL: int = Field(default=28800, description="Impact.com search cache TTL in seconds (8 hours)")
+    IMPACT_MAX_RESULTS: int = Field(default=20, description="Max Impact.com products per search request")
+    IMPACT_RATE_LIMIT_PER_HOUR: int = Field(default=2500, description="Max Impact.com API requests per hour (actual limit 3000, using 2500 safety margin)")
+
+    # Skimlinks Affiliate Link Wrapper
+    SKIMLINKS_API_ENABLED: bool = Field(default=False, description="Enable Skimlinks affiliate link wrapping")
+    SKIMLINKS_PUBLISHER_ID: str = Field(default="", description="Skimlinks publisher ID (numeric, before the X)")
+    SKIMLINKS_DOMAIN_ID: str = Field(default="", description="Skimlinks domain ID (numeric, after the X)")
+    SKIMLINKS_CLIENT_ID: str = Field(default="", description="Skimlinks Merchant API client ID for OAuth2")
+    SKIMLINKS_CLIENT_SECRET: str = Field(default="", description="Skimlinks Merchant API client secret for OAuth2")
+    SKIMLINKS_DOMAIN_CACHE_TTL: int = Field(default=86400, description="Skimlinks merchant domain cache TTL in seconds (24h)")
+
     # IP Geolocation
     IPINFO_TOKEN: str = Field(default="", description="IPInfo.io API token for IP geolocation")
 

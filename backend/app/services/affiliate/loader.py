@@ -68,6 +68,10 @@ _PROVIDER_INIT_MAP = {
         "website_id": settings.CJ_WEBSITE_ID,
     },
     "serper_shopping": lambda: {},  # reads settings.SERPAPI_API_KEY internally
+    "impact": lambda: {
+        "account_sid": settings.IMPACT_ACCOUNT_SID,
+        "auth_token": settings.IMPACT_AUTH_TOKEN,
+    },
 }
 
 
