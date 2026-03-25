@@ -125,7 +125,11 @@ Plans:
   2. Editor's Picks sections appear on browse category pages with product names, images, and working affiliate links
   3. Editor's Picks images load from a live provider (not placehold.co placeholders)
   4. The curatedLinks.ts data is used to populate Editor's Picks without requiring a new data source
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 07-01-PLAN.md — Wave 0 RED test scaffolds for Skimlinks middleware and Editor's Picks (AFFL-04, AFFL-05)
+- [ ] 07-02-PLAN.md — Backend Skimlinks post-processing middleware in product_affiliate.py (AFFL-04)
+- [ ] 07-03-PLAN.md — Frontend EditorsPicks component and browse category page wiring (AFFL-05)
 
 ### Phase 8: Clarifier Suggestion Chips
 **Goal**: Clarifying questions arrive with tappable chip options so users can answer in one tap instead of typing
@@ -291,7 +295,7 @@ v2.0 phases execute sequentially: 12 -> 13 -> 14 -> 15 -> 16. Phase 12 is a hard
 | 4. Browse Page Fixes | v1.0 | 0/1 | Not started | - |
 | 5. Amazon Creators API Migration | v1.0 | 0/TBD | Not started | - |
 | 6. Skimlinks Link Wrapper | v1.0 | 0/3 | Not started | - |
-| 7. Skimlinks Middleware + Editor's Picks | v1.0 | 0/TBD | Not started | - |
+| 7. Skimlinks Middleware + Editor's Picks | v1.0 | 0/3 | Not started | - |
 | 8. Clarifier Suggestion Chips | v1.0 | 0/3 | Not started | - |
 | 9. Top Pick Block + Help Me Decide | v1.0 | 0/3 | Not started | - |
 | 10. Impact.com Provider | v1.0 | 0/2 | Not started | - |
