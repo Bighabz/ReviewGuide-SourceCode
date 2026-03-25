@@ -55,6 +55,7 @@ async def test_blog_article_runs_in_parallel_batch():
 
     fake_service = MagicMock()
     fake_service.generate = fake_generate
+    fake_service.generate_compose = fake_generate
 
     state = {
         "user_message": "best wireless headphones",

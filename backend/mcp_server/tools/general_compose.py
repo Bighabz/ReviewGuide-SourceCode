@@ -96,9 +96,8 @@ async def general_compose(
 
             messages.append({"role": "user", "content": user_message})
 
-            assistant_text = await model_service.generate(
+            assistant_text = await model_service.generate_compose(
                 messages=messages,
-                model=settings.COMPOSER_MODEL,
                 temperature=0.8,
                 max_tokens=150,
                 agent_name="general_compose_conversational"
@@ -146,12 +145,11 @@ Answer the user's question directly and concisely. If the user's question refers
             "If discussing specific products or models that may have been released after your training "
             "cutoff, briefly acknowledge that you may not have the most current specifications or pricing.\n\n"
         )
-        assistant_text = await model_service.generate(
+        assistant_text = await model_service.generate_compose(
             messages=[
                 {"role": "system", "content": search_system_prefix + "You are ReviewGuide, a friendly and knowledgeable AI assistant. Never open with phrases like 'Based on X sources' or mention how many sources you searched. Never describe your process. Respond immediately in a warm, conversational tone like a knowledgeable friend. You remember everything the user has told you. If the user introduced themselves or shared their name earlier in the conversation, always address them by name. Remember their preferences, budget, family members, pets, etc. Use these personal details naturally in your responses. Use search results for factual questions, but use conversation history for personal questions."},
                 {"role": "user", "content": prompt}
             ],
-            model=settings.COMPOSER_MODEL,
             temperature=0.7,
             max_tokens=500,
             agent_name="general_compose"

@@ -230,6 +230,7 @@ def capturing_model_service():
 
     fake_service = MagicMock()
     fake_service.generate = fake_generate
+    fake_service.generate_compose = fake_generate
 
     with patch("app.services.model_service.model_service", fake_service):
         yield fake_service, captured_calls

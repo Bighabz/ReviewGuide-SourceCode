@@ -442,12 +442,11 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
                     parts.append(f"favors {', '.join(past_brands)}")
                 pref_note = f"\nReturning user who {' and '.join(parts)}."
 
-            llm_tasks['concierge'] = model_service.generate(
+            llm_tasks['concierge'] = model_service.generate_compose(
                 messages=[
                     {"role": "system", "content": "You are ReviewGuide, a friendly and knowledgeable AI shopping assistant. Never open with phrases like 'Based on X sources' or mention how many sources you searched. Never describe your process. Write 2-3 SHORT sentences (max 60 words) explaining WHY these products match the user's needs. Reference their criteria from the conversation (budget, features, use case). Do NOT list products — they are shown in cards below. End with 2-3 specific follow-up questions like 'Want to compare the top two?' or 'Looking for budget alternatives?' — make them relevant to the specific products shown."},
                     {"role": "user", "content": f'User asked: "{user_message}"\nContext:\n{context_summary}{pref_note}\nProducts: {", ".join(product_name_list)}\nSources: {", ".join(provider_names)}'}
                 ],
-                model=settings.COMPOSER_MODEL,
                 temperature=0.7,
                 max_tokens=120,
                 agent_name="product_compose"
@@ -479,12 +478,11 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
                     f"- {s.get('site_name', 'Review')}: {s.get('snippet', '')}"
                     for s in bundle.get("sources", [])[:5]
                 ])
-                llm_tasks[f'consensus:{product_name}'] = model_service.generate(
+                llm_tasks[f'consensus:{product_name}'] = model_service.generate_compose(
                     messages=[
                         {"role": "system", "content": "You are an editorial product reviewer writing a concise expert summary. Write a 3-5 sentence summary that covers: (1) what reviewers consistently praise, (2) any notable criticisms or caveats, and (3) who this product is best suited for. Write in a warm, authoritative editorial voice — like a knowledgeable friend giving the tldr. Never open with \"Based on X sources\" or mention how many sources. Weave in source names only when it adds credibility (e.g., \"Wirecutter highlights its noise cancellation\"). End with a sentence describing the ideal buyer."},
                         {"role": "user", "content": f"Product: {product_name}\nAvg Rating: {bundle.get('avg_rating', 0)}/5 from {bundle.get('total_reviews', 0)} reviews\n\nReview excerpts:\n{source_snippets}\n\nWrite a 3-5 sentence editorial summary covering: strengths, criticisms, and ideal buyer."}
                     ],
-                    model=settings.COMPOSER_MODEL,
                     temperature=0.5,
                     max_tokens=220,
                     agent_name="review_consensus"
@@ -507,12 +505,11 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
             # Opener (only depends on user_message, independent of consensus)
             # Only queue if we actually have bundles with sources
             if review_bundles:
-                llm_tasks['opener'] = model_service.generate(
+                llm_tasks['opener'] = model_service.generate_compose(
                     messages=[
                         {"role": "system", "content": "Write a warm 1-2 sentence intro for product review results. Reference what the user asked for — their budget, use case, or features. Sound like a knowledgeable friend, not a search engine. NEVER mention source counts, number of reviews, or 'trusted sources'. Never describe your process. Respond immediately in a conversational tone. Max 30 words."},
                         {"role": "user", "content": f'User asked: "{user_message}"'}
                     ],
-                    model=settings.COMPOSER_MODEL,
                     temperature=0.7,
                     max_tokens=60,
                     agent_name="product_opener"
@@ -551,12 +548,11 @@ User's current question: "{user_message}"
 Products to describe:
 {json.dumps(product_titles)}'''
 
-            llm_tasks['descriptions'] = model_service.generate(
+            llm_tasks['descriptions'] = model_service.generate_compose(
                 messages=[
                     {"role": "system", "content": desc_system},
                     {"role": "user", "content": desc_user}
                 ],
-                model=settings.COMPOSER_MODEL,
                 temperature=0.7,
                 max_tokens=600,
                 response_format={"type": "json_object"},
@@ -565,12 +561,11 @@ Products to describe:
 
         # --- Conclusion ---
         if products_by_provider:
-            llm_tasks['conclusion'] = model_service.generate(
+            llm_tasks['conclusion'] = model_service.generate_compose(
                 messages=[
                     {"role": "system", "content": "You are a helpful shopping assistant. Write 2 sentences: first, briefly interpret what was found (mention count and price range if evident), then ask a natural follow-up question to help narrow down. Be warm and conversational — like a knowledgeable friend. Never describe your process. Do NOT use markdown. Max 50 words total."},
                     {"role": "user", "content": f'User asked: "{user_message}"\nFound {num_products} products from {", ".join(products_by_provider.keys())}. Write a 2-sentence response: what was found + a follow-up question to narrow things down.'}
                 ],
-                model=settings.COMPOSER_MODEL,
                 temperature=0.7,
                 max_tokens=80,
                 agent_name="product_conclusion"
@@ -679,7 +674,7 @@ Products to describe:
 
         blog_data = "\n".join(blog_data_parts)
 
-        llm_tasks['blog_article'] = model_service.generate(
+        llm_tasks['blog_article'] = model_service.generate_compose(
             messages=[
                 {"role": "system", "content": """You are an expert product journalist writing a buying guide for ReviewGuide.ai. Write in a warm, authoritative voice — like a Wirecutter or The Verge review.
 
@@ -711,7 +706,6 @@ RULES:
 - The follow-up questions at the end are REQUIRED — never skip them"""},
                 {"role": "user", "content": blog_data}
             ],
-            model=settings.COMPOSER_MODEL,
             temperature=0.7,
             max_tokens=500,
             agent_name="blog_article_composer"

@@ -195,7 +195,6 @@ class Settings(BaseSettings):
 
     # LLM Providers
     OPENAI_API_KEY: str = Field(..., description="OpenAI API key")
-    ANTHROPIC_API_KEY: str = Field(default="", description="Anthropic API key")
     DEFAULT_MODEL: str = Field(default="gpt-4o-mini", description="Default LLM model to use")
     LITELLM_LOG_LEVEL: str = Field(default="INFO", description="LiteLLM logging level")
 
@@ -280,6 +279,10 @@ class Settings(BaseSettings):
     FAST_ROUTER_MODEL: str = Field(
         default="claude-haiku-4-5-20251001",
         description="Model for fast router Tier 2 fallback"
+    )
+    USE_ANTHROPIC_COMPOSE: bool = Field(
+        default=False,
+        description="Use Claude Haiku 4.5 for compose tools instead of GPT-4o-mini (Phase C)"
     )
 
     # Amazon Associates / Product Advertising API

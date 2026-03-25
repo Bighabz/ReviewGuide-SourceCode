@@ -12,6 +12,7 @@ from typing import Optional, Dict, AsyncGenerator
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from app.core.config import settings
+from langchain_core.language_models.chat_models import BaseChatModel
 from app.core.colored_logging import get_colored_logger
 
 logger = get_logger(__name__)
@@ -115,6 +116,154 @@ class ModelService:
             self._llm_cache[cache_key] = ChatOpenAI(**kwargs)
             logger.info(f"[model_service] Created new ChatOpenAI instance (cache size: {len(self._llm_cache)})")
         return self._llm_cache[cache_key]
+
+    def get_compose_model(self) -> BaseChatModel:
+        """Return the LLM instance for compose operations.
+
+        When ``USE_ANTHROPIC_COMPOSE`` is enabled and an Anthropic API key is
+        configured, returns a ``ChatAnthropic`` (Claude Haiku 4.5) instance.
+        Otherwise falls back to the existing ``ChatOpenAI`` path using
+        ``COMPOSER_MODEL``.
+
+        The returned object implements the standard LangChain chat model
+        interface (``.ainvoke()``, ``.astream()``, etc.) and is compatible
+        with Langfuse callback tracing.
+        """
+        if getattr(settings, "USE_ANTHROPIC_COMPOSE", False) and getattr(settings, "ANTHROPIC_API_KEY", ""):
+            cache_key = ("anthropic_compose", settings.FAST_ROUTER_MODEL)
+            if cache_key not in self._llm_cache:
+                from langchain_anthropic import ChatAnthropic
+                self._llm_cache[cache_key] = ChatAnthropic(
+                    model=settings.FAST_ROUTER_MODEL,  # claude-haiku-4-5-20251001
+                    anthropic_api_key=settings.ANTHROPIC_API_KEY,
+                    max_tokens=4096,
+                    temperature=0.7,
+                    streaming=True,
+                )
+                logger.info(
+                    f"[model_service] Created ChatAnthropic compose instance "
+                    f"(model={settings.FAST_ROUTER_MODEL}, cache size: {len(self._llm_cache)})"
+                )
+            return self._llm_cache[cache_key]
+        else:
+            # Fall back to existing ChatOpenAI with COMPOSER_MODEL
+            return self._get_llm(
+                model=settings.COMPOSER_MODEL,
+                temperature=0.7,
+                max_tokens=None,
+                json_mode=False,
+                stream=False,
+            )
+
+    async def generate_compose(
+            self,
+            messages: list[Dict[str, str]],
+            temperature: float = 0.7,
+            max_tokens: Optional[int] = None,
+            agent_name: Optional[str] = None,
+            session_id: Optional[str] = None,
+            response_format: Optional[Dict[str, str]] = None,
+            callbacks: Optional[list] = None,
+    ) -> str:
+        """Generate a completion using the compose model (Anthropic or OpenAI).
+
+        When ``USE_ANTHROPIC_COMPOSE`` is enabled this uses ``ChatAnthropic``;
+        otherwise it delegates to the standard ``generate()`` path with
+        ``COMPOSER_MODEL``.  The interface mirrors ``generate()`` for easy
+        swap-in.
+        """
+        use_anthropic = (
+            getattr(settings, "USE_ANTHROPIC_COMPOSE", False)
+            and getattr(settings, "ANTHROPIC_API_KEY", "")
+        )
+
+        if not use_anthropic:
+            # Feature flag off — use existing OpenAI path
+            return await self.generate(
+                messages=messages,
+                model=settings.COMPOSER_MODEL,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                agent_name=agent_name,
+                session_id=session_id,
+                response_format=response_format,
+                callbacks=callbacks,
+            )
+
+        # JSON mode requested — ChatAnthropic doesn't support response_format
+        # the same way OpenAI does, so fall back to OpenAI for structured output.
+        if response_format and response_format.get("type") == "json_object":
+            return await self.generate(
+                messages=messages,
+                model=settings.COMPOSER_MODEL,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                agent_name=agent_name,
+                session_id=session_id,
+                response_format=response_format,
+                callbacks=callbacks,
+            )
+
+        try:
+            llm = self.get_compose_model()
+            lc_messages = self._convert_messages(messages)
+
+            model_name = settings.FAST_ROUTER_MODEL
+            colored_logger.api_input(
+                {
+                    "model": model_name,
+                    "temperature": temperature,
+                    "max_tokens": max_tokens,
+                    "messages": [
+                        {
+                            "role": m.type,
+                            "content": m.content[:100] + "..." if len(m.content) > 100 else m.content,
+                        }
+                        for m in lc_messages
+                    ],
+                },
+                endpoint=f"Anthropic Chat ({model_name})",
+                agent=agent_name or "unknown",
+            )
+
+            async with self._sync_semaphore:
+                if callbacks:
+                    response = await llm.ainvoke(lc_messages, config={"callbacks": callbacks})
+                else:
+                    response = await llm.ainvoke(lc_messages)
+
+            content = response.content
+
+            colored_logger.api_output(
+                {"content_preview": content[:200] + "..." if len(content) > 200 else content},
+                endpoint=f"Anthropic Chat ({model_name})",
+                agent=agent_name or "unknown",
+            )
+
+            logger.info(
+                json.dumps({
+                    "event": "model_call",
+                    "agent": agent_name or "unknown",
+                    "model": model_name,
+                    "session_id": session_id,
+                    "provider": "anthropic",
+                })
+            )
+
+            return content
+
+        except Exception as e:
+            logger.error(
+                json.dumps({
+                    "event": "model_error",
+                    "agent": agent_name or "unknown",
+                    "model": settings.FAST_ROUTER_MODEL,
+                    "error": str(e),
+                    "session_id": session_id,
+                    "provider": "anthropic",
+                })
+            )
+            raise
 
     def invalidate_cache(self, reason: str = "manual") -> int:
         """Clear all cached LLM instances.
