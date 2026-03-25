@@ -112,9 +112,9 @@ Plans:
   4. The Skimlinks link wrapper can be disabled via SKIMLINKS_API_ENABLED=false without breaking product search
 **Plans**: 3 plans
 Plans:
-- [ ] 06-01-PLAN.md � Wave 1 RED test scaffolds for all AFFL requirements (AFFL-01, AFFL-02, AFFL-03)
-- [ ] 06-02-PLAN.md � Config settings + SkimlinksLinkWrapper service (AFFL-01, AFFL-02, AFFL-03)
-- [ ] 06-03-PLAN.md � Post-processing integration in product_affiliate.py (AFFL-01, AFFL-02, AFFL-03)
+- [ ] 06-01-PLAN.md — Wave 1 RED test scaffolds for all AFFL requirements (AFFL-01, AFFL-02, AFFL-03)
+- [ ] 06-02-PLAN.md — Config settings + SkimlinksLinkWrapper service (AFFL-01, AFFL-02, AFFL-03)
+- [ ] 06-03-PLAN.md — Post-processing integration in product_affiliate.py (AFFL-01, AFFL-02, AFFL-03)
 
 ### Phase 7: Skimlinks Middleware + Editor's Picks
 **Goal**: Skimlinks post-processing runs automatically on all provider results, and Editor's Picks with product images are visible on browse category pages
@@ -151,7 +151,11 @@ Plans:
   2. No product response returns more than 5 product cards
   3. A follow-up message like "how do these compare?" or "which one should I get?" against an active product shortlist automatically returns a ComparisonTable — without the user asking for a table explicitly
   4. The top_pick ui_block type is rendered correctly in Message.tsx without modifying the existing ui_blocks dispatch logic
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 09-01-PLAN.md — Wave 0 RED test scaffolds for UX-03, UX-04, UX-05
+- [ ] 09-02-PLAN.md — Backend: top_pick LLM task, 5-product cap, comparison follow-up (UX-03, UX-04, UX-05)
+- [ ] 09-03-PLAN.md — Frontend: TopPickBlock component + BlockRegistry wiring (UX-03)
 
 ### Phase 10: Impact.com Provider
 **Goal**: Impact.com affiliate catalog is available as a product search provider, adding higher-commission direct brand relationships
@@ -289,7 +293,7 @@ v2.0 phases execute sequentially: 12 -> 13 -> 14 -> 15 -> 16. Phase 12 is a hard
 | 6. Skimlinks Link Wrapper | v1.0 | 0/3 | Not started | - |
 | 7. Skimlinks Middleware + Editor's Picks | v1.0 | 0/TBD | Not started | - |
 | 8. Clarifier Suggestion Chips | v1.0 | 0/3 | Not started | - |
-| 9. Top Pick Block + Help Me Decide | v1.0 | 0/TBD | Not started | - |
+| 9. Top Pick Block + Help Me Decide | v1.0 | 0/3 | Not started | - |
 | 10. Impact.com Provider | v1.0 | 0/2 | Not started | - |
 | 11. Viator + CJ Expansion | v1.0 | 0/TBD | Not started | - |
 | 12. Navigation Shell | v2.0 | 3/3 | Complete | 2026-03-17 |
