@@ -136,7 +136,11 @@ Plans:
   2. Tapping a chip sends its text as the user's reply without typing
   3. Chips are rendered as styled buttons consistent with the Editorial Luxury theme (DM Sans, warm ivory/charcoal palette)
   4. The clarifier_chips field is present in GraphState with a default value so LangGraph channels do not crash on existing sessions
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 08-01-PLAN.md — Wave 0 RED test scaffolds for clarifier chip rendering and click dispatch (UX-01, UX-02)
+- [ ] 08-02-PLAN.md — Backend: GraphState field, initial_state default, clarifier prompt chip generation (UX-01, UX-02)
+- [ ] 08-03-PLAN.md — Frontend: FollowupQuestion interface update, chip pill rendering in Message.tsx (UX-01, UX-02)
 
 ### Phase 9: Top Pick Block + Help Me Decide
 **Goal**: Product responses lead with a single opinionated editorial recommendation, product counts are capped at 5, and comparison intent triggers a comparison table automatically
