@@ -110,7 +110,11 @@ Plans:
   2. An Amazon product URL is never passed through the Skimlinks wrapper
   3. The Skimlinks merchant domain list is fetched from Redis on cache hit and from the Merchant API only on cache miss (24h TTL)
   4. The Skimlinks link wrapper can be disabled via SKIMLINKS_API_ENABLED=false without breaking product search
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 06-01-PLAN.md — Wave 1 RED test scaffolds for all AFFL requirements (AFFL-01, AFFL-02, AFFL-03)
+- [ ] 06-02-PLAN.md — Config settings + SkimlinksLinkWrapper service (AFFL-01, AFFL-02, AFFL-03)
+- [ ] 06-03-PLAN.md — Post-processing integration in product_affiliate.py (AFFL-01, AFFL-02, AFFL-03)
 
 ### Phase 7: Skimlinks Middleware + Editor's Picks
 **Goal**: Skimlinks post-processing runs automatically on all provider results, and Editor's Picks with product images are visible on browse category pages
@@ -154,7 +158,10 @@ Plans:
   2. Impact.com results are auto-discovered by the provider loader and registered in AffiliateProviderRegistry
   3. Impact.com API calls are rate-limited to stay within 3,000 requests/hour
   4. The provider can be disabled via IMPACT_API_ENABLED=false without affecting other providers
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 10-01-PLAN.md â€” Wave 0 RED test scaffolds for all PROV-01 behaviors
+- [ ] 10-02-PLAN.md â€” Config settings, ImpactAffiliateProvider class, loader wiring (PROV-01)
 
 ### Phase 11: Viator + CJ Expansion
 **Goal**: Viator activity search is available for travel queries, and CJ advertiser coverage is expanded to include major retail brands
@@ -275,11 +282,11 @@ v2.0 phases execute sequentially: 12 -> 13 -> 14 -> 15 -> 16. Phase 12 is a hard
 | 3. Serper Shopping Provider | v1.0 | 0/1 | Not started | - |
 | 4. Browse Page Fixes | v1.0 | 0/1 | Not started | - |
 | 5. Amazon Creators API Migration | v1.0 | 0/TBD | Not started | - |
-| 6. Skimlinks Link Wrapper | v1.0 | 0/TBD | Not started | - |
+| 6. Skimlinks Link Wrapper | v1.0 | 0/3 | Not started | - |
 | 7. Skimlinks Middleware + Editor's Picks | v1.0 | 0/TBD | Not started | - |
-| 8. Clarifier Suggestion Chips | v1.0 | 0/TBD | Not started | - |
+| 8. Clarifier Suggestion Chips | v1.0 | 0/3 | Not started | - |
 | 9. Top Pick Block + Help Me Decide | v1.0 | 0/TBD | Not started | - |
-| 10. Impact.com Provider | v1.0 | 0/TBD | Not started | - |
+| 10. Impact.com Provider | v1.0 | 0/2 | Not started | - |
 | 11. Viator + CJ Expansion | v1.0 | 0/TBD | Not started | - |
 | 12. Navigation Shell | v2.0 | 3/3 | Complete | 2026-03-17 |
 | 13. Discover Screen | v2.0 | 3/3 | Complete | 2026-03-17 |
