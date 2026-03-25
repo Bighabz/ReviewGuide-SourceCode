@@ -45,8 +45,13 @@ PROVIDER_CONFIG = {
         "type": "amazon_products",
         "order": 2
     },
+    "serper_shopping": {
+        "title": "Shop Online",
+        "type": "serper_products",
+        "order": 3,
+    },
     # Add more providers here as needed:
-    # "walmart": {"title": "Shop on Walmart", "type": "walmart_products", "order": 3},
+    # "walmart": {"title": "Shop on Walmart", "type": "walmart_products", "order": 4},
 }
 
 # Accessory keywords for relevance filtering
@@ -701,6 +706,7 @@ RULES:
 - DO include review source names and citation links throughout the text
 - Write naturally — vary sentence structure, don't be formulaic
 - NEVER invent features or specs not in the data
+- NEVER invent URLs — only link to sources explicitly listed in the data
 - NEVER mention personal details unless the user provided them
 - Keep the total response under 400 words
 - The follow-up questions at the end are REQUIRED — never skip them"""},
@@ -996,8 +1002,14 @@ RULES:
             if not assistant_text:
                 assistant_text = "Here's what I found for you."
 
-        # Create citations
-        citations = [p["url"] for p in normalized_products if p.get("url")][:5]
+        # Create citations — prefer review source URLs (Wirecutter, Reddit, etc.)
+        review_source_urls = []
+        for bundle in review_bundles.values():
+            for source in bundle.get("sources", [])[:2]:
+                if source.get("url"):
+                    review_source_urls.append(source["url"])
+
+        citations = review_source_urls[:5] or [p["url"] for p in normalized_products if p.get("url")][:5]
 
         # Log summary
         provider_summary = ", ".join([f"{len(affiliate_products.get(p, []))} {p}" for p in sorted_providers])

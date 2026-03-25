@@ -304,10 +304,14 @@ async def test_system_prompt_forbids_inventing_urls(capturing_model_service):
         ""
     )
 
-    assert "never invent" in system_content.lower(), (
+    lower_content = system_content.lower()
+    assert "never invent" in lower_content, (
         f"System prompt must contain 'never invent URLs' guard, but got:\n{system_content[:500]}"
     )
-    assert "url" in system_content.lower().split("never invent")[1][:20], (
+    # Check that at least one "never invent" occurrence specifically mentions URLs
+    parts = lower_content.split("never invent")
+    has_url_guard = any("url" in part[:30] for part in parts[1:])
+    assert has_url_guard, (
         "The 'never invent' instruction must specifically mention URLs"
     )
 
