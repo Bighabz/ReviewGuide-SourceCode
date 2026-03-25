@@ -9,6 +9,7 @@ from langgraph.graph import StateGraph, END
 from app.schemas.graph_state import GraphState
 from app.core.config import settings
 from app.core.colored_logging import get_colored_logger
+from app.services.fast_router import fast_router_sync
 
 # Import the 5 main agent classes
 from app.agents.safety_agent import SafetyAgent
@@ -159,6 +160,33 @@ async def safety_node(state: GraphState) -> Dict[str, Any]:
     )
 
     update["stage_telemetry"] = [telemetry.to_dict()]
+
+    # Fast router bypass: intercept fresh queries before they hit intent/planner/clarifier
+    if (
+        settings.USE_FAST_ROUTER
+        and update.get("next_agent") == "intent"
+    ):
+        try:
+            router_result = fast_router_sync(
+                state.get("user_message", ""),
+                state.get("conversation_history", []),
+                state.get("last_search_context"),
+            )
+            update["intent"] = router_result.intent
+            # Existing state slots (e.g. country_code) take precedence over regex extraction
+            update["slots"] = {**router_result.slots, **state.get("slots", {})}
+            update["plan"] = router_result.plan
+            update["routing_mode"] = "fast"
+            update["next_agent"] = "plan_executor"
+            logger.info(
+                f"Fast router: intent={router_result.intent}, "
+                f"tier={router_result.tier}, confidence={router_result.confidence:.2f}"
+            )
+        except Exception as e:
+            logger.error(f"Fast router failed, falling back to legacy: {e}")
+            update["routing_mode"] = "legacy"
+    else:
+        update["routing_mode"] = update.get("routing_mode", "legacy")
 
     colored_logger.agent_title("SAFETY AGENT - OUTPUT", agent_name="SafetyAgent")
     colored_logger.agent_data({
@@ -520,6 +548,7 @@ def build_workflow() -> StateGraph:
             "intent": "agent_intent",
             "clarifier": "agent_clarifier",  # For resuming halt state
             "tiered_executor": "tiered_executor",  # For resuming from consent halt
+            "plan_executor": "agent_plan_executor",  # fast router bypass
             END: END,
         }
     )

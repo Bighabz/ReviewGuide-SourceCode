@@ -600,3 +600,30 @@ class TestTier2HaikuFallback:
         with patch("app.services.fast_router._call_haiku", new_callable=AsyncMock, return_value=None):
             result = await fast_router("ambiguous query about stuff", [], None)
             assert result.intent == "general"  # fallback
+
+
+# ---------------------------------------------------------------------------
+# Workflow integration
+# ---------------------------------------------------------------------------
+
+
+class TestWorkflowIntegration:
+    """Test that fast router correctly sets GraphState fields for PlanExecutor."""
+
+    def test_fast_router_sets_all_required_state(self):
+        from app.services.fast_router import fast_router_sync
+        result = fast_router_sync("best headphones under $200", [], None)
+        assert result.intent is not None
+        assert result.plan is not None
+        assert "steps" in result.plan
+        assert result.slots is not None
+
+    def test_plan_executor_compatible_plan(self):
+        from app.services.fast_router import fast_router_sync
+        result = fast_router_sync("best laptop for college", [], None)
+        for step in result.plan["steps"]:
+            assert "id" in step, "Step missing 'id'"
+            assert "tools" in step, "Step missing 'tools'"
+            assert isinstance(step["tools"], list), "Step 'tools' must be a list"
+            for tool in step["tools"]:
+                assert isinstance(tool, str), f"Tool must be string, got {type(tool)}"
