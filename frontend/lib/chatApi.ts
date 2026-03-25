@@ -327,6 +327,23 @@ export async function streamChat({
                 if (chunk.clear && onClear) {
                   onClear()
                 }
+                // Phase B: skeleton_cards — convert to products ui_block with loading=true
+                // so the BlockRegistry renders name-only skeleton product cards immediately,
+                // before the real affiliate/price data arrives in the terminal done event.
+                if (chunk.type === 'skeleton_cards' && (chunk as any).data) {
+                  const skeletonBlocks = [{
+                    type: 'products',
+                    data: (chunk as any).data.map((card: any) => ({
+                      name: card.name,
+                      price: null,
+                      url: null,
+                      image_url: null,
+                      loading: true,
+                    })),
+                  }]
+                  onComplete({ ui_blocks: skeletonBlocks })
+                  continue
+                }
                 if (chunk.blocks || chunk.ui_blocks || chunk.itinerary) {
                   const blocks = chunk.blocks ?? chunk.ui_blocks
                   onComplete({
