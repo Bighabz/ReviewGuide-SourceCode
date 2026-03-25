@@ -10,7 +10,7 @@ Amazon is auditing our affiliate account. We need a **fast, static blog/site** w
 
 **Company:** ReviewGuide.ai
 **Purpose:** AI-powered shopping assistant that recommends products based on aggregated reviews
-**Affiliate Tag:** `mikejahshan-20`
+**Affiliate Tag:** `revguide-20`
 **Domain:** reviewguide.ai (or subdomain like blog.reviewguide.ai)
 
 ---
@@ -45,12 +45,12 @@ Amazon is auditing our affiliate account. We need a **fast, static blog/site** w
 ### 3. Amazon Affiliate Link Format
 
 ```
-https://www.amazon.com/dp/[ASIN]?tag=mikejahshan-20
+https://www.amazon.com/dp/[ASIN]?tag=revguide-20
 ```
 
 **Example:**
 ```
-https://www.amazon.com/dp/B09NQNGDGB?tag=mikejahshan-20
+https://www.amazon.com/dp/B09NQNGDGB?tag=revguide-20
 ```
 
 Mike will provide a list of specific ASINs/products to feature.

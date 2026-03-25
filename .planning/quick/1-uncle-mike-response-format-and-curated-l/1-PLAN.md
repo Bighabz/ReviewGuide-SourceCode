@@ -43,7 +43,7 @@ must_haves:
 <objective>
 Implement Uncle Mike's feedback on response format: enforce Blog Review -> Product Carousel (5 links) -> Conversational Follow-up structure for every product response. Add USE_CURATED_LINKS feature flag so curated amzn.to links are the primary product source until PA-API access is granted.
 
-Purpose: Fix product response format to match the editorial blog style Uncle Mike expects, and ensure curated affiliate links (tag: mikejahshan-20) are used reliably instead of live API calls that may return inconsistent/empty results.
+Purpose: Fix product response format to match the editorial blog style Uncle Mike expects, and ensure curated affiliate links (tag: revguide-20) are used reliably instead of live API calls that may return inconsistent/empty results.
 
 Output: Updated backend config, product_affiliate (curated-first logic), and product_compose (enforced response format with inline follow-ups).
 </objective>

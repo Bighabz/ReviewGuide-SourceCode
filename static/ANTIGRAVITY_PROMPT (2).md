@@ -24,12 +24,12 @@ A static blog/content site with:
 
 Every product link must use this format:
 ```
-https://www.amazon.com/dp/[ASIN]?tag=mikejahshan-20
+https://www.amazon.com/dp/[ASIN]?tag=revguide-20
 ```
 
 Example:
 ```
-https://www.amazon.com/dp/B09NQNGDGB?tag=mikejahshan-20
+https://www.amazon.com/dp/B09NQNGDGB?tag=revguide-20
 ```
 
 ## Required Footer (on every page)
@@ -60,11 +60,11 @@ Looking for the perfect wireless headphones? We've analyzed hundreds of reviews.
 ### 1. Sony WH-1000XM5
 [Product card with image, price, description]
 **Why we love it:** Industry-leading noise cancellation...
-[Buy on Amazon](https://www.amazon.com/dp/PLACEHOLDER001?tag=mikejahshan-20)
+[Buy on Amazon](https://www.amazon.com/dp/PLACEHOLDER001?tag=revguide-20)
 
 ### 2. Apple AirPods Max
 [Product card]
-[Buy on Amazon](https://www.amazon.com/dp/PLACEHOLDER002?tag=mikejahshan-20)
+[Buy on Amazon](https://www.amazon.com/dp/PLACEHOLDER002?tag=revguide-20)
 
 ... etc
 ```
@@ -123,14 +123,14 @@ Each product should display:
 
 **Use placeholder ASINs for now.** Structure all affiliate links like:
 ```
-https://www.amazon.com/dp/PLACEHOLDER001?tag=mikejahshan-20
-https://www.amazon.com/dp/PLACEHOLDER002?tag=mikejahshan-20
+https://www.amazon.com/dp/PLACEHOLDER001?tag=revguide-20
+https://www.amazon.com/dp/PLACEHOLDER002?tag=revguide-20
 ```
 
 We'll replace these with real ASINs when Mike provides them. For now:
 - Use real, popular product **names** (Sony WH-1000XM5, Apple AirPods Max, etc.)
 - Use placeholder ASINs (PLACEHOLDER001, PLACEHOLDER002, etc.)
-- The affiliate tag `mikejahshan-20` is correct and should remain
+- The affiliate tag `revguide-20` is correct and should remain
 
 This allows us to build the full site structure now and do a quick find-replace later.
 

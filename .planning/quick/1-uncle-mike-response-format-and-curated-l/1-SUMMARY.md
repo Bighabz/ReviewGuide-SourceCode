@@ -18,7 +18,7 @@ key_files:
     - backend/mcp_server/tools/product_affiliate.py
     - backend/mcp_server/tools/product_compose.py
 decisions:
-  - USE_CURATED_LINKS defaults to True — curated amzn.to links (tag mikejahshan-20) are used as sole product source until PA-API access is granted
+  - USE_CURATED_LINKS defaults to True — curated amzn.to links (tag revguide-20) are used as sole product source until PA-API access is granted
   - blog_article word limit raised from 350 to 400 to accommodate mandatory follow-up questions section
   - Concierge product listing cap changed from 8 to 5 to match product card cap
 metrics:
