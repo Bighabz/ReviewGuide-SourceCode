@@ -264,6 +264,20 @@ class Settings(BaseSettings):
         description="Use curated Amazon affiliate links as primary product source (bypasses live product search APIs)"
     )
 
+    # Fast Router (Phase A - sub-3s architecture)
+    USE_FAST_ROUTER: bool = Field(
+        default=False,
+        description="Bypass intent/planner/clarifier agents with deterministic fast router"
+    )
+    ANTHROPIC_API_KEY: str = Field(
+        default="",
+        description="Anthropic API key for Haiku fallback in fast router"
+    )
+    FAST_ROUTER_MODEL: str = Field(
+        default="claude-haiku-4-5-20251001",
+        description="Model for fast router Tier 2 fallback"
+    )
+
     # Amazon Associates / Product Advertising API
     AMAZON_API_ENABLED: bool = Field(default=False, description="Enable real Amazon PA-API (requires API credentials)")
     AMAZON_ACCESS_KEY: str = Field(default="", description="Amazon PA-API Access Key")

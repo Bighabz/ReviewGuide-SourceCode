@@ -301,6 +301,7 @@ async def generate_chat_stream(
             "next_agent": resume_next_agent,  # Set for consent resume, None otherwise
             "halt": False,  # Required field - reset to False so workflow can continue
             "plan": None,
+            "routing_mode": None,
             "slots": initial_slots,  # Initialize with country_code
             "followups": halt_state_data.get("followups", []) if halt_state_data else [],
             "policy_status": "allow",

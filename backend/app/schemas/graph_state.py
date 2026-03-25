@@ -27,6 +27,7 @@ class GraphState(TypedDict):
     next_agent: Optional[str]
     halt: bool  # Whether workflow should halt and wait for user input
     plan: Optional[Dict[str, Any]]  # MCP execution plan from planner agent
+    routing_mode: Optional[str]  # "fast" or "legacy" — tracks which path was taken
     extended_search_confirmed: bool  # Whether user confirmed extended search consent
 
     # Slot Filling (Multi-turn Conversation)
