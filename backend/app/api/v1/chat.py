@@ -304,6 +304,7 @@ async def generate_chat_stream(
             "routing_mode": None,
             "slots": initial_slots,  # Initialize with country_code
             "followups": halt_state_data.get("followups", []) if halt_state_data else [],
+            "clarifier_chips": [],  # Phase 08: chip answer options from clarifier
             "policy_status": "allow",
             "extended_search_confirmed": extended_search_confirmed,  # Flag for tiered executor
             "sanitized_text": None,

@@ -622,12 +622,20 @@ Rules:
 - Use the CORRECT destination from conversation history (e.g., if they said "Paris" earlier, say "Paris" not "Berlin")
 - Be warm but concise
 - No hardcoded phrases - generate based on actual context
+- For each question, include "chips": an array of 2-4 short answer options (2-6 words each)
+- Chips appear as tappable buttons so users can answer in one tap
+- Keep chip text concise and mutually exclusive
+- Put answer options in chips ONLY, not repeated in the question text
+- Keep the question brief — do not list the options in the question prose
+- For open-ended questions (e.g., specific product names, destinations), use chips: [] (empty array)
+- Example chips for budget: ["Under $100", "$100-$300", "$300-$500", "Over $500"]
+- Example chips for category: ["Vacuums", "Hair dryers", "Air purifiers"]
 
 Return ONLY valid JSON:
 {{
   "intro": "<your generated intro>",
   "questions": [
-    {{"slot": "<slot_name>", "question": "<your question>"}},
+    {{"slot": "<slot_name>", "question": "<your brief question>", "chips": ["<option 1>", "<option 2>", "<option 3>"]}},
     ...
   ],
   "closing": "<your generated closing>"
@@ -658,7 +666,7 @@ Return ONLY valid JSON:
                 logger.warning(f"[Clarifier Agent] LLM generated {len(questions)} questions for {len(missing_slots)} slots")
                 for slot in missing_slots:
                     if not any(q["slot"] == slot for q in questions):
-                        questions.append({"slot": slot, "question": f"What is the {slot.replace('_', ' ')}?"})
+                        questions.append({"slot": slot, "question": f"What is the {slot.replace('_', ' ')}?", "chips": []})
 
             return {
                 "intro": result.get("intro", "I need a few more details:"),
@@ -671,7 +679,7 @@ Return ONLY valid JSON:
             # Fallback
             return {
                 "intro": "I need a few more details to help you:",
-                "questions": [{"slot": slot, "question": f"What is the {slot.replace('_', ' ')}?"} for slot in missing_slots],
+                "questions": [{"slot": slot, "question": f"What is the {slot.replace('_', ' ')}?", "chips": []} for slot in missing_slots],
                 "closing": ""
             }
 

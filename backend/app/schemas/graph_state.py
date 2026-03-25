@@ -33,6 +33,7 @@ class GraphState(TypedDict):
     # Slot Filling (Multi-turn Conversation)
     slots: Dict[str, Any]  # Extracted slots for the current intent (destination, dates, budget, etc.)
     followups: List[Dict[str, Any]]  # Follow-up questions for missing required slots
+    clarifier_chips: List[Dict[str, Any]]  # Chip answer options from clarifier [{slot, chips: [...]}]
 
     # Safety & Policy
     policy_status: str  # "allow", "block", "needs_clarification"
