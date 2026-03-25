@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Core Platform
-status: completed
-stopped_at: Completed 04-01-PLAN.md
-last_updated: "2026-03-25T23:44:51.154Z"
+status: verifying
+stopped_at: Completed 03-01-PLAN.md
+last_updated: "2026-03-25T23:47:44.119Z"
 last_activity: "2026-03-25 — Phase 04 Plan 01 complete: Browse page affiliate link fixes"
 progress:
   total_phases: 16
-  completed_phases: 6
+  completed_phases: 8
   total_plans: 42
-  completed_plans: 21
+  completed_plans: 23
   percent: 50
 ---
 
@@ -87,6 +87,8 @@ Progress: [█████░░░░░] 50%
 - [Phase 04-browse-page-fixes]: Editor's Picks section inserted between editorial rule and Popular Questions on category pages
 - [Phase 02-fix-review-source-links]: Citations prefer review_source_urls (Wirecutter, RTINGS) with fallback to normalized_products — backward compatible
 - [Phase 02-fix-review-source-links]: source_refs already threaded from Phase 1 work — only "never invent URLs" guard and citations fix were missing
+- [Phase 03]: Reuse SERPAPI_API_KEY for Serper shopping — no new credentials needed
+- [Phase 03]: Direct retailer URLs without affiliate wrapping for MVP — Skimlinks wrapping deferred to Phase 6
 
 ### Pending Todos
 
@@ -103,9 +105,10 @@ None yet.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 1 | Uncle Mike Response Format and Curated Links Fallback | 2026-03-25 | c3ddebb | [1-uncle-mike-response-format-and-curated-l](./quick/1-uncle-mike-response-format-and-curated-l/) |
+| Phase 03 P01 | 5min | 2 tasks | 4 files |
 
 ## Session Continuity
 
-Last session: 2026-03-25T23:45:00Z
-Stopped at: Completed 02-01-PLAN.md (Phase 2 Fix Review Source Links)
+Last session: 2026-03-25T23:47:44.115Z
+Stopped at: Completed 03-01-PLAN.md
 Resume file: None
