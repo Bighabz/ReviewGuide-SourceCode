@@ -20,6 +20,8 @@ ai_prj.pub
 *.log
 .claude
 .mcp.json
+staticlinks.txt
+STATIC_AFFILIATE_SITE_BRIEF.md
 
 # Node
 node_modules/
