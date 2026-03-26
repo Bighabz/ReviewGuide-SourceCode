@@ -126,8 +126,8 @@ export default function CategorySidebar({ isOpen = true, onClose }: CategorySide
                   <button
                     key={category.slug}
                     onClick={() => handleCategoryClick(category.slug)}
-                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-colors group
-                      text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)]"
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left transition-all duration-200 group
+                      text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--primary-light)] hover:scale-[1.01]"
                   >
                     <Icon
                       size={14}

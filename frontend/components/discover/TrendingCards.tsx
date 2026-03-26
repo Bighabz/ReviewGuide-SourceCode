@@ -44,7 +44,7 @@ export default function TrendingCards() {
               onClick={() =>
                 router.push(`/chat?q=${encodeURIComponent(topic.query)}&new=1`)
               }
-              className="product-card-hover w-full text-left"
+              className="product-card-hover w-full text-left group"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -114,6 +114,7 @@ export default function TrendingCards() {
               <ChevronRight
                 size={16}
                 aria-hidden="true"
+                className="transition-transform duration-200 group-hover:translate-x-1"
                 style={{ color: 'var(--text-muted)', flexShrink: 0 }}
               />
             </button>
