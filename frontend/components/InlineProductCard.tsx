@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { ShoppingCart } from 'lucide-react'
 import { stripMarkdown } from '@/lib/stripMarkdown'
 import { curatedLinks } from '@/lib/curatedLinks'
+import { resolveProductImage, isPlaceholderImage } from '@/lib/productImages'
 
 interface ProductItem {
   name: string
@@ -48,22 +48,20 @@ function lookupCuratedProduct(name: string): { imageUrl: string | null; affiliat
 
 function ProductImage({ name, imageUrl }: { name: string; imageUrl: string | null }) {
   const [errored, setErrored] = useState(false)
+  const resolvedUrl = resolveProductImage(name, errored ? null : imageUrl)
+  const isPlaceholder = isPlaceholderImage(resolvedUrl)
 
-  if (!imageUrl || errored) {
-    return (
-      <div
-        data-testid="product-image-placeholder"
-        className="w-16 h-16 rounded-lg flex-shrink-0 flex items-center justify-center"
-        style={{ backgroundColor: 'var(--surface-hover)' }}
-      >
-        <ShoppingCart size={20} style={{ color: 'var(--text-secondary)' }} />
-      </div>
-    )
-  }
-
-  return (
+  return isPlaceholder ? (
+    <div
+      data-testid="product-image-placeholder"
+      className="w-16 h-16 rounded-lg flex-shrink-0 flex items-center justify-center"
+      style={{ backgroundColor: 'var(--surface-hover)' }}
+    >
+      <img src={resolvedUrl} alt="" className="w-8 h-8 opacity-50" />
+    </div>
+  ) : (
     <img
-      src={imageUrl}
+      src={resolvedUrl}
       alt={name}
       className="w-16 h-16 rounded-lg object-cover flex-shrink-0"
       onError={() => setErrored(true)}
@@ -75,8 +73,8 @@ export default function InlineProductCard({ products }: InlineProductCardProps) 
   return (
     <div className="flex flex-col w-full overflow-hidden">
       {products.map((product, index) => {
-        const { imageUrl: curatedImage, affiliateUrl: curatedUrl } = lookupCuratedProduct(product.name)
-        const imageUrl = product.image_url || curatedImage
+        const { affiliateUrl: curatedUrl } = lookupCuratedProduct(product.name)
+        const imageUrl = product.image_url || null
         const linkUrl =
           product.url ||
           curatedUrl ||
