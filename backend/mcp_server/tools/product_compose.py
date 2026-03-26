@@ -173,6 +173,24 @@ def _is_follow_up_query(query: str, last_context: dict) -> bool:
     return False
 
 
+COMPARISON_SIGNALS = [
+    "compare", "comparison", "which one", "which should",
+    "help me decide", "help me choose", "between these",
+    "how do these compare", "side by side", "vs", "versus",
+    "differences", "pros and cons of each", "better",
+]
+
+
+def _is_comparison_follow_up(query: str, last_context: dict) -> bool:
+    """Detect if a follow-up message is asking for comparison of the active shortlist."""
+    if not last_context or not last_context.get("product_names"):
+        return False
+    if len(last_context["product_names"]) < 2:
+        return False
+    q = query.lower().strip()
+    return any(signal in q for signal in COMPARISON_SIGNALS)
+
+
 def _find_in_history(query: str, history: list) -> dict | None:
     """Scan search_history for a matching previous context."""
     q = query.lower()
@@ -298,6 +316,40 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
         comparison_html = state.get("comparison_html")
         comparison_data = state.get("comparison_data")
 
+        # ── Comparison follow-up detection (UX-05) ──
+        if _is_comparison_follow_up(user_message, last_search_context):
+            product_names = last_search_context.get("product_names", [])[:5]
+            logger.info(f"[product_compose] Comparison follow-up detected for {product_names}")
+            comparison_products = []
+            for pname in product_names:
+                price = last_search_context.get("top_prices", {}).get(pname, 0)
+                rating = last_search_context.get("avg_rating", {}).get(pname, 0)
+                comparison_products.append({
+                    "title": pname,
+                    "price": price,
+                    "currency": "USD",
+                    "rating": rating,
+                    "merchant": "",
+                    "url": "",
+                })
+            comparison_block = {
+                "type": "product_comparison",
+                "title": "Product Comparison",
+                "data": {
+                    "products": comparison_products,
+                    "criteria": [],
+                    "summary": f"Comparing {', '.join(product_names[:3])}{'...' if len(product_names) > 3 else ''}",
+                }
+            }
+            return {
+                "assistant_text": "Here's a side-by-side comparison of the products from your search.",
+                "ui_blocks": [comparison_block],
+                "citations": [],
+                "last_search_context": last_search_context,
+                "search_history": list(state.get("search_history", [])),
+                "success": True
+            }
+
         # Check if we have any data to display
         if not normalized_products and not affiliate_products and not review_data:
             if general_product_info and general_product_info.strip():
@@ -408,7 +460,7 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
             if provider_products:
                 products_by_provider[provider_name] = {
                     "config": config,
-                    "products": provider_products[:10]
+                    "products": provider_products[:5]
                 }
 
         num_products = sum(len(d["products"]) for d in products_by_provider.values())
@@ -717,6 +769,28 @@ RULES:
             agent_name="blog_article_composer"
         )
 
+        # --- Top Pick editorial prose (UX-03) ---
+        # Uses deterministic "Best Overall" selection + LLM for prose
+        if review_data and review_bundles:
+            sorted_by_quality = sorted(
+                review_data.items(),
+                key=lambda x: x[1].get("quality_score", 0),
+                reverse=True
+            )
+            if sorted_by_quality and sorted_by_quality[0][1].get("quality_score", 0) > 0:
+                best_product_name = sorted_by_quality[0][0]
+                best_bundle = sorted_by_quality[0][1]
+                llm_tasks['top_pick'] = model_service.generate_compose(
+                    messages=[
+                        {"role": "system", "content": "You are an editorial product reviewer. Given a top-rated product, write a JSON object with exactly three keys: headline (one sentence why it's the best pick), best_for (who should buy it, one sentence), not_for (who should look elsewhere, one sentence). Be specific and opinionated. Do not use generic phrases."},
+                        {"role": "user", "content": f'Product: {best_product_name}\nRating: {best_bundle.get("avg_rating", 0)}/5 from {best_bundle.get("total_reviews", 0)} reviews\nUser asked: "{user_message}"'}
+                    ],
+                    temperature=0.5,
+                    max_tokens=150,
+                    response_format={"type": "json_object"},
+                    agent_name="top_pick_composer"
+                )
+
         # ── Phase 3: Fire all LLM calls in parallel ──
 
         task_keys = list(llm_tasks.keys())
@@ -746,6 +820,44 @@ RULES:
         # ── Phase 4: Assemble blog-style article ──
 
         ui_blocks = []
+
+        # ── Top Pick block (UX-03) — must be FIRST in ui_blocks ──
+        if 'top_pick' in result_map:
+            top_pick_raw = _get_result('top_pick', '')
+            if top_pick_raw:
+                try:
+                    top_pick_result = json.loads(top_pick_raw)
+                    # Find the best product name (same selection as Phase 2)
+                    sorted_by_quality = sorted(
+                        review_data.items(),
+                        key=lambda x: x[1].get("quality_score", 0),
+                        reverse=True
+                    )
+                    best_product_name = sorted_by_quality[0][0] if sorted_by_quality else ""
+                    # Find image and affiliate URL from products_with_offers
+                    best_image = ""
+                    best_url = ""
+                    for p in products_with_offers:
+                        if _fuzzy_product_match(p.get("name", ""), best_product_name):
+                            offer = p.get("best_offer", {})
+                            best_image = offer.get("image_url", "")
+                            best_url = offer.get("url", "")
+                            break
+                    ui_blocks.insert(0, {
+                        "type": "top_pick",
+                        "title": "Our Top Pick",
+                        "data": {
+                            "product_name": best_product_name,
+                            "headline": top_pick_result.get("headline", ""),
+                            "best_for": top_pick_result.get("best_for", ""),
+                            "not_for": top_pick_result.get("not_for", ""),
+                            "image_url": best_image,
+                            "affiliate_url": best_url,
+                        }
+                    })
+                    logger.info(f"[product_compose] Added top_pick block for {best_product_name}")
+                except (json.JSONDecodeError, Exception) as e:
+                    logger.warning(f"[product_compose] Failed to parse top_pick: {e}")
 
         # Comparison HTML block (keep as structured UI)
         if comparison_html:
