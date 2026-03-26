@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowUp } from 'lucide-react'
+import { ArrowUp, Mic, Paperclip } from 'lucide-react'
 import { useRef, useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 
@@ -66,7 +66,7 @@ export default function ChatInput({
           placeholder={placeholder}
           disabled={disabled}
           rows={1}
-          className="w-full resize-none rounded-2xl pl-5 pr-14 py-4 bg-transparent focus:outline-none disabled:cursor-not-allowed text-[15px] text-[var(--text)] placeholder:text-[var(--text-muted)]"
+          className="w-full resize-none rounded-2xl pl-5 pr-28 py-4 bg-transparent focus:outline-none disabled:cursor-not-allowed text-[15px] text-[var(--text)] placeholder:text-[var(--text-muted)]"
           style={{
             minHeight: '52px',
             maxHeight: '240px',
@@ -74,6 +74,26 @@ export default function ChatInput({
             lineHeight: '1.5',
           }}
         />
+
+        {/* Placeholder icons */}
+        <div className="absolute right-14 bottom-3.5 flex items-center gap-1">
+          <button
+            type="button"
+            className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors opacity-50 cursor-default"
+            title="Voice input (coming soon)"
+            disabled
+          >
+            <Mic size={16} />
+          </button>
+          <button
+            type="button"
+            className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors opacity-50 cursor-default"
+            title="Attach image (coming soon)"
+            disabled
+          >
+            <Paperclip size={16} />
+          </button>
+        </div>
 
         {/* Send Button */}
         <motion.button
