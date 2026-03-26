@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Core Platform
 status: executing
-stopped_at: Completed 11-04-PLAN.md
-last_updated: "2026-03-26T00:15:00.000Z"
-last_activity: "2026-03-26 — Phase 11 complete: Viator + CJ Expansion (4 plans)"
+stopped_at: Completed 07-03-PLAN.md
+last_updated: "2026-03-26T00:13:00.000Z"
+last_activity: "2026-03-26 — Phase 7 complete: Skimlinks Middleware + Editor's Picks (3 plans)"
 progress:
   total_phases: 16
   completed_phases: 12
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 
 ## Current Position
 
-Phase: 11 of 16 (Viator + CJ Expansion) — COMPLETE
-Plan: 04 of 04 — COMPLETE
-Status: Phase 11 complete — Viator activity search via /search/freetext with Redis caching and PLP fallback, MCP tool wired to travel workflow, CJ expansion documented as human action.
-Last activity: 2026-03-26 — Phase 11 complete: Viator + CJ Expansion
+Phase: 07 of 16 (Skimlinks Middleware + Editor's Picks) — COMPLETE
+Plan: 03 of 03 — COMPLETE
+Status: Phase 7 complete — _apply_skimlinks_wrapping middleware function, EditorsPicks component with Amazon CDN images on browse category pages.
+Last activity: 2026-03-26 — Phase 7 complete: Skimlinks Middleware + Editor's Picks
 
 Progress: [█████████░] 83%
 
@@ -107,6 +107,9 @@ Progress: [█████████░] 83%
 - [Phase 11]: activities_viator UI block type avoids conflict with existing plain-text activities from destination_facts
 - [Phase 11]: PLP fallback on connection/timeout exceptions; empty list on API error status codes (non-200)
 - [Phase 11]: CJ advertiser_ids=joined means approved advertisers auto-appear with zero code change
+- [Phase 07]: _apply_skimlinks_wrapping extracted as standalone function with module-level lazy import -- enables test patching and curated path wrapping
+- [Phase 07]: EditorsPicks replaces CuratedProductCard on category pages -- image grid with Amazon CDN ASIN URLs instead of text-only pills
+- [Phase 07]: Amazon CDN image URL pattern: images-na.ssl-images-amazon.com/images/I/{ASIN}._SL300_.jpg (proven from InlineProductCard)
 
 ### Pending Todos
 
@@ -127,6 +130,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26T00:15:00.000Z
-Stopped at: Completed 11-04-PLAN.md
+Last session: 2026-03-26T00:13:00.000Z
+Stopped at: Completed 07-03-PLAN.md
 Resume file: None
