@@ -17,6 +17,60 @@ backend_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__
 if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
+# Lazy imports for Skimlinks -- graceful if Phase 6 not deployed
+try:
+    from app.services.affiliate.skimlinks import skimlinks_wrapper
+except ImportError:
+    skimlinks_wrapper = None  # type: ignore[assignment]
+
+try:
+    from app.core.config import settings
+except ImportError:
+    settings = None  # type: ignore[assignment]
+
+
+async def _apply_skimlinks_wrapping(affiliate_products: dict, session_id: str = "") -> dict:
+    """
+    Post-process all provider results: wrap qualifying URLs with Skimlinks.
+
+    Non-fatal: if anything fails, original URLs are preserved.
+    Provider-agnostic: works on ALL providers without modifying them.
+    """
+    try:
+        from app.core.centralized_logger import get_logger
+
+        logger = get_logger(__name__)
+
+        # Guard: skip if Skimlinks is not configured or not enabled
+        if not skimlinks_wrapper:
+            return affiliate_products
+        if not getattr(settings, 'SKIMLINKS_API_ENABLED', False):
+            return affiliate_products
+
+        wrapped_count = 0
+        for provider_name, provider_groups in affiliate_products.items():
+            for group in provider_groups:
+                for offer in group.get("offers", []):
+                    url = offer.get("url", "")
+                    if url and skimlinks_wrapper.is_supported_domain(url):
+                        offer["url"] = skimlinks_wrapper.wrap_url(url, xcust=session_id)
+                        offer["skimlinks_wrapped"] = True
+                        wrapped_count += 1
+
+        if wrapped_count > 0:
+            logger.info(f"[product_affiliate] Skimlinks wrapped {wrapped_count} URLs")
+
+    except ImportError:
+        # Phase 6 not yet deployed -- silently skip
+        pass
+    except Exception as e:
+        from app.core.centralized_logger import get_logger
+        logger = get_logger(__name__)
+        logger.warning(f"[product_affiliate] Skimlinks wrapping failed (non-fatal): {e}")
+
+    return affiliate_products
+
+
 # Tool contract for planner
 TOOL_CONTRACT = {
     "name": "product_affiliate",
@@ -146,9 +200,13 @@ async def product_affiliate(
                     })
             # Cap at 5 products
             results = results[:5]
+            # Apply Skimlinks wrapping even to curated results
+            curated_affiliate = {"amazon": results} if results else {}
+            session_id = state.get("session_id", "")
+            curated_affiliate = await _apply_skimlinks_wrapping(curated_affiliate, session_id)
             logger.info(f"[product_affiliate] USE_CURATED_LINKS=true: returning {len(results)} curated Amazon links (skipping live APIs)")
             return {
-                "affiliate_products": {"amazon": results} if results else {},
+                "affiliate_products": curated_affiliate,
                 "success": True
             }
 
@@ -280,26 +338,9 @@ async def product_affiliate(
 
         logger.info(f"[product_affiliate] Total providers with results: {list(affiliate_products.keys())}")
 
-        # Post-process: wrap non-Amazon, non-eBay URLs with Skimlinks affiliate tracking
-        try:
-            from app.services.affiliate.skimlinks import skimlinks_wrapper
-
-            if skimlinks_wrapper.enabled:
-                session_id = state.get("session_id", "")
-                for provider_name, product_groups in affiliate_products.items():
-                    # Skip providers with their own direct affiliate programs
-                    if provider_name in ("amazon", "ebay"):
-                        continue
-                    for group in product_groups:
-                        for offer in group.get("offers", []):
-                            original_url = offer.get("url", "")
-                            if original_url:
-                                offer["url"] = await skimlinks_wrapper.wrap_url(
-                                    original_url, xcust=session_id
-                                )
-                logger.info("[product_affiliate] Skimlinks post-processing applied to non-Amazon/non-eBay offers")
-        except Exception as e:
-            logger.warning(f"[product_affiliate] Skimlinks post-processing failed, URLs unchanged: {e}")
+        # Apply Skimlinks wrapping to qualifying URLs (Phase 7 middleware)
+        session_id = state.get("session_id", "")
+        affiliate_products = await _apply_skimlinks_wrapping(affiliate_products, session_id)
 
         return {
             "affiliate_products": affiliate_products,

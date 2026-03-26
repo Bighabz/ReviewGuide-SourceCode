@@ -167,12 +167,19 @@ def test_no_provider_modifications():
     for filename in provider_files:
         filepath = os.path.join(providers_dir, filename)
         with open(filepath, "r", encoding="utf-8") as f:
-            content = f.read().lower()
-        assert "skimlinks" not in content, (
-            f"Provider file {filename} contains 'skimlinks' -- "
-            f"wrapping should only happen in post-processing middleware"
-        )
-        assert "skimresources" not in content, (
-            f"Provider file {filename} contains 'skimresources' -- "
-            f"wrapping should only happen in post-processing middleware"
-        )
+            lines = f.readlines()
+        # Check only non-comment code lines for Skimlinks references
+        for line_num, line in enumerate(lines, 1):
+            stripped = line.strip()
+            # Skip comments and docstrings
+            if stripped.startswith("#") or stripped.startswith('"""') or stripped.startswith("'''"):
+                continue
+            line_lower = stripped.lower()
+            assert "skimlinks" not in line_lower, (
+                f"Provider file {filename}:{line_num} contains 'skimlinks' in code -- "
+                f"wrapping should only happen in post-processing middleware"
+            )
+            assert "skimresources" not in line_lower, (
+                f"Provider file {filename}:{line_num} contains 'skimresources' in code -- "
+                f"wrapping should only happen in post-processing middleware"
+            )

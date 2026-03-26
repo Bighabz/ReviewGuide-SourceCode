@@ -300,7 +300,8 @@ class TestProductAffiliateIntegration:
 
         with patch("app.services.affiliate.manager.affiliate_manager") as mock_manager, \
              patch("app.core.config.settings") as mock_settings, \
-             patch("app.services.affiliate.skimlinks.skimlinks_wrapper") as mock_skimlinks:
+             patch("mcp_server.tools.product_affiliate.skimlinks_wrapper") as mock_skimlinks, \
+             patch("mcp_server.tools.product_affiliate.settings") as mock_pa_settings:
 
             mock_settings.MAX_AFFILIATE_OFFERS_PER_PRODUCT = 3
             mock_settings.AMAZON_DEFAULT_COUNTRY = "US"
@@ -308,11 +309,10 @@ class TestProductAffiliateIntegration:
             mock_manager.get_available_providers.return_value = ["serper_shopping"]
             mock_manager.get_provider.return_value = mock_provider
 
-            # Configure Skimlinks mock
-            mock_skimlinks.enabled = True
-            mock_skimlinks.wrap_url = AsyncMock(
-                return_value="https://go.skimresources.com?id=12345X67890&xs=1&url=https%3A%2F%2Fwww.bestbuy.com%2Fsite%2Fproduct%2F12345"
-            )
+            # Configure Skimlinks mock for _apply_skimlinks_wrapping
+            mock_skimlinks.is_supported_domain.return_value = True
+            mock_skimlinks.wrap_url.return_value = "https://go.skimresources.com?id=12345X67890&xs=1&url=https%3A%2F%2Fwww.bestbuy.com%2Fsite%2Fproduct%2F12345"
+            mock_pa_settings.SKIMLINKS_API_ENABLED = True
 
             result = await product_affiliate(state)
 
@@ -337,7 +337,8 @@ class TestProductAffiliateIntegration:
 
         with patch("app.services.affiliate.manager.affiliate_manager") as mock_manager, \
              patch("app.core.config.settings") as mock_settings, \
-             patch("app.services.affiliate.skimlinks.skimlinks_wrapper") as mock_skimlinks, \
+             patch("mcp_server.tools.product_affiliate.skimlinks_wrapper") as mock_skimlinks, \
+             patch("mcp_server.tools.product_affiliate.settings") as mock_pa_settings, \
              patch("app.services.affiliate.providers.curated_amazon_links.find_curated_links", return_value=mock_curated):
 
             mock_settings.MAX_AFFILIATE_OFFERS_PER_PRODUCT = 3
@@ -346,8 +347,8 @@ class TestProductAffiliateIntegration:
             mock_manager.get_available_providers.return_value = ["amazon"]
             mock_manager.get_provider.return_value = None  # Force curated path
 
-            mock_skimlinks.enabled = True
-            mock_skimlinks.wrap_url = AsyncMock(side_effect=AssertionError("wrap_url should not be called for Amazon"))
+            mock_skimlinks.is_supported_domain.return_value = False
+            mock_pa_settings.SKIMLINKS_API_ENABLED = True
 
             result = await product_affiliate(state)
 
@@ -378,7 +379,8 @@ class TestProductAffiliateIntegration:
 
         with patch("app.services.affiliate.manager.affiliate_manager") as mock_manager, \
              patch("app.core.config.settings") as mock_settings, \
-             patch("app.services.affiliate.skimlinks.skimlinks_wrapper") as mock_skimlinks:
+             patch("mcp_server.tools.product_affiliate.skimlinks_wrapper") as mock_skimlinks, \
+             patch("mcp_server.tools.product_affiliate.settings") as mock_pa_settings:
 
             mock_settings.MAX_AFFILIATE_OFFERS_PER_PRODUCT = 3
             mock_settings.AMAZON_DEFAULT_COUNTRY = "US"
@@ -386,9 +388,8 @@ class TestProductAffiliateIntegration:
             mock_manager.get_available_providers.return_value = ["serper_shopping"]
             mock_manager.get_provider.return_value = mock_provider
 
-            # Skimlinks DISABLED
-            mock_skimlinks.enabled = False
-            mock_skimlinks.wrap_url = AsyncMock(side_effect=AssertionError("wrap_url should not be called when disabled"))
+            # Skimlinks DISABLED via settings flag
+            mock_pa_settings.SKIMLINKS_API_ENABLED = False
 
             result = await product_affiliate(state)
 
@@ -417,7 +418,8 @@ class TestProductAffiliateIntegration:
 
         with patch("app.services.affiliate.manager.affiliate_manager") as mock_manager, \
              patch("app.core.config.settings") as mock_settings, \
-             patch("app.services.affiliate.skimlinks.skimlinks_wrapper") as mock_skimlinks:
+             patch("mcp_server.tools.product_affiliate.skimlinks_wrapper") as mock_skimlinks, \
+             patch("mcp_server.tools.product_affiliate.settings") as mock_pa_settings:
 
             mock_settings.MAX_AFFILIATE_OFFERS_PER_PRODUCT = 3
             mock_settings.AMAZON_DEFAULT_COUNTRY = "US"
@@ -425,8 +427,8 @@ class TestProductAffiliateIntegration:
             mock_manager.get_available_providers.return_value = ["serper_shopping"]
             mock_manager.get_provider.return_value = mock_provider
 
-            mock_skimlinks.enabled = True
-            mock_skimlinks.wrap_url = AsyncMock(side_effect=Exception("Skimlinks API error"))
+            mock_skimlinks.is_supported_domain.side_effect = Exception("Skimlinks API error")
+            mock_pa_settings.SKIMLINKS_API_ENABLED = True
 
             result = await product_affiliate(state)
 
