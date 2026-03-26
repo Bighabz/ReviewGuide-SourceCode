@@ -72,6 +72,10 @@ _PROVIDER_INIT_MAP = {
         "account_sid": settings.IMPACT_ACCOUNT_SID,
         "auth_token": settings.IMPACT_AUTH_TOKEN,
     },
+    "viator": lambda: {
+        "api_key": settings.VIATOR_API_KEY,
+        "affiliate_id": settings.VIATOR_AFFILIATE_ID,
+    },
 }
 
 

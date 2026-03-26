@@ -361,6 +361,13 @@ class Settings(BaseSettings):
     AMADEUS_API_SECRET: str = Field(default="", description="Amadeus API secret")
     VIATOR_AFFILIATE_ID: str = Field(default="", description="Viator affiliate ID for activity search links")
 
+    # Viator Activity Search API
+    VIATOR_API_KEY: str = Field(default="", description="Viator Partner API key (exp-api-key header)")
+    VIATOR_API_ENABLED: bool = Field(default=False, description="Enable Viator activity search API")
+    VIATOR_API_TIMEOUT: float = Field(default=10.0, description="Viator API request timeout in seconds")
+    VIATOR_CACHE_TTL: int = Field(default=28800, description="Viator search cache TTL in seconds (8 hours)")
+    VIATOR_MAX_RESULTS: int = Field(default=10, description="Max Viator activities per search request")
+
     # Travel Cache Configuration
     ENABLE_TRAVEL_CACHE: bool = Field(default=True, description="Enable Redis caching for travel searches")
     TRAVEL_CACHE_TTL: int = Field(default=3600, description="Travel cache TTL in seconds (default: 1 hour)")
