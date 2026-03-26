@@ -43,6 +43,7 @@ from tools.travel_itinerary import travel_itinerary
 from tools.travel_search_hotels import travel_search_hotels
 from tools.travel_search_flights import travel_search_flights
 from tools.travel_search_cars import travel_search_cars
+from tools.travel_search_activities import travel_search_activities
 from tools.travel_destination_facts import travel_destination_facts
 from tools.travel_compose import travel_compose
 from tools.intro_compose import intro_compose
@@ -144,6 +145,11 @@ async def list_tools() -> List[Tool]:
             inputSchema=state_schema
         ),
         Tool(
+            name="travel_search_activities",
+            description="Search for activities, tours, experiences. Reads: destination from slots. Writes: activities.",
+            inputSchema=state_schema
+        ),
+        Tool(
             name="travel_destination_facts",
             description="Get destination facts (weather, best season, tips). Reads: destination, month from slots. Writes: destination_facts.",
             inputSchema=state_schema
@@ -225,6 +231,8 @@ async def call_tool(name: str, arguments: Dict[str, Any]) -> List[TextContent]:
             result = await travel_search_flights(state)
         elif name == "travel_search_cars":
             result = await travel_search_cars(state)
+        elif name == "travel_search_activities":
+            result = await travel_search_activities(state)
         elif name == "travel_destination_facts":
             result = await travel_destination_facts(state)
         elif name == "travel_compose":

@@ -75,6 +75,7 @@ class GraphState(TypedDict):
     hotels: List[Dict[str, Any]]
     flights: List[Dict[str, Any]]
     cars: List[Dict[str, Any]]  # Rental car PLP search links
+    activities: List[Dict[str, Any]]  # Viator activity/experience search results
     itinerary: List[Dict[str, Any]]
     travel_results: Optional[Dict[str, Any]]  # Combined travel planning results
 
