@@ -280,6 +280,27 @@ async def product_affiliate(
 
         logger.info(f"[product_affiliate] Total providers with results: {list(affiliate_products.keys())}")
 
+        # Post-process: wrap non-Amazon, non-eBay URLs with Skimlinks affiliate tracking
+        try:
+            from app.services.affiliate.skimlinks import skimlinks_wrapper
+
+            if skimlinks_wrapper.enabled:
+                session_id = state.get("session_id", "")
+                for provider_name, product_groups in affiliate_products.items():
+                    # Skip providers with their own direct affiliate programs
+                    if provider_name in ("amazon", "ebay"):
+                        continue
+                    for group in product_groups:
+                        for offer in group.get("offers", []):
+                            original_url = offer.get("url", "")
+                            if original_url:
+                                offer["url"] = await skimlinks_wrapper.wrap_url(
+                                    original_url, xcust=session_id
+                                )
+                logger.info("[product_affiliate] Skimlinks post-processing applied to non-Amazon/non-eBay offers")
+        except Exception as e:
+            logger.warning(f"[product_affiliate] Skimlinks post-processing failed, URLs unchanged: {e}")
+
         return {
             "affiliate_products": affiliate_products,
             "success": True

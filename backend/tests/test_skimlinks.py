@@ -253,3 +253,183 @@ class TestAuth:
             domains = await wrapper._fetch_domains_from_api()
 
         assert domains == set()
+
+
+# ---------------------------------------------------------------------------
+# TestProductAffiliateIntegration -- end-to-end wiring
+# ---------------------------------------------------------------------------
+
+from mcp_server.tools.product_affiliate import product_affiliate  # noqa: E402
+
+
+class TestProductAffiliateIntegration:
+    """Integration tests for Skimlinks post-processing in product_affiliate."""
+
+    def _make_mock_result(self, url="https://www.bestbuy.com/site/product/12345", merchant="Best Buy", source="serper_shopping"):
+        """Create a mock search result object."""
+        mock_result = MagicMock()
+        mock_result.merchant = merchant
+        mock_result.price = 299.99
+        mock_result.currency = "USD"
+        mock_result.affiliate_link = url
+        mock_result.condition = "new"
+        mock_result.title = "Sony WH-1000XM5"
+        mock_result.image_url = "https://example.com/image.jpg"
+        mock_result.rating = 4.7
+        mock_result.review_count = 500
+        mock_result.product_id = "SKU12345"
+        return mock_result
+
+    @pytest.mark.asyncio
+    async def test_serper_offers_wrapped(self):
+        """When Skimlinks is enabled and serper_shopping returns bestbuy.com URLs, URLs are wrapped."""
+        mock_result = self._make_mock_result(
+            url="https://www.bestbuy.com/site/product/12345",
+            source="serper_shopping"
+        )
+        mock_provider = MagicMock()
+        mock_provider.search_products = AsyncMock(return_value=[mock_result])
+
+        state = {
+            "normalized_products": [{"title": "Sony WH-1000XM5"}],
+            "session_id": "test-session-123",
+            "user_message": "best headphones",
+            "slots": {},
+            "last_search_context": {},
+        }
+
+        with patch("app.services.affiliate.manager.affiliate_manager") as mock_manager, \
+             patch("app.core.config.settings") as mock_settings, \
+             patch("app.services.affiliate.skimlinks.skimlinks_wrapper") as mock_skimlinks:
+
+            mock_settings.MAX_AFFILIATE_OFFERS_PER_PRODUCT = 3
+            mock_settings.AMAZON_DEFAULT_COUNTRY = "US"
+            mock_settings.USE_CURATED_LINKS = False
+            mock_manager.get_available_providers.return_value = ["serper_shopping"]
+            mock_manager.get_provider.return_value = mock_provider
+
+            # Configure Skimlinks mock
+            mock_skimlinks.enabled = True
+            mock_skimlinks.wrap_url = AsyncMock(
+                return_value="https://go.skimresources.com?id=12345X67890&xs=1&url=https%3A%2F%2Fwww.bestbuy.com%2Fsite%2Fproduct%2F12345"
+            )
+
+            result = await product_affiliate(state)
+
+        assert result["success"] is True
+        assert "serper_shopping" in result["affiliate_products"]
+        offers = result["affiliate_products"]["serper_shopping"][0]["offers"]
+        assert offers[0]["url"].startswith("https://go.skimresources.com")
+
+    @pytest.mark.asyncio
+    async def test_amazon_offers_not_wrapped(self):
+        """When Skimlinks is enabled and amazon provider returns amazon.com URLs, those URLs remain unchanged."""
+        state = {
+            "normalized_products": [{"title": "Sony WH-1000XM5"}],
+            "session_id": "test-session-123",
+            "user_message": "best headphones",
+            "slots": {},
+            "last_search_context": {},
+        }
+
+        # Use curated links path for Amazon
+        mock_curated = [{"url": "https://www.amazon.com/dp/B09XS7JWHH", "title": "Sony WH-1000XM5", "price": 298, "image_url": "https://example.com/img.jpg", "asin": "B09XS7JWHH"}]
+
+        with patch("app.services.affiliate.manager.affiliate_manager") as mock_manager, \
+             patch("app.core.config.settings") as mock_settings, \
+             patch("app.services.affiliate.skimlinks.skimlinks_wrapper") as mock_skimlinks, \
+             patch("app.services.affiliate.providers.curated_amazon_links.find_curated_links", return_value=mock_curated):
+
+            mock_settings.MAX_AFFILIATE_OFFERS_PER_PRODUCT = 3
+            mock_settings.AMAZON_DEFAULT_COUNTRY = "US"
+            mock_settings.USE_CURATED_LINKS = False
+            mock_manager.get_available_providers.return_value = ["amazon"]
+            mock_manager.get_provider.return_value = None  # Force curated path
+
+            mock_skimlinks.enabled = True
+            mock_skimlinks.wrap_url = AsyncMock(side_effect=AssertionError("wrap_url should not be called for Amazon"))
+
+            result = await product_affiliate(state)
+
+        assert result["success"] is True
+        # Amazon provider results should have original URL
+        if "amazon" in result["affiliate_products"]:
+            for group in result["affiliate_products"]["amazon"]:
+                for offer in group.get("offers", []):
+                    assert "go.skimresources.com" not in offer["url"]
+
+    @pytest.mark.asyncio
+    async def test_skimlinks_disabled_no_wrapping(self):
+        """When SKIMLINKS_API_ENABLED=false, all URLs remain unchanged."""
+        mock_result = self._make_mock_result(
+            url="https://www.bestbuy.com/site/product/12345",
+            source="serper_shopping"
+        )
+        mock_provider = MagicMock()
+        mock_provider.search_products = AsyncMock(return_value=[mock_result])
+
+        state = {
+            "normalized_products": [{"title": "Sony WH-1000XM5"}],
+            "session_id": "test-session-123",
+            "user_message": "best headphones",
+            "slots": {},
+            "last_search_context": {},
+        }
+
+        with patch("app.services.affiliate.manager.affiliate_manager") as mock_manager, \
+             patch("app.core.config.settings") as mock_settings, \
+             patch("app.services.affiliate.skimlinks.skimlinks_wrapper") as mock_skimlinks:
+
+            mock_settings.MAX_AFFILIATE_OFFERS_PER_PRODUCT = 3
+            mock_settings.AMAZON_DEFAULT_COUNTRY = "US"
+            mock_settings.USE_CURATED_LINKS = False
+            mock_manager.get_available_providers.return_value = ["serper_shopping"]
+            mock_manager.get_provider.return_value = mock_provider
+
+            # Skimlinks DISABLED
+            mock_skimlinks.enabled = False
+            mock_skimlinks.wrap_url = AsyncMock(side_effect=AssertionError("wrap_url should not be called when disabled"))
+
+            result = await product_affiliate(state)
+
+        assert result["success"] is True
+        # URL should be unchanged (the original bestbuy URL)
+        offers = result["affiliate_products"]["serper_shopping"][0]["offers"]
+        assert offers[0]["url"] == "https://www.bestbuy.com/site/product/12345"
+
+    @pytest.mark.asyncio
+    async def test_skimlinks_error_graceful(self):
+        """When skimlinks_wrapper.wrap_url raises an exception, product_affiliate still returns successfully."""
+        mock_result = self._make_mock_result(
+            url="https://www.bestbuy.com/site/product/12345",
+            source="serper_shopping"
+        )
+        mock_provider = MagicMock()
+        mock_provider.search_products = AsyncMock(return_value=[mock_result])
+
+        state = {
+            "normalized_products": [{"title": "Sony WH-1000XM5"}],
+            "session_id": "test-session-123",
+            "user_message": "best headphones",
+            "slots": {},
+            "last_search_context": {},
+        }
+
+        with patch("app.services.affiliate.manager.affiliate_manager") as mock_manager, \
+             patch("app.core.config.settings") as mock_settings, \
+             patch("app.services.affiliate.skimlinks.skimlinks_wrapper") as mock_skimlinks:
+
+            mock_settings.MAX_AFFILIATE_OFFERS_PER_PRODUCT = 3
+            mock_settings.AMAZON_DEFAULT_COUNTRY = "US"
+            mock_settings.USE_CURATED_LINKS = False
+            mock_manager.get_available_providers.return_value = ["serper_shopping"]
+            mock_manager.get_provider.return_value = mock_provider
+
+            mock_skimlinks.enabled = True
+            mock_skimlinks.wrap_url = AsyncMock(side_effect=Exception("Skimlinks API error"))
+
+            result = await product_affiliate(state)
+
+        # Function should still return successfully despite Skimlinks error
+        assert result["success"] is True
+        assert "serper_shopping" in result["affiliate_products"]
