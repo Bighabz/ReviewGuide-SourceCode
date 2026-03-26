@@ -40,6 +40,12 @@ const BLOCK_RENDERERS: Record<string, BlockRenderer> = {
             notFor={(b.data as any)?.not_for ?? ''}
             imageUrl={(b.data as any)?.image_url}
             affiliateUrl={(b.data as any)?.affiliate_url}
+            price={(b.data as any)?.price}
+            currency={(b.data as any)?.currency}
+            merchant={(b.data as any)?.merchant}
+            rating={(b.data as any)?.rating}
+            pros={(b.data as any)?.pros}
+            cons={(b.data as any)?.cons}
         />
     ),
     carousel: (b) => (
