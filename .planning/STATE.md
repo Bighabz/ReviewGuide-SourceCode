@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Core Platform
 status: executing
-stopped_at: Completed 09-03-PLAN.md
-last_updated: "2026-03-26T00:03:00.000Z"
-last_activity: "2026-03-25 — Phase 09 complete: Top Pick Block + Help Me Decide (3 plans)"
+stopped_at: Completed 11-04-PLAN.md
+last_updated: "2026-03-26T00:15:00.000Z"
+last_activity: "2026-03-26 — Phase 11 complete: Viator + CJ Expansion (4 plans)"
 progress:
   total_phases: 16
-  completed_phases: 11
+  completed_phases: 12
   total_plans: 42
-  completed_plans: 31
-  percent: 73
+  completed_plans: 35
+  percent: 83
 ---
 
 # Project State
@@ -25,19 +25,19 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 
 ## Current Position
 
-Phase: 09 of 16 (Top Pick Block + Help Me Decide) — COMPLETE
-Plan: 03 of 03 — COMPLETE
-Status: Phase 09 complete — Product responses display "Our Top Pick" editorial block, 5-product cap enforced, comparison follow-ups auto-trigger ComparisonTable.
-Last activity: 2026-03-25 — Phase 09 complete: Top Pick Block + Help Me Decide
+Phase: 11 of 16 (Viator + CJ Expansion) — COMPLETE
+Plan: 04 of 04 — COMPLETE
+Status: Phase 11 complete — Viator activity search via /search/freetext with Redis caching and PLP fallback, MCP tool wired to travel workflow, CJ expansion documented as human action.
+Last activity: 2026-03-26 — Phase 11 complete: Viator + CJ Expansion
 
-Progress: [████████░░] 73%
+Progress: [█████████░] 83%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
+- Total plans completed: 13
 - Average duration: ~3 min
-- Total execution time: 0.31 hours
+- Total execution time: 0.46 hours
 
 ## Accumulated Context
 
@@ -103,6 +103,10 @@ Progress: [████████░░] 73%
 - [Phase 09]: Comparison follow-up intercepts before no-data guard to handle empty normalized_products
 - [Phase 09]: products_by_provider cap changed from 10 to 5 per provider
 - [Phase 09]: New block types added via BLOCK_RENDERERS entry + dedicated component -- no Message.tsx changes needed
+- [Phase 11]: Viator uses POST /search/freetext with exp-api-key header (API v2 format, not v1 query param)
+- [Phase 11]: activities_viator UI block type avoids conflict with existing plain-text activities from destination_facts
+- [Phase 11]: PLP fallback on connection/timeout exceptions; empty list on API error status codes (non-200)
+- [Phase 11]: CJ advertiser_ids=joined means approved advertisers auto-appear with zero code change
 
 ### Pending Todos
 
@@ -123,6 +127,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26T00:03:00.000Z
-Stopped at: Completed 09-03-PLAN.md
+Last session: 2026-03-26T00:15:00.000Z
+Stopped at: Completed 11-04-PLAN.md
 Resume file: None
