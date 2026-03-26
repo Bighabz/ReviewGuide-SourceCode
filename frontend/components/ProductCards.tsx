@@ -1,5 +1,6 @@
 'use client'
 
+import { ExternalLink } from 'lucide-react'
 import { stripMarkdown } from '@/lib/stripMarkdown'
 
 interface ProductCard {
@@ -135,14 +136,20 @@ export default function ProductCards({ products }: ProductCardsProps) {
               )}
 
               {/* CTA */}
-              <div className="flex justify-start pt-3 border-t border-[var(--border)]">
+              <div className="flex items-center justify-between pt-3 border-t border-[var(--border)]">
                 <a
                   href={displayLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-sm font-medium text-[var(--primary)] hover:text-[var(--primary-hover)] transition-colors"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-[0.97]"
+                  style={{
+                    background: 'linear-gradient(135deg, var(--primary), var(--accent))',
+                  }}
                 >
-                  Check price{displayMerchant ? ` on ${displayMerchant}` : ''} &rarr;
+                  {displayPrice !== undefined
+                    ? `Buy on ${displayMerchant || 'Amazon'} — $${displayPrice.toFixed(2)}`
+                    : `Check price on ${displayMerchant || 'Amazon'}`}
+                  <ExternalLink size={14} />
                 </a>
               </div>
                 </div>{/* end flex-1 */}
