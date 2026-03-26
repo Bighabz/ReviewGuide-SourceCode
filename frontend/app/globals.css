@@ -389,6 +389,15 @@ a, button, input, textarea, select {
               0 0 20px rgba(59, 130, 246, 0.15);
 }
 
+/* ═══════════════════════════════════════════
+   V3 — Click feedback & interactions
+   ═══════════════════════════════════════════ */
+
+.click-feedback:active {
+  transform: scale(0.97);
+  transition: transform 100ms ease;
+}
+
 /* Hide scrollbar but keep scroll behavior */
 .scrollbar-hide {
   -ms-overflow-style: none;
@@ -454,10 +463,21 @@ a, button, input, textarea, select {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-card-enter,
-  .animate-pulse,
-  .stream-status-text {
-    transition: none !important;
-    animation: none !important;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .product-card-hover:hover {
+    transform: none;
+  }
+
+  .animate-shimmer {
+    animation: none;
+    background: var(--surface-hover);
   }
 }
