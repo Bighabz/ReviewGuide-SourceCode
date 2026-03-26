@@ -18,6 +18,7 @@ import { useChatStatus } from '@/lib/chatStatusContext'
 export interface FollowupQuestion {
   slot: string
   question: string
+  chips?: string[]  // Tappable answer option chips from clarifier agent
 }
 
 export interface StructuredFollowups {

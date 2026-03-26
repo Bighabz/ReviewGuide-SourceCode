@@ -99,7 +99,7 @@ describe('Phase 08 — ClarifierChips rendering', () => {
 
     expect(dispatchSpy).toHaveBeenCalled()
     const call = dispatchSpy.mock.calls.find(
-      (c) => c[0] instanceof CustomEvent && (c[0] as CustomEvent).type === 'sendSuggestion'
+      (c: [Event]) => c[0] instanceof CustomEvent && (c[0] as CustomEvent).type === 'sendSuggestion'
     )
     expect(call).toBeTruthy()
     const event = call![0] as CustomEvent

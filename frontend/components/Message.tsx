@@ -223,20 +223,40 @@ export default function Message({ message, isLast = false }: MessageProps) {
                         </p>
                       )}
                       <div className="space-y-1.5">
-                        {message.followups.questions && message.followups.questions.map((q: { slot: string; question: string }, idx: number) => (
-                          <button
-                            key={idx}
-                            className="w-full text-left px-3.5 py-2.5 rounded-lg border border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)] hover:bg-[var(--primary-light)] transition-all text-sm text-[var(--text)] flex items-center justify-between group"
-                            onClick={() => {
-                              const event = new CustomEvent('sendSuggestion', {
-                                detail: { question: q.question }
-                              })
-                              window.dispatchEvent(event)
-                            }}
-                          >
-                            <span>{q.question}</span>
-                            <ArrowRight size={14} strokeWidth={1.5} className="opacity-0 group-hover:opacity-100 transition-opacity text-[var(--primary)]" />
-                          </button>
+                        {message.followups.questions && message.followups.questions.map((q: { slot: string; question: string; chips?: string[] }, idx: number) => (
+                          <div key={idx}>
+                            <button
+                              className="w-full text-left px-3.5 py-2.5 rounded-lg border border-[var(--border)] bg-[var(--background)] hover:border-[var(--primary)] hover:bg-[var(--primary-light)] transition-all text-sm text-[var(--text)] flex items-center justify-between group"
+                              onClick={() => {
+                                const event = new CustomEvent('sendSuggestion', {
+                                  detail: { question: q.question }
+                                })
+                                window.dispatchEvent(event)
+                              }}
+                            >
+                              <span>{q.question}</span>
+                              <ArrowRight size={14} strokeWidth={1.5} className="opacity-0 group-hover:opacity-100 transition-opacity text-[var(--primary)]" />
+                            </button>
+                            {q.chips && q.chips.length > 0 && (
+                              <div className="flex flex-row flex-wrap gap-1.5 mt-1.5 ml-3.5">
+                                {q.chips.map((chip: string, chipIdx: number) => (
+                                  <button
+                                    key={chipIdx}
+                                    data-testid={`clarifier-chip-${idx}-${chipIdx}`}
+                                    className="rounded-[20px] border border-[var(--primary)] text-[var(--primary)] bg-transparent px-3 py-1 text-[12px] font-medium transition-all hover:bg-[var(--primary-light)]"
+                                    onClick={() => {
+                                      const event = new CustomEvent('sendSuggestion', {
+                                        detail: { question: chip }
+                                      })
+                                      window.dispatchEvent(event)
+                                    }}
+                                  >
+                                    {chip}
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         ))}
                       </div>
                       {message.followups.closing && (
