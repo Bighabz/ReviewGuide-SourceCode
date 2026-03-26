@@ -1,36 +1,36 @@
-import Link from 'next/link'
-import { BarChart3 } from 'lucide-react'
+'use client'
+
+import { ArrowLeftRight } from 'lucide-react'
 
 export default function ComparePage() {
   return (
-    <div
-      className="flex flex-col items-center justify-center min-h-[60vh] gap-6 px-4 text-center"
-    >
-      <BarChart3
-        size={48}
-        strokeWidth={1.5}
-        style={{ color: 'var(--text-muted)' }}
-      />
-
-      <div className="flex flex-col items-center gap-3">
-        <h1
-          className="font-serif italic text-2xl"
-          style={{ color: 'var(--text)' }}
-        >
-          Compare Products
-        </h1>
-        <p style={{ color: 'var(--text-secondary)' }}>
-          This feature is coming soon. We&apos;re building something great.
-        </p>
-      </div>
-
-      <Link
-        href="/"
-        className="rounded-lg px-6 py-2.5 text-sm font-medium text-white"
-        style={{ backgroundColor: 'var(--primary)' }}
+    <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
+      <div
+        className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6"
+        style={{ background: 'var(--primary-light)' }}
       >
-        Back to Discover
-      </Link>
+        <ArrowLeftRight size={36} className="text-[var(--primary)]" />
+      </div>
+      <h1 className="font-serif text-2xl font-bold text-[var(--text)] mb-2">
+        Compare Products
+      </h1>
+      <p className="text-sm text-[var(--text-secondary)] max-w-sm mb-6">
+        Add products to your comparison board to see specs, prices, and ratings side by side.
+      </p>
+      <div className="w-full max-w-lg">
+        <div className="grid grid-cols-3 gap-3">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="h-40 rounded-xl border border-dashed border-[var(--border)] flex items-center justify-center"
+              style={{ background: 'var(--surface)', opacity: 0.5 }}
+            >
+              <span className="text-2xl text-[var(--text-muted)]">+</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      <p className="text-xs text-[var(--text-muted)] mt-6">Coming soon</p>
     </div>
   )
 }
