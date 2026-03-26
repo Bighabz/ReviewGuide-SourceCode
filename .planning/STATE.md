@@ -99,6 +99,10 @@ Progress: [████████░░] 73%
 - [Phase 06]: 21 excluded domains: 13 Amazon + 8 eBay -- never passed through Skimlinks
 - [Phase 06]: Three-tier domain cache: in-memory -> Redis (24h TTL) -> Merchant API
 - [Phase 06]: Skimlinks post-processing wired as last step in product_affiliate before return
+- [Phase 09]: top_pick LLM call runs in parallel via llm_tasks dict -- no sequential latency hit
+- [Phase 09]: Comparison follow-up intercepts before no-data guard to handle empty normalized_products
+- [Phase 09]: products_by_provider cap changed from 10 to 5 per provider
+- [Phase 09]: New block types added via BLOCK_RENDERERS entry + dedicated component -- no Message.tsx changes needed
 
 ### Pending Todos
 
@@ -119,6 +123,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26T00:10:00.000Z
-Stopped at: Completed 06-03-PLAN.md
+Last session: 2026-03-26T00:03:00.000Z
+Stopped at: Completed 09-03-PLAN.md
 Resume file: None

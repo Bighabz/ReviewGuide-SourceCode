@@ -160,9 +160,9 @@ Plans:
   4. The top_pick ui_block type is rendered correctly in Message.tsx without modifying the existing ui_blocks dispatch logic
 **Plans**: 3 plans
 Plans:
-- [ ] 09-01-PLAN.md — Wave 0 RED test scaffolds for UX-03, UX-04, UX-05
-- [ ] 09-02-PLAN.md — Backend: top_pick LLM task, 5-product cap, comparison follow-up (UX-03, UX-04, UX-05)
-- [ ] 09-03-PLAN.md — Frontend: TopPickBlock component + BlockRegistry wiring (UX-03)
+- [x] 09-01-PLAN.md — Wave 0 RED test scaffolds for UX-03, UX-04, UX-05
+- [x] 09-02-PLAN.md — Backend: top_pick LLM task, 5-product cap, comparison follow-up (UX-03, UX-04, UX-05)
+- [x] 09-03-PLAN.md — Frontend: TopPickBlock component + BlockRegistry wiring (UX-03)
 
 ### Phase 10: Impact.com Provider
 **Goal**: Impact.com affiliate catalog is available as a product search provider, adding higher-commission direct brand relationships
@@ -305,7 +305,7 @@ v2.0 phases execute sequentially: 12 -> 13 -> 14 -> 15 -> 16. Phase 12 is a hard
 | 6. Skimlinks Link Wrapper | v1.0 | 3/3 | Complete | 2026-03-25 |
 | 7. Skimlinks Middleware + Editor's Picks | v1.0 | 0/3 | Not started | - |
 | 8. Clarifier Suggestion Chips | v1.0 | 0/3 | Not started | - |
-| 9. Top Pick Block + Help Me Decide | v1.0 | 0/3 | Not started | - |
+| 9. Top Pick Block + Help Me Decide | v1.0 | 3/3 | Complete | 2026-03-25 |
 | 10. Impact.com Provider | v1.0 | 2/2 | Complete | 2026-03-25 |
 | 11. Viator + CJ Expansion | v1.0 | 0/4 | Not started | - |
 | 12. Navigation Shell | v2.0 | 3/3 | Complete | 2026-03-17 |
