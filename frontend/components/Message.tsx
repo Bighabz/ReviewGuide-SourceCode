@@ -149,7 +149,7 @@ export default function Message({ message, isLast = false }: MessageProps) {
               // Regular user message: editorial bubble
               <>
                 <div className="relative group flex items-start justify-end max-w-full gap-2.5">
-                  <div className="px-4 py-3 rounded-tl-[20px] rounded-tr-[20px] rounded-br-[4px] rounded-bl-[20px] bg-[var(--primary)] text-white shadow-card max-w-[80%]">
+                  <div className="px-4 py-3 rounded-tl-[20px] rounded-tr-[20px] rounded-br-[4px] rounded-bl-[20px] bg-[var(--primary)] text-white shadow-card max-w-[85%]" style={{ minWidth: 'fit-content' }}>
                     <p className="whitespace-pre-wrap text-[15px] leading-relaxed">
                       {message.content}
                     </p>
