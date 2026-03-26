@@ -26,7 +26,7 @@
   --info: #1A73E8;
 
   /* Backgrounds: Warm Ivory & Paper */
-  --background: #FAFAF7;
+  --background: #F7F5F0;
   --surface: #F5F4F0;
   --surface-hover: #EDECE7;
   --surface-elevated: #FFFFFF;
@@ -42,11 +42,13 @@
   --border-strong: #D6D3CD;
 
   /* Shadows: Warm & Soft */
-  --shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.04);
-  --shadow-md: 0 4px 12px rgba(28, 25, 23, 0.06);
-  --shadow-lg: 0 8px 24px rgba(28, 25, 23, 0.08);
-  --shadow-xl: 0 16px 40px rgba(28, 25, 23, 0.10);
+  --shadow-sm: 0 1px 2px rgba(180, 160, 130, 0.06);
+  --shadow-md: 0 4px 12px rgba(180, 160, 130, 0.08);
+  --shadow-lg: 0 8px 24px rgba(180, 160, 130, 0.10);
+  --shadow-xl: 0 16px 40px rgba(180, 160, 130, 0.12);
   --shadow-float: 0 12px 32px rgba(27, 77, 255, 0.08);
+  --price-deal: #16A34A;
+  --rating-star: #D97706;
 
   /* Card accent tints for Results page */
   --card-accent-1: #FFF8F0;
