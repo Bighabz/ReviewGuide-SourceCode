@@ -1,5 +1,7 @@
 'use client'
 
+import { stripMarkdown } from '@/lib/stripMarkdown'
+
 interface ProductCard {
   // Old format fields
   rank?: number
@@ -110,7 +112,7 @@ export default function ProductCards({ products }: ProductCardsProps) {
               {/* Snippet / description */}
               {product.snippet && (
                 <p className="text-sm text-[var(--text-secondary)] leading-relaxed mt-3 mb-4">
-                  {product.snippet}
+                  {stripMarkdown(product.snippet)}
                 </p>
               )}
 

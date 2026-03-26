@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { ShoppingCart } from 'lucide-react'
+import { stripMarkdown } from '@/lib/stripMarkdown'
 import { curatedLinks } from '@/lib/curatedLinks'
 
 interface ProductItem {
@@ -113,7 +114,7 @@ export default function InlineProductCard({ products }: InlineProductCardProps) 
                   className="text-xs truncate mt-0.5"
                   style={{ color: 'var(--text-secondary)' }}
                 >
-                  {product.description}
+                  {stripMarkdown(product.description)}
                 </p>
               )}
             </div>

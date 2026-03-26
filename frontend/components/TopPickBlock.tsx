@@ -1,6 +1,7 @@
 'use client'
 
 import { Award, ExternalLink } from 'lucide-react'
+import { stripMarkdown } from '@/lib/stripMarkdown'
 
 interface TopPickBlockProps {
     productName: string
@@ -59,7 +60,7 @@ export default function TopPickBlock({
                     </h3>
                     {headline && (
                         <p className="text-sm text-[var(--text)] leading-relaxed mb-3">
-                            {headline}
+                            {stripMarkdown(headline)}
                         </p>
                     )}
                 </div>
