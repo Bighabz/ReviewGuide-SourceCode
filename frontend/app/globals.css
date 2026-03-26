@@ -155,37 +155,58 @@
   --rating-star: #F59E0B;
 }
 
-/* Theme Color Variants */
-[data-accent="teal"] {
-  --primary: #0D9488;
-  --primary-hover: #0F766E;
-  --primary-light: rgba(13, 148, 136, 0.08);
-  --accent: #2DD4BF;
-  --accent-hover: #5EEAD4;
+/* ═══════════════════════════════════════════
+   V3 THEMED ACCENTS — Full mood shift
+   ═══════════════════════════════════════════ */
+
+[data-accent="ocean"] {
+  --primary: #0EA5E9;
+  --primary-hover: #38BDF8;
+  --primary-light: rgba(14, 165, 233, 0.10);
+  --accent: #06B6D4;
+  --accent-hover: #22D3EE;
+  --accent-light: rgba(6, 182, 212, 0.10);
+  --shadow-float: 0 12px 32px rgba(14, 165, 233, 0.12);
 }
 
-[data-accent="rose"] {
+[data-accent="sunset"] {
+  --primary: #F97316;
+  --primary-hover: #FB923C;
+  --primary-light: rgba(249, 115, 22, 0.10);
+  --accent: #EF4444;
+  --accent-hover: #F87171;
+  --accent-light: rgba(239, 68, 68, 0.10);
+  --shadow-float: 0 12px 32px rgba(249, 115, 22, 0.12);
+}
+
+[data-accent="neon"] {
+  --primary: #A855F7;
+  --primary-hover: #C084FC;
+  --primary-light: rgba(168, 85, 247, 0.10);
+  --accent: #EC4899;
+  --accent-hover: #F472B6;
+  --accent-light: rgba(236, 72, 153, 0.10);
+  --shadow-float: 0 12px 32px rgba(168, 85, 247, 0.12);
+}
+
+[data-accent="forest"] {
+  --primary: #10B981;
+  --primary-hover: #34D399;
+  --primary-light: rgba(16, 185, 129, 0.10);
+  --accent: #14B8A6;
+  --accent-hover: #2DD4BF;
+  --accent-light: rgba(20, 184, 166, 0.10);
+  --shadow-float: 0 12px 32px rgba(16, 185, 129, 0.12);
+}
+
+[data-accent="berry"] {
   --primary: #E11D48;
-  --primary-hover: #BE123C;
-  --primary-light: rgba(225, 29, 72, 0.08);
-  --accent: #FB7185;
-  --accent-hover: #FDA4AF;
-}
-
-[data-accent="amber"] {
-  --primary: #D97706;
-  --primary-hover: #B45309;
-  --primary-light: rgba(217, 119, 6, 0.08);
-  --accent: #FBBF24;
-  --accent-hover: #FCD34D;
-}
-
-[data-accent="violet"] {
-  --primary: #7C3AED;
-  --primary-hover: #6D28D9;
-  --primary-light: rgba(124, 58, 237, 0.08);
-  --accent: #A78BFA;
-  --accent-hover: #C4B5FD;
+  --primary-hover: #FB7185;
+  --primary-light: rgba(225, 29, 72, 0.10);
+  --accent: #DB2777;
+  --accent-hover: #EC4899;
+  --accent-light: rgba(219, 39, 119, 0.10);
+  --shadow-float: 0 12px 32px rgba(225, 29, 72, 0.12);
 }
 
 /* ═══════════════════════════════════════════

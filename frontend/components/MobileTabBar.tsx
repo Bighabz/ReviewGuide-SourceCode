@@ -6,11 +6,12 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Home, Bookmark, Plus, LayoutGrid, User, Sun, Moon } from 'lucide-react'
 
 const ACCENT_COLORS = [
-  { id: 'indigo', label: 'Indigo', color: '#1B4DFF' },
-  { id: 'teal', label: 'Teal', color: '#0D9488' },
-  { id: 'rose', label: 'Rose', color: '#E11D48' },
-  { id: 'amber', label: 'Amber', color: '#D97706' },
-  { id: 'violet', label: 'Violet', color: '#7C3AED' },
+  { id: 'indigo', label: 'Default', color: '#3B82F6' },
+  { id: 'ocean', label: 'Ocean', color: '#0EA5E9' },
+  { id: 'sunset', label: 'Sunset', color: '#F97316' },
+  { id: 'neon', label: 'Neon', color: '#A855F7' },
+  { id: 'forest', label: 'Forest', color: '#10B981' },
+  { id: 'berry', label: 'Berry', color: '#E11D48' },
 ] as const
 
 const TABS = [
