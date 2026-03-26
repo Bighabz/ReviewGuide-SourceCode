@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Core Platform
 status: executing
-stopped_at: Completed 08-03-PLAN.md
-last_updated: "2026-03-26T00:02:00.000Z"
-last_activity: "2026-03-25 — Phase 08 complete: Clarifier suggestion chips (3 plans)"
+stopped_at: Completed 09-03-PLAN.md
+last_updated: "2026-03-26T00:03:00.000Z"
+last_activity: "2026-03-25 — Phase 09 complete: Top Pick Block + Help Me Decide (3 plans)"
 progress:
   total_phases: 16
-  completed_phases: 10
+  completed_phases: 11
   total_plans: 42
-  completed_plans: 28
-  percent: 66
+  completed_plans: 31
+  percent: 73
 ---
 
 # Project State
@@ -25,19 +25,19 @@ See: .planning/PROJECT.md (updated 2026-03-16)
 
 ## Current Position
 
-Phase: 08 of 16 (Clarifier Suggestion Chips) — COMPLETE
+Phase: 09 of 16 (Top Pick Block + Help Me Decide) — COMPLETE
 Plan: 03 of 03 — COMPLETE
-Status: Phase 08 complete — Clarifier agent generates 2-4 tappable chips per question, frontend renders pill buttons, GraphState extended.
-Last activity: 2026-03-25 — Phase 08 complete: Clarifier suggestion chips
+Status: Phase 09 complete — Product responses display "Our Top Pick" editorial block, 5-product cap enforced, comparison follow-ups auto-trigger ComparisonTable.
+Last activity: 2026-03-25 — Phase 09 complete: Top Pick Block + Help Me Decide
 
-Progress: [███████░░░] 66%
+Progress: [████████░░] 73%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
+- Total plans completed: 9
 - Average duration: ~3 min
-- Total execution time: 0.22 hours
+- Total execution time: 0.31 hours
 
 ## Accumulated Context
 
@@ -95,6 +95,10 @@ Progress: [███████░░░] 66%
 - [Phase 08]: clarifier_chips is plain List (not Annotated with operator.add) — chips replaced each turn, not accumulated
 - [Phase 08]: Fallback and backfill questions include chips: [] — frontend never receives undefined
 - [Phase 08]: Chip rendering uses text-[12px] (smaller than next_suggestions text-[13px]) for visual nesting hierarchy
+- [Phase 06]: SkimlinksLinkWrapper is standalone service (not BaseAffiliateProvider) -- wraps URLs, does not search for products
+- [Phase 06]: 21 excluded domains: 13 Amazon + 8 eBay -- never passed through Skimlinks
+- [Phase 06]: Three-tier domain cache: in-memory -> Redis (24h TTL) -> Merchant API
+- [Phase 06]: Skimlinks post-processing wired as last step in product_affiliate before return
 
 ### Pending Todos
 
@@ -115,6 +119,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26T00:02:00.000Z
-Stopped at: Completed 08-03-PLAN.md
+Last session: 2026-03-26T00:10:00.000Z
+Stopped at: Completed 06-03-PLAN.md
 Resume file: None

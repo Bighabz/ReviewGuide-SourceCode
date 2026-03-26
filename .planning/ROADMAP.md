@@ -115,9 +115,9 @@ Plans:
   4. The Skimlinks link wrapper can be disabled via SKIMLINKS_API_ENABLED=false without breaking product search
 **Plans**: 3 plans
 Plans:
-- [ ] 06-01-PLAN.md — Wave 1 RED test scaffolds for all AFFL requirements (AFFL-01, AFFL-02, AFFL-03)
-- [ ] 06-02-PLAN.md — Config settings + SkimlinksLinkWrapper service (AFFL-01, AFFL-02, AFFL-03)
-- [ ] 06-03-PLAN.md — Post-processing integration in product_affiliate.py (AFFL-01, AFFL-02, AFFL-03)
+- [x] 06-01-PLAN.md — Wave 1 RED test scaffolds for all AFFL requirements (AFFL-01, AFFL-02, AFFL-03)
+- [x] 06-02-PLAN.md — Config settings + SkimlinksLinkWrapper service (AFFL-01, AFFL-02, AFFL-03)
+- [x] 06-03-PLAN.md — Post-processing integration in product_affiliate.py (AFFL-01, AFFL-02, AFFL-03)
 
 ### Phase 7: Skimlinks Middleware + Editor's Picks
 **Goal**: Skimlinks post-processing runs automatically on all provider results, and Editor's Picks with product images are visible on browse category pages
@@ -302,7 +302,7 @@ v2.0 phases execute sequentially: 12 -> 13 -> 14 -> 15 -> 16. Phase 12 is a hard
 | 3. Serper Shopping Provider | v1.0 | 0/1 | Not started | - |
 | 4. Browse Page Fixes | v1.0 | 0/1 | Not started | - |
 | 5. Amazon Creators API Migration | v1.0 | 0/2 | Not started | - |
-| 6. Skimlinks Link Wrapper | v1.0 | 0/3 | Not started | - |
+| 6. Skimlinks Link Wrapper | v1.0 | 3/3 | Complete | 2026-03-25 |
 | 7. Skimlinks Middleware + Editor's Picks | v1.0 | 0/3 | Not started | - |
 | 8. Clarifier Suggestion Chips | v1.0 | 0/3 | Not started | - |
 | 9. Top Pick Block + Help Me Decide | v1.0 | 0/3 | Not started | - |
