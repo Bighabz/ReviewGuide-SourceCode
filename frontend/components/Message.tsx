@@ -183,10 +183,16 @@ export default function Message({ message, isLast = false }: MessageProps) {
                 {/* Status indicator — shown while tools are working */}
                 {!message.content && message.isThinking && (
                   <div className="flex items-center gap-2 py-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-pulse" />
-                    <span className="stream-status-text tracking-tight">
-                      {message.statusText || 'Thinking...'}
-                    </span>
+                    <div className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-bounce-dot" style={{ animationDelay: '0ms' }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-bounce-dot" style={{ animationDelay: '150ms' }} />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-bounce-dot" style={{ animationDelay: '300ms' }} />
+                    </div>
+                    {message.statusText && message.statusText !== 'Thinking...' && (
+                      <span className="stream-status-text tracking-tight">
+                        {message.statusText}
+                      </span>
+                    )}
                   </div>
                 )}
 
@@ -203,6 +209,9 @@ export default function Message({ message, isLast = false }: MessageProps) {
                         prose-a:text-[var(--primary)] prose-a:no-underline hover:prose-a:underline"
                     >
                       <ReactMarkdown>{message.content}</ReactMarkdown>
+                      {message.isThinking && message.content && (
+                        <span className="inline-block w-0.5 h-4 bg-[var(--primary)] animate-pulse ml-0.5 align-text-bottom" />
+                      )}
                     </div>
                   </div>
                 )}

@@ -324,6 +324,21 @@ a, button, input, textarea, select {
   50% { opacity: 0.7; }
 }
 
+@keyframes bounce-dot {
+  0%, 80%, 100% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-bounce-dot {
+  animation: bounce-dot 1.4s ease-in-out infinite;
+}
+
 .animate-gradient {
   animation: gradient 3s ease infinite;
 }

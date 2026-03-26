@@ -877,6 +877,18 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
             }}
           >
             <div id="chat-input-container" className="mx-auto px-2 sm:px-0 max-w-full" style={{ maxWidth: '780px' }}>
+              {isStreaming && (
+                <div className="flex justify-center mb-2">
+                  <button
+                    onClick={() => {
+                      dispatchStream({ type: 'STREAM_INTERRUPTED' })
+                    }}
+                    className="px-4 py-1.5 rounded-full text-xs font-medium border border-[var(--border)] bg-[var(--surface-elevated)] text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] transition-all"
+                  >
+                    Stop generating
+                  </button>
+                </div>
+              )}
               <ChatInput
                 value={input}
                 onChange={setInput}
