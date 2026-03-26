@@ -559,18 +559,8 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
                     f"See the full reviews for detailed pros and cons."
                 )
 
-            # Opener (only depends on user_message, independent of consensus)
-            # Only queue if we actually have bundles with sources
-            if review_bundles:
-                llm_tasks['opener'] = model_service.generate_compose(
-                    messages=[
-                        {"role": "system", "content": "Write a warm 1-2 sentence intro for product review results. Reference what the user asked for — their budget, use case, or features. Sound like a knowledgeable friend, not a search engine. NEVER mention source counts, number of reviews, or 'trusted sources'. Never describe your process. Respond immediately in a conversational tone. Max 30 words."},
-                        {"role": "user", "content": f'User asked: "{user_message}"'}
-                    ],
-                    temperature=0.7,
-                    max_tokens=60,
-                    agent_name="product_opener"
-                )
+            # REMOVED (v3): opener LLM call — blog_article already provides intro
+            # Saves ~1-2s per query. Fallback template will work without it.
 
         # --- Personalized product descriptions ---
         if all_products_for_desc:
@@ -616,17 +606,8 @@ Products to describe:
                 agent_name="product_compose_descriptions"
             )
 
-        # --- Conclusion ---
-        if products_by_provider:
-            llm_tasks['conclusion'] = model_service.generate_compose(
-                messages=[
-                    {"role": "system", "content": "You are a helpful shopping assistant. Write 2 sentences: first, briefly interpret what was found (mention count and price range if evident), then ask a natural follow-up question to help narrow down. Be warm and conversational — like a knowledgeable friend. Never describe your process. Do NOT use markdown. Max 50 words total."},
-                    {"role": "user", "content": f'User asked: "{user_message}"\nFound {num_products} products from {", ".join(products_by_provider.keys())}. Write a 2-sentence response: what was found + a follow-up question to narrow things down.'}
-                ],
-                temperature=0.7,
-                max_tokens=80,
-                agent_name="product_conclusion"
-            )
+        # REMOVED (v3): conclusion LLM call — blog_article already provides conclusion
+        # Saves ~1-2s per query. Fallback template will work without it.
 
         # --- Blog article composition ---
         # Gather all data the blog writer needs
