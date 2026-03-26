@@ -503,6 +503,15 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
         // done payload, so it's a reliable sentinel.
         if (data.session_id) {
           dispatchStream({ type: 'RECEIVE_DONE', data: data as any })
+          // Track session for history sidebar
+          try {
+            const stored = JSON.parse(localStorage.getItem('chat_all_session_ids') || '[]')
+            if (!stored.includes(data.session_id)) {
+              stored.unshift(data.session_id)
+              // Keep last 50 sessions
+              localStorage.setItem('chat_all_session_ids', JSON.stringify(stored.slice(0, 50)))
+            }
+          } catch { /* ignore localStorage errors */ }
           // RFC §2.3: stream completed successfully — mark the message as full
           // RFC §2.4: attach next_suggestions to the message for chip rendering
           // RFC §2.5: attach response_metadata for explainability panel
