@@ -26,7 +26,7 @@ export default function MobileTabBar() {
   const router = useRouter()
   const [keyboardOpen, setKeyboardOpen] = useState(false)
   const [showProfilePopover, setShowProfilePopover] = useState(false)
-  const [theme, setTheme] = useState<'light' | 'dark'>('light')
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark')
   const [accent, setAccent] = useState<string>('indigo')
   const profileRef = useRef<HTMLDivElement>(null)
   const popoverRef = useRef<HTMLDivElement>(null)
@@ -45,7 +45,7 @@ export default function MobileTabBar() {
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null
     const savedAccent = localStorage.getItem('accent') || 'indigo'
-    setTheme(savedTheme || 'light')
+    setTheme(savedTheme || 'dark')
     setAccent(savedAccent)
   }, [])
 

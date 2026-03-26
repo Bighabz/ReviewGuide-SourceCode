@@ -29,7 +29,7 @@ export default function UnifiedTopbar({
   onSearch,
   searchPlaceholder = 'Search products, reviews, travel...'
 }: UnifiedTopbarProps) {
-  const [theme, setTheme] = useState<'light' | 'dark'>('light')
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark')
   const [accent, setAccent] = useState<string>('indigo')
   const [showColorPicker, setShowColorPicker] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -54,7 +54,7 @@ export default function UnifiedTopbar({
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null
     const savedAccent = localStorage.getItem('accent') || 'indigo'
-    const initialTheme = savedTheme || 'light'
+    const initialTheme = savedTheme || 'dark'
     setTheme(initialTheme)
     setAccent(savedAccent)
     document.documentElement.setAttribute('data-theme', initialTheme)

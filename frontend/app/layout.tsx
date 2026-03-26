@@ -34,10 +34,14 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              try {
-                const theme = localStorage.getItem('theme') || 'light';
+              (function() {
+                var theme = localStorage.getItem('theme') || 'dark';
                 document.documentElement.setAttribute('data-theme', theme);
-              } catch (e) {}
+                var accent = localStorage.getItem('accent');
+                if (accent && accent !== 'indigo') {
+                  document.documentElement.setAttribute('data-accent', accent);
+                }
+              })();
             `,
           }}
         />
