@@ -175,8 +175,8 @@ Plans:
   4. The provider can be disabled via IMPACT_API_ENABLED=false without affecting other providers
 **Plans**: 2 plans
 Plans:
-- [ ] 10-01-PLAN.md — Wave 0 RED test scaffolds for all PROV-01 behaviors
-- [ ] 10-02-PLAN.md — Config settings, ImpactAffiliateProvider class, loader wiring (PROV-01)
+- [x] 10-01-PLAN.md — Wave 0 RED test scaffolds for all PROV-01 behaviors
+- [x] 10-02-PLAN.md — Config settings, ImpactAffiliateProvider class, loader wiring (PROV-01)
 
 ### Phase 11: Viator + CJ Expansion
 **Goal**: Viator activity search is available for travel queries, and CJ advertiser coverage is expanded to include major retail brands
@@ -306,7 +306,7 @@ v2.0 phases execute sequentially: 12 -> 13 -> 14 -> 15 -> 16. Phase 12 is a hard
 | 7. Skimlinks Middleware + Editor's Picks | v1.0 | 0/3 | Not started | - |
 | 8. Clarifier Suggestion Chips | v1.0 | 0/3 | Not started | - |
 | 9. Top Pick Block + Help Me Decide | v1.0 | 0/3 | Not started | - |
-| 10. Impact.com Provider | v1.0 | 0/2 | Not started | - |
+| 10. Impact.com Provider | v1.0 | 2/2 | Complete | 2026-03-25 |
 | 11. Viator + CJ Expansion | v1.0 | 0/4 | Not started | - |
 | 12. Navigation Shell | v2.0 | 3/3 | Complete | 2026-03-17 |
 | 13. Discover Screen | v2.0 | 3/3 | Complete | 2026-03-17 |
