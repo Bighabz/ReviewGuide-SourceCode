@@ -25,12 +25,23 @@ import ReviewSources from '@/components/ReviewSources'
 import PriceComparison from '@/components/PriceComparison'
 import InlineProductCard from '@/components/InlineProductCard'
 import SourceCitations from '@/components/SourceCitations'
+import TopPickBlock from '@/components/TopPickBlock'
 import DOMPurify from 'dompurify'
 
 /** Each renderer receives the normalized block and returns JSX or null */
 type BlockRenderer = (block: NormalizedBlock) => JSX.Element | null
 
 const BLOCK_RENDERERS: Record<string, BlockRenderer> = {
+    top_pick: (b) => (
+        <TopPickBlock
+            productName={(b.data as any)?.product_name ?? ''}
+            headline={(b.data as any)?.headline ?? ''}
+            bestFor={(b.data as any)?.best_for ?? ''}
+            notFor={(b.data as any)?.not_for ?? ''}
+            imageUrl={(b.data as any)?.image_url}
+            affiliateUrl={(b.data as any)?.affiliate_url}
+        />
+    ),
     carousel: (b) => (
         <ProductCarousel items={(b.data as any)?.items ?? b.data ?? []} title={b.title} />
     ),
