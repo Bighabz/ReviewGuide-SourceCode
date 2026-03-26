@@ -1,6 +1,6 @@
 'use client'
 
-import { ExternalLink, Star } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
 
 interface AffiliateLink {
   product_id: string
@@ -40,40 +40,41 @@ export default function AffiliateLinks({ productName, affiliateLinks, rank }: Af
       </h4>
 
       <div className="space-y-2">
-        {affiliateLinks.map((link, idx) => (
-          <a
-            key={idx}
-            href={link.affiliate_link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-between p-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-hover)] hover:border-[var(--primary)]/30 transition-all group/link"
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              <span className="text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] shrink-0">
-                {link.merchant}
-              </span>
-              {link.rating && (
-                <div className="flex items-center gap-1">
-                  <Star size={12} fill="currentColor" className="text-amber-500" />
-                  <span className="text-xs text-[var(--text-muted)]">{link.rating}</span>
-                </div>
-              )}
-              {link.review_count && link.review_count > 0 && (
-                <span className="text-xs text-[var(--text-muted)]">
-                  ({link.review_count.toLocaleString()} reviews)
+        {affiliateLinks.map((link, idx) => {
+          const isLowest = idx === 0
+          return (
+            <a
+              key={idx}
+              href={link.affiliate_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`flex items-center justify-between p-3 rounded-lg border transition-all group/link ${
+                isLowest
+                  ? 'border-green-500/30 bg-green-500/5 hover:bg-green-500/10'
+                  : 'border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-hover)] hover:border-[var(--primary)]/30'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                {isLowest && (
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-green-600 bg-green-100 px-1.5 py-0.5 rounded dark:text-green-400 dark:bg-green-900/30">
+                    Best Price
+                  </span>
+                )}
+                <span className="text-sm font-semibold text-[var(--text)]">
+                  {link.merchant}
                 </span>
-              )}
-            </div>
-            <div className="flex items-center gap-3 shrink-0">
-              <span className="text-base font-bold font-serif text-[var(--text)]">
-                {link.currency} {link.price.toFixed(2)}
-              </span>
-              <span className="text-xs font-medium text-[var(--primary)] group-hover/link:text-[var(--primary-hover)] flex items-center gap-1">
-                View <ExternalLink size={12} />
-              </span>
-            </div>
-          </a>
-        ))}
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <span className={`text-base font-bold font-serif ${isLowest ? 'text-green-600 dark:text-green-400' : 'text-[var(--text)]'}`}>
+                  {link.currency} {link.price.toFixed(2)}
+                </span>
+                <span className="text-xs font-medium text-[var(--primary)] group-hover/link:text-[var(--primary-hover)] flex items-center gap-1">
+                  Buy &rarr;
+                </span>
+              </div>
+            </a>
+          )
+        })}
       </div>
       <p className="text-xs text-[var(--text-muted)] mt-3 px-1">
         Disclosure: We may earn commissions from qualifying purchases.
