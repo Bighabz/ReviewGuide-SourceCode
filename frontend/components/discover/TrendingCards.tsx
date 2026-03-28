@@ -41,13 +41,11 @@ export default function TrendingCards() {
             <button
               key={topic.id}
               data-testid="trending-card"
-              className={`product-card-hover w-full text-left group${idx >= 3 ? ' hidden md:flex' : ''}`}
+              className={`product-card-hover w-full text-left group flex items-center${idx >= 3 ? ' !hidden md:!flex' : ''}`}
               onClick={() =>
                 router.push(`/chat?q=${encodeURIComponent(topic.query)}&new=1`)
               }
               style={{
-                display: 'flex',
-                alignItems: 'center',
                 gap: '12px',
                 padding: '12px',
                 borderRadius: '10px',
