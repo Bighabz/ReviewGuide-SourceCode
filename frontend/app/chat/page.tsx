@@ -5,8 +5,10 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import CategorySidebar from '@/components/CategorySidebar'
 import ChatContainer from '@/components/ChatContainer'
 import ConversationSidebar from '@/components/ConversationSidebar'
+import ResultsMainPanel from '@/components/ResultsMainPanel'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import { CHAT_CONFIG } from '@/lib/constants'
+import type { Message } from '@/components/ChatContainer'
 
 function ChatPageContent() {
   const router = useRouter()
@@ -18,6 +20,7 @@ function ChatPageContent() {
   const [currentSessionId, setCurrentSessionId] = useState<string>('')
   const [switchToSessionId, setSwitchToSessionId] = useState<string | undefined>(undefined)
   const [initialQuery, setInitialQuery] = useState<string | undefined>(undefined)
+  const [chatMessages, setChatMessages] = useState<Message[]>([])
 
   // Track which query we've processed to avoid re-processing after router.replace
   const processedQueryRef = useRef<string | null>(null)
@@ -131,18 +134,32 @@ function ChatPageContent() {
 
       {/* Content area below topbar */}
       <div className="flex-1 flex overflow-hidden relative">
-        {/* Desktop sidebar — fixed, same as BrowseLayout */}
-        <aside className="hidden lg:block fixed left-0 top-14 sm:top-16 bottom-0 w-56 z-30">
-          <CategorySidebar />
-        </aside>
-
-        {/* Mobile sidebar overlay */}
+        {/* Mobile category sidebar overlay */}
         {sidebarOpen && (
           <CategorySidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         )}
 
-        {/* Main chat content — offset for sidebar */}
-        <main className="flex-1 flex flex-col overflow-hidden lg:ml-56">
+        {/* Desktop: split-pane layout (chat left, results right) */}
+        <main className="hidden lg:flex flex-1 overflow-hidden">
+          <div className="w-[380px] flex-shrink-0 border-r flex flex-col overflow-hidden" style={{ borderColor: 'var(--border)' }}>
+            <ErrorBoundary>
+              <ChatContainer
+                clearHistoryTrigger={clearHistoryTrigger}
+                externalSessionId={switchToSessionId}
+                onSessionChange={handleSessionChange}
+                initialQuery={initialQuery}
+                onMessagesChange={setChatMessages}
+              />
+            </ErrorBoundary>
+          </div>
+          <ResultsMainPanel
+            messages={chatMessages}
+            sessionTitle={initialQuery || ''}
+          />
+        </main>
+
+        {/* Mobile: full-width chat */}
+        <main className="flex lg:hidden flex-1 flex-col overflow-hidden">
           <ErrorBoundary>
             <ChatContainer
               clearHistoryTrigger={clearHistoryTrigger}
