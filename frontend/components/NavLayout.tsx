@@ -52,8 +52,6 @@ export default function NavLayout({ children }: NavLayoutProps) {
         {/* Mobile: MobileHeader (hidden on desktop) */}
         <div className="block md:hidden">
           <MobileHeader />
-          {/* Spacer to clear fixed header (h-14 = 56px) */}
-          <div className="h-14" />
         </div>
 
         {/* Content area — padded bottom on mobile for 64px tab bar + safe area */}

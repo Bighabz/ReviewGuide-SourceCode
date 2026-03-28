@@ -20,12 +20,12 @@ export default function DiscoverPage() {
         <CategorySidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       </div>
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col px-4 sm:px-6 md:px-8 pb-20 md:pb-8">
+      {/* Main content — pt-16 on mobile clears the fixed h-14 header + breathing room */}
+      <div className="flex-1 flex flex-col px-4 sm:px-6 md:px-8 pt-16 md:pt-0 pb-20 md:pb-8">
         {/* Hero section */}
-        <div className="flex flex-col items-center pt-8 sm:pt-12 pb-6">
+        <div className="flex flex-col items-center pt-2 sm:pt-8 pb-4">
           <h1
-            className="font-serif text-[32px] sm:text-4xl md:text-5xl text-center leading-tight tracking-tight"
+            className="font-serif text-[28px] sm:text-4xl md:text-5xl text-center leading-tight tracking-tight"
             style={{ color: 'var(--text)' }}
           >
             What are you{' '}
@@ -43,12 +43,12 @@ export default function DiscoverPage() {
         </div>
 
         {/* Category chips */}
-        <div className="mt-4 max-w-xl mx-auto w-full">
+        <div className="mt-3 max-w-xl mx-auto w-full">
           <CategoryChipRow />
         </div>
 
         {/* Trending Research */}
-        <div className="mt-6 max-w-xl mx-auto w-full">
+        <div className="mt-4 max-w-xl mx-auto w-full">
           <TrendingCards />
         </div>
 
