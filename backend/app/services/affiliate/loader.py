@@ -66,6 +66,7 @@ _PROVIDER_INIT_MAP = {
     "cj": lambda: {
         "api_key": settings.CJ_API_KEY,
         "website_id": settings.CJ_WEBSITE_ID,
+        "company_id": settings.CJ_PUBLISHER_ID,
     },
     "serper_shopping": lambda: {},  # reads settings.SERPAPI_API_KEY internally
     "impact": lambda: {

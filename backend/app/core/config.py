@@ -312,13 +312,10 @@ class Settings(BaseSettings):
     TARGET_AFFILIATE_ID: str = Field(default="", description="Target Impact Radius affiliate ID")
 
     # Commission Junction (CJ) Affiliate
-    CJ_API_ENABLED: bool = Field(default=False, description="Enable CJ Product Search API")
+    CJ_API_ENABLED: bool = Field(default=True, description="Enable CJ Product Search API")
     CJ_API_KEY: str = Field(default="", description="CJ personal access token (Bearer token)")
     CJ_WEBSITE_ID: str = Field(default="", description="CJ publisher website ID (PID)")
-    CJ_ADVERTISER_IDS: str = Field(
-        default="joined",
-        description="CJ advertiser IDs: 'joined' for all, or comma-separated CIDs"
-    )
+    CJ_PUBLISHER_ID: str = Field(default="", description="CJ publisher company ID (CID) for GraphQL companyId")
     CJ_API_TIMEOUT: float = Field(default=10.0, description="CJ API request timeout in seconds")
     CJ_CACHE_TTL: int = Field(default=28800, description="CJ search cache TTL in seconds (8 hours)")
     CJ_MAX_RESULTS: int = Field(default=20, description="Max CJ products per search request")
