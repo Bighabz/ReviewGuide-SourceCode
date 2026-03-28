@@ -486,6 +486,20 @@ async def generate_chat_stream(
                             logger.info(f"Travel planner status (suppressed): from {event_name}")
                             last_node_name = "planner"
 
+                # Stream tokens dispatched via adispatch_custom_event from compose tools
+                elif event_type == "on_custom_event":
+                    custom_name = event.get("name", "")
+                    if custom_name == "stream_token":
+                        custom_data = event.get("data", {})
+                        token = custom_data.get("token", "") if isinstance(custom_data, dict) else ""
+                        if token:
+                            if not data_already_streamed:
+                                # First token — clear the "Thinking..." / skeleton state
+                                yield _sse_event("artifact", {"clear": True})
+                                logger.info("First streaming token received — cleared placeholder")
+                            data_already_streamed = True
+                            yield _sse_event("content", {"token": token})
+
         try:
             # RFC §1.1 — drain; the 60-second hard cap fires inside _drain_event_loop
             # on every iteration, so this loop is always bounded by MAX_TOTAL_REQUEST_S
