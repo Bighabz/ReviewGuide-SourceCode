@@ -265,6 +265,71 @@ class ModelService:
             )
             raise
 
+    async def generate_compose_with_streaming(
+            self,
+            messages: list[Dict[str, str]],
+            temperature: float = 0.7,
+            max_tokens: Optional[int] = None,
+            agent_name: Optional[str] = None,
+    ) -> str:
+        """Generate a compose completion while streaming tokens via LangGraph custom events.
+
+        Uses llm.astream() to get tokens incrementally, dispatching each as a
+        'stream_token' custom event via adispatch_custom_event. If streaming or
+        event dispatch fails, falls back to non-streaming generate_compose().
+
+        Returns the full generated text (same interface as generate_compose).
+        """
+        try:
+            from langchain_core.callbacks.manager import adispatch_custom_event
+        except ImportError:
+            logger.debug("adispatch_custom_event not available, falling back to non-streaming")
+            return await self.generate_compose(
+                messages=messages, temperature=temperature,
+                max_tokens=max_tokens, agent_name=agent_name,
+            )
+
+        use_anthropic = (
+            getattr(settings, "USE_ANTHROPIC_COMPOSE", False)
+            and getattr(settings, "ANTHROPIC_API_KEY", "")
+        )
+
+        try:
+            if use_anthropic:
+                llm = self.get_compose_model()
+            else:
+                llm = self._get_llm(
+                    model=settings.COMPOSER_MODEL,
+                    temperature=temperature,
+                )
+
+            lc_messages = self._convert_messages(messages)
+            full_text_parts: list[str] = []
+
+            async with self._streaming_semaphore:
+                async for chunk in llm.astream(lc_messages):
+                    if chunk.content:
+                        full_text_parts.append(chunk.content)
+                        try:
+                            await adispatch_custom_event(
+                                "stream_token",
+                                {"token": chunk.content},
+                            )
+                        except Exception:
+                            pass  # Event dispatch failed — continue collecting text
+
+            result = "".join(full_text_parts)
+            if agent_name:
+                logger.info(f"[{agent_name}] Streamed {len(result)} chars ({len(full_text_parts)} chunks)")
+            return result
+
+        except Exception as e:
+            logger.warning(f"Streaming compose failed ({e}), falling back to non-streaming")
+            return await self.generate_compose(
+                messages=messages, temperature=temperature,
+                max_tokens=max_tokens, agent_name=agent_name,
+            )
+
     def invalidate_cache(self, reason: str = "manual") -> int:
         """Clear all cached LLM instances.
 
