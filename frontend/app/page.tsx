@@ -53,7 +53,7 @@ export default function DiscoverPage() {
         </div>
 
         {/* Search bar — below cards */}
-        <div className="mt-6 w-full max-w-xl mx-auto">
+        <div className="mt-4 w-full max-w-xl mx-auto">
           <DiscoverSearchBar />
         </div>
       </div>

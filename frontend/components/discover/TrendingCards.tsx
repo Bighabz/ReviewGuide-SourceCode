@@ -20,7 +20,7 @@ export default function TrendingCards() {
     <div>
       {/* Section header */}
       <p
-        className="mb-4"
+        className="mb-3"
         style={{
           textTransform: 'uppercase',
           fontSize: '11px',
@@ -32,24 +32,24 @@ export default function TrendingCards() {
         Trending Research
       </p>
 
-      {/* Cards grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {trendingTopics.map((topic) => {
+      {/* Cards grid — show 3 on mobile, all on desktop */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
+        {trendingTopics.map((topic, idx) => {
           const IconComponent = iconMap[topic.icon]
 
           return (
             <button
               key={topic.id}
               data-testid="trending-card"
+              className={`product-card-hover w-full text-left group${idx >= 3 ? ' hidden md:flex' : ''}`}
               onClick={() =>
                 router.push(`/chat?q=${encodeURIComponent(topic.query)}&new=1`)
               }
-              className="product-card-hover w-full text-left group"
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '14px',
-                padding: '14px',
+                gap: '12px',
+                padding: '12px',
                 borderRadius: '10px',
                 background: 'var(--surface)',
                 boxShadow: '0 1px 3px rgba(26,24,22,0.06), 0 4px 12px rgba(26,24,22,0.04)',
@@ -60,8 +60,8 @@ export default function TrendingCards() {
               <div
                 aria-hidden="true"
                 style={{
-                  width: '56px',
-                  height: '56px',
+                  width: '48px',
+                  height: '48px',
                   borderRadius: '12px',
                   background: topic.iconBg,
                   display: 'flex',
@@ -122,10 +122,10 @@ export default function TrendingCards() {
         })}
       </div>
 
-      {/* See more */}
+      {/* See more — desktop only */}
       <button
         onClick={() => router.push('/chat?new=1')}
-        className="mt-4 text-sm"
+        className="hidden md:block mt-4 text-sm"
         style={{ color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer' }}
       >
         See more topics &rarr;
