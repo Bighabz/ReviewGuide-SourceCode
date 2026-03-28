@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { getRecentSearches } from '@/lib/recentSearches'
 import DiscoverSearchBar from '@/components/discover/DiscoverSearchBar'
 import TrendingCards from '@/components/discover/TrendingCards'
+import CategoryChipRow from '@/components/discover/CategoryChipRow'
 import CategorySidebar from '@/components/CategorySidebar'
 
 export default function DiscoverPage() {
@@ -48,6 +49,11 @@ export default function DiscoverPage() {
           >
             Expert reviews, real data, zero fluff.
           </p>
+        </div>
+
+        {/* Category chips — with For You from search history */}
+        <div className="mt-6 max-w-xl mx-auto">
+          <CategoryChipRow hasHistory={hasHistory} />
         </div>
 
         {/* Trending cards — category pills removed, they live in sidebar now */}
