@@ -42,11 +42,6 @@ export default function DiscoverPage() {
           </p>
         </div>
 
-        {/* Search bar — inline, not sticky */}
-        <div className="w-full max-w-xl mx-auto">
-          <DiscoverSearchBar />
-        </div>
-
         {/* Category chips */}
         <div className="mt-4 max-w-xl mx-auto w-full">
           <CategoryChipRow />
@@ -55,6 +50,11 @@ export default function DiscoverPage() {
         {/* Trending Research */}
         <div className="mt-6 max-w-xl mx-auto w-full">
           <TrendingCards />
+        </div>
+
+        {/* Search bar — below cards */}
+        <div className="mt-6 w-full max-w-xl mx-auto">
+          <DiscoverSearchBar />
         </div>
       </div>
     </div>

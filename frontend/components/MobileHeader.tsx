@@ -15,7 +15,8 @@ export default function MobileHeader() {
 
   return (
     <header
-      className="fixed top-0 left-0 right-0 z-[100] flex items-center h-12 px-4"
+      className="fixed top-0 left-0 right-0 z-[100] flex items-center h-14 px-6"
+      data-mobile-header
       style={{
         background: showChatHeader ? 'var(--surface)' : 'var(--background)',
         borderBottom: '1px solid var(--border)',
