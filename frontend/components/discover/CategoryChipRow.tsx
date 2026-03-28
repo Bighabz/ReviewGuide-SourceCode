@@ -8,26 +8,16 @@ interface ChipConfig {
 }
 
 const CHIPS: ChipConfig[] = [
-  { label: 'Popular', query: 'Best products of 2026' },
+  { label: 'For You' },
   { label: 'Tech', query: 'Best noise-cancelling headphones' },
   { label: 'Travel', query: 'Top all-inclusive resorts in the Caribbean' },
   { label: 'Kitchen', query: 'Best robot vacuums for pet hair' },
   { label: 'Fitness', query: 'Best hiking boots for beginners' },
-  { label: 'Home', query: 'Best Alexa-compatible smart home gadgets' },
-  { label: 'Fashion', query: 'Best white sneakers for everyday wear' },
-  { label: 'Outdoor', query: 'Best hiking boots for beginners' },
+  { label: 'Audio', query: 'Best wireless earbuds and headphones' },
 ]
 
-const FOR_YOU_CHIP: ChipConfig = { label: 'For You' }
-
-interface Props {
-  hasHistory: boolean
-}
-
-export default function CategoryChipRow({ hasHistory }: Props) {
+export default function CategoryChipRow() {
   const router = useRouter()
-
-  const chips = hasHistory ? [FOR_YOU_CHIP, ...CHIPS] : CHIPS
 
   function handleChipClick(chip: ChipConfig) {
     if (chip.query) {
@@ -37,12 +27,12 @@ export default function CategoryChipRow({ hasHistory }: Props) {
     }
   }
 
-  // First chip is "For You" (active state) when hasHistory is true
-  const activeIndex = hasHistory ? 0 : -1
+  // First chip ("For You") always active per Figma
+  const activeIndex = 0
 
   return (
     <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-      {chips.map((chip, idx) => {
+      {CHIPS.map((chip, idx) => {
         const isActive = idx === activeIndex
         return (
           <button
@@ -53,7 +43,7 @@ export default function CategoryChipRow({ hasHistory }: Props) {
               height: '36px',
               padding: '0 14px',
               borderRadius: '20px',
-              background: isActive ? 'var(--text)' : 'var(--surface-elevated)',
+              background: isActive ? 'var(--text)' : 'var(--surface)',
               border: isActive ? '1px solid var(--text)' : '1px solid var(--border)',
               color: isActive ? 'var(--background)' : 'var(--text-secondary)',
               fontSize: '13px',

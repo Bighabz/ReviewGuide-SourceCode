@@ -1,32 +1,17 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
-import { ArrowLeft, User, Maximize2, ArrowUpRight } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { ArrowLeft, User, ArrowUpRight } from 'lucide-react'
 import { useChatStatus } from '@/lib/chatStatusContext'
-import { CHAT_CONFIG } from '@/lib/constants'
 
 export default function MobileHeader() {
   const pathname = usePathname()
   const router = useRouter()
-  const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const { isStreaming, statusText, sessionTitle } = useChatStatus()
 
   const isChatRoute = pathname?.startsWith('/chat')
   const isResultsRoute = pathname?.startsWith('/results')
   const showChatHeader = isChatRoute || isResultsRoute
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null
-    setTheme(savedTheme || 'light')
-  }, [])
-
-  const handleExpandClick = () => {
-    const sessionId = localStorage.getItem(CHAT_CONFIG.SESSION_STORAGE_KEY)
-    if (sessionId) {
-      router.push(`/results/${sessionId}`)
-    }
-  }
 
   return (
     <header
@@ -82,33 +67,28 @@ export default function MobileHeader() {
         </>
       ) : (
         <>
-          {/* Logo */}
-          <a href="/" className="flex items-center shrink-0">
-            <img
-              src={
-                theme === 'dark'
-                  ? '/images/1815e5dc-c4db-4248-9aeb-0a815fd87a4b.png'
-                  : '/images/8f4c1971-a5b0-474e-9fb1-698e76324f0b.png'
-              }
-              alt="ReviewGuide.Ai"
-              className="h-9 w-auto object-contain"
-            />
+          {/* Logo — serif italic per Figma */}
+          <a
+            href="/"
+            className="flex items-center shrink-0 font-serif italic"
+            style={{ fontSize: '22px', color: 'var(--text)' }}
+          >
+            ReviewGuide
           </a>
 
           {/* Spacer */}
           <div className="flex-1" />
 
-          {/* User avatar */}
+          {/* User avatar — filled gradient circle per Figma */}
           <button
-            className="flex w-8 h-8 rounded-full items-center justify-center border transition-all"
+            className="flex w-8 h-8 rounded-full items-center justify-center transition-all"
             style={{
-              background: 'var(--surface)',
-              borderColor: 'var(--border)',
-              color: 'var(--text-muted)',
+              background: 'linear-gradient(135deg, var(--primary), #6366f1)',
+              color: 'white',
             }}
             aria-label="User menu"
           >
-            <User size={14} strokeWidth={1.5} />
+            <User size={14} strokeWidth={2} />
           </button>
         </>
       )}

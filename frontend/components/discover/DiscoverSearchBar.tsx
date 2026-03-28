@@ -16,8 +16,8 @@ export default function DiscoverSearchBar() {
         height: '56px',
         border: '1.5px solid var(--border)',
         borderRadius: '14px',
-        background: 'var(--surface-elevated)',
-        boxShadow: 'var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.06))',
+        background: 'var(--surface)',
+        boxShadow: '0 1px 3px rgba(26,24,22,0.06), 0 4px 12px rgba(26,24,22,0.04)',
         cursor: 'pointer',
       }}
       onMouseEnter={(e) => {

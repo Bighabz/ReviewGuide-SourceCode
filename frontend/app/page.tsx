@@ -1,19 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { getRecentSearches } from '@/lib/recentSearches'
+import { useState } from 'react'
 import DiscoverSearchBar from '@/components/discover/DiscoverSearchBar'
 import TrendingCards from '@/components/discover/TrendingCards'
 import CategoryChipRow from '@/components/discover/CategoryChipRow'
 import CategorySidebar from '@/components/CategorySidebar'
 
 export default function DiscoverPage() {
-  const [hasHistory, setHasHistory] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
-
-  useEffect(() => {
-    setHasHistory(getRecentSearches().length > 0)
-  }, [])
 
   return (
     <div className="flex min-h-[calc(100vh-64px)]">
@@ -31,7 +25,7 @@ export default function DiscoverPage() {
         {/* Hero section */}
         <div className="flex flex-col items-center pt-8 sm:pt-12 pb-6">
           <h1
-            className="font-serif text-[28px] sm:text-4xl md:text-5xl text-center leading-tight tracking-tight"
+            className="font-serif text-[32px] sm:text-4xl md:text-5xl text-center leading-tight tracking-tight"
             style={{ color: 'var(--text)' }}
           >
             What are you{' '}
@@ -55,7 +49,7 @@ export default function DiscoverPage() {
 
         {/* Category chips */}
         <div className="mt-4 max-w-xl mx-auto w-full">
-          <CategoryChipRow hasHistory={hasHistory} />
+          <CategoryChipRow />
         </div>
 
         {/* Trending Research */}

@@ -51,7 +51,7 @@ export default function TrendingCards() {
                 gap: '14px',
                 padding: '14px',
                 borderRadius: '10px',
-                background: 'var(--surface-elevated)',
+                background: 'var(--surface)',
                 boxShadow: '0 1px 3px rgba(26,24,22,0.06), 0 4px 12px rgba(26,24,22,0.04)',
                 cursor: 'pointer',
               }}
