@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import DiscoverSearchBar from '@/components/discover/DiscoverSearchBar'
-import TrendingCards from '@/components/discover/TrendingCards'
+import ProductCarousel from '@/components/discover/ProductCarousel'
 import CategoryChipRow from '@/components/discover/CategoryChipRow'
 import CategorySidebar from '@/components/CategorySidebar'
 
@@ -47,9 +47,9 @@ export default function DiscoverPage() {
           <CategoryChipRow />
         </div>
 
-        {/* Trending Research */}
+        {/* Product Carousel */}
         <div className="mt-4 max-w-xl mx-auto w-full">
-          <TrendingCards />
+          <ProductCarousel />
         </div>
 
         {/* Search bar — below cards */}

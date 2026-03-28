@@ -25,10 +25,10 @@ export default function DiscoverSearchBar() {
       className="w-full flex items-center gap-3 px-4"
       style={{
         height: '52px',
-        border: '1.5px solid var(--border)',
+        border: '2px solid var(--border-strong, #D4D1CC)',
         borderRadius: '14px',
         background: 'var(--surface)',
-        boxShadow: '0 1px 3px rgba(26,24,22,0.06), 0 4px 12px rgba(26,24,22,0.04)',
+        boxShadow: '0 2px 8px rgba(26,24,22,0.08), 0 0 0 1px rgba(26,24,22,0.03)',
       }}
     >
       <Search
