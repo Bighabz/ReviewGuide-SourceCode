@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
-import { ArrowLeft, User, Maximize2 } from 'lucide-react'
+import { ArrowLeft, User, Maximize2, ArrowUpRight } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import { useChatStatus } from '@/lib/chatStatusContext'
 import { CHAT_CONFIG } from '@/lib/constants'
@@ -49,36 +49,33 @@ export default function MobileHeader() {
           </button>
 
           {/* Dynamic title + status */}
-          <div className="flex-1 text-center px-2 min-w-0">
+          <div className="flex-1 px-2 min-w-0">
             <div
-              className="text-sm font-medium truncate"
+              className="text-sm font-semibold truncate"
               style={{ color: 'var(--text)' }}
             >
-              {sessionTitle}
+              {sessionTitle || 'New Research'}
             </div>
-            {isStreaming && statusText && (
-              <div
-                className="text-[12px] truncate"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                {statusText}
-              </div>
-            )}
+            <div
+              className="text-[11px] truncate"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              {isStreaming ? (statusText || 'Researching...') : 'Researching'}
+            </div>
           </div>
 
-          {/* Expand icon — hidden on /results (already on results page) */}
+          {/* Share button — hidden on /results */}
           {!isResultsRoute && (
             <button
               className="flex items-center justify-center w-8 h-8 rounded-lg"
-              style={{ color: 'var(--text-muted)' }}
-              aria-label="Expand results"
-              onClick={handleExpandClick}
+              style={{ color: 'var(--text-secondary)' }}
+              aria-label="Share"
             >
-              <Maximize2 size={16} strokeWidth={1.5} />
+              <ArrowUpRight size={18} strokeWidth={1.5} />
             </button>
           )}
 
-          {/* Spacer to keep title centered when expand icon hidden */}
+          {/* Spacer to keep title balanced when share button hidden */}
           {isResultsRoute && (
             <div className="w-8 h-8" />
           )}
