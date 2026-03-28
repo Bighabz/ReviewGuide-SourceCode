@@ -48,27 +48,27 @@ export default function TrendingCards() {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '12px',
-                padding: '16px',
-                borderRadius: '12px',
-                background: 'var(--surface)',
-                border: '1px solid var(--border)',
+                gap: '14px',
+                padding: '14px',
+                borderRadius: '10px',
+                background: 'var(--surface-elevated)',
+                boxShadow: '0 1px 3px rgba(26,24,22,0.06), 0 4px 12px rgba(26,24,22,0.04)',
                 cursor: 'pointer',
-                minHeight: '72px',
               }}
             >
-              {/* Icon circle */}
+              {/* Icon square — Figma: 56x56, rounded 12px, gradient bg */}
               <div
                 aria-hidden="true"
                 style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '50%',
+                  width: '56px',
+                  height: '56px',
+                  borderRadius: '12px',
                   background: topic.iconBg,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   flexShrink: 0,
+                  fontSize: '24px',
                 }}
               >
                 {IconComponent && (

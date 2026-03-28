@@ -37,29 +37,35 @@ export default function CategoryChipRow({ hasHistory }: Props) {
     }
   }
 
+  // First chip is "For You" (active state) when hasHistory is true
+  const activeIndex = hasHistory ? 0 : -1
+
   return (
     <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
-      {chips.map((chip) => (
-        <button
-          key={chip.label}
-          onClick={() => handleChipClick(chip)}
-          className="flex-shrink-0"
-          style={{
-            height: '36px',
-            padding: '0 16px',
-            borderRadius: '20px',
-            background: 'transparent',
-            border: '1px solid var(--border)',
-            color: 'var(--text)',
-            fontSize: '13px',
-            fontWeight: 600,
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-          }}
-        >
-          {chip.label}
-        </button>
-      ))}
+      {chips.map((chip, idx) => {
+        const isActive = idx === activeIndex
+        return (
+          <button
+            key={chip.label}
+            onClick={() => handleChipClick(chip)}
+            className="flex-shrink-0"
+            style={{
+              height: '36px',
+              padding: '0 14px',
+              borderRadius: '20px',
+              background: isActive ? 'var(--text)' : 'var(--surface-elevated)',
+              border: isActive ? '1px solid var(--text)' : '1px solid var(--border)',
+              color: isActive ? 'var(--background)' : 'var(--text-secondary)',
+              fontSize: '13px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {chip.label}
+          </button>
+        )
+      })}
     </div>
   )
 }
