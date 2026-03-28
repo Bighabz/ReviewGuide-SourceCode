@@ -57,12 +57,19 @@ interface ChatContainerProps {
   externalSessionId?: string  // Allow parent to set session ID
   onSessionChange?: (sessionId: string) => void  // Notify parent of session changes
   initialQuery?: string  // Initial query from URL params (for sticky chat bar)
+  onMessagesChange?: (messages: Message[]) => void  // Notify parent when messages change (for split-pane results)
 }
 
 const CYCLING_VERBS = ['simplified.', 'effortless.', 'smarter.', 'reimagined.', 'personalized.', 'instant.']
 
-export default function ChatContainer({ clearHistoryTrigger, externalSessionId, onSessionChange, initialQuery }: ChatContainerProps) {
+export default function ChatContainer({ clearHistoryTrigger, externalSessionId, onSessionChange, initialQuery, onMessagesChange }: ChatContainerProps) {
   const [messages, setMessages] = useState<Message[]>([])
+
+  // Notify parent of messages changes (for split-pane results panel)
+  useEffect(() => {
+    if (onMessagesChange) onMessagesChange(messages)
+  }, [messages, onMessagesChange])
+
   const [input, setInput] = useState('')
   const { streamState, dispatch: dispatchStream, isStreaming } = useStreamReducer()
   const [sessionId, setSessionId] = useState<string>('')
