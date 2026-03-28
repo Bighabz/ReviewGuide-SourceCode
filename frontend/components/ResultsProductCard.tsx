@@ -1,8 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ShoppingCart } from 'lucide-react'
-import { curatedLinks } from '@/lib/curatedLinks'
+import { resolveProductImage, isPlaceholderImage } from '@/lib/productImages'
 import type { ExtractedProduct } from '@/lib/extractResultsData'
 
 interface ResultsProductCardProps {
@@ -10,180 +9,113 @@ interface ResultsProductCardProps {
   index: number
 }
 
-function lookupCuratedProduct(name: string): { imageUrl: string | null; affiliateUrl: string | null } {
-  const nameLower = name.toLowerCase()
-  for (const category of Object.values(curatedLinks)) {
-    for (const topic of category) {
-      if (
-        topic.title.toLowerCase().includes(nameLower) ||
-        nameLower.includes(
-          topic.title
-            .toLowerCase()
-            .split(' ')
-            .slice(1)
-            .join(' ')
-            .toLowerCase()
-        )
-      ) {
-        const firstProduct = topic.products[0]
-        if (firstProduct) {
-          return {
-            imageUrl: `https://images-na.ssl-images-amazon.com/images/I/${firstProduct.asin}._SL300_.jpg`,
-            affiliateUrl: firstProduct.url,
-          }
-        }
-      }
-    }
-  }
-  return { imageUrl: null, affiliateUrl: null }
-}
+const GRADIENT_BGS = [
+  'linear-gradient(135deg, #EEF2FF, #E0E7FF)',
+  'linear-gradient(135deg, #FEF3C7, #FDE68A)',
+  'linear-gradient(135deg, #F3E8FF, #E9D5FF)',
+  'linear-gradient(135deg, #DCFCE7, #BBF7D0)',
+  'linear-gradient(135deg, #FFE4E6, #FECDD3)',
+  'linear-gradient(135deg, #E0F2FE, #BAE6FD)',
+]
 
-const POSITION_SCORES = [95, 88, 82, 76, 70]
+const POSITION_SCORES = [94, 91, 88, 82, 78, 74]
 
-function getCategoryBadge(index: number): { label: string; color: string; bg: string } {
-  if (index === 0) {
-    return { label: 'Top Pick', color: '#B8860B', bg: 'rgba(184,134,11,0.1)' }
-  }
-  if (index === 1) {
-    return { label: 'Best Value', color: 'var(--primary)', bg: 'var(--primary-light, rgba(27,77,255,0.08))' }
-  }
-  if (index === 2) {
-    return { label: 'Premium', color: '#7C3AED', bg: 'rgba(124,58,237,0.1)' }
-  }
-  return { label: `#${index + 1}`, color: 'var(--text-secondary)', bg: 'var(--surface-hover)' }
-}
-
-function ProductImage({ name, imageUrl }: { name: string; imageUrl: string | null }) {
-  const [errored, setErrored] = useState(false)
-
-  if (!imageUrl || errored) {
-    return (
-      <div
-        data-testid="product-image-placeholder"
-        className="w-16 h-16 flex items-center justify-center rounded-lg flex-shrink-0"
-        style={{ backgroundColor: 'var(--surface-hover)' }}
-      >
-        <ShoppingCart size={20} style={{ color: 'var(--text-secondary)' }} />
-      </div>
-    )
-  }
-
-  return (
-    <img
-      src={imageUrl}
-      alt={name}
-      className="w-16 h-16 object-contain"
-      onError={() => setErrored(true)}
-    />
-  )
+function getBadge(index: number): { label: string; bg: string; color: string } {
+  if (index === 0) return { label: 'TOP PICK', bg: '#FEF3C7', color: '#92400E' }
+  if (index === 1) return { label: 'BEST VALUE', bg: '#DBEAFE', color: '#1E40AF' }
+  if (index === 2) return { label: 'PREMIUM', bg: '#F3E8FF', color: '#6B21A8' }
+  return { label: `#${index + 1}`, bg: 'var(--surface-elevated)', color: 'var(--text-secondary)' }
 }
 
 export default function ResultsProductCard({ product, index }: ResultsProductCardProps) {
-  const { imageUrl: curatedImage, affiliateUrl: curatedUrl } = lookupCuratedProduct(product.name)
-  const imageUrl = curatedImage || product.image_url || null
-  const affiliateUrl = curatedUrl || product.url || null
-
-  const score = POSITION_SCORES[index] ?? 60
-  const accentIndex = (index % 4) + 1
-  const badge = getCategoryBadge(index)
-
-  const ctaHref =
-    affiliateUrl ||
-    `https://www.amazon.com/s?k=${encodeURIComponent(product.name)}&tag=revguide-20`
+  const [imgError, setImgError] = useState(false)
+  const imageUrl = resolveProductImage(product.name, imgError ? null : product.image_url)
+  const isPlaceholder = isPlaceholderImage(imageUrl)
+  const badge = getBadge(index)
+  const score = POSITION_SCORES[index] ?? 70
+  const gradient = GRADIENT_BGS[index % GRADIENT_BGS.length]
+  const linkUrl = product.url || `https://www.amazon.com/s?k=${encodeURIComponent(product.name)}&tag=revguide-20`
 
   return (
     <div
-      className="rounded-2xl border w-full overflow-hidden product-card-hover"
-      style={{
-        borderColor: 'var(--border)',
-        backgroundColor: 'var(--surface-elevated)',
-        padding: '12px',
-      }}
+      className="rounded-2xl border overflow-hidden product-card-hover"
+      style={{ background: 'var(--surface-elevated)', borderColor: 'var(--border)' }}
     >
-      {/* Top section: pastel background with rank badge and product image */}
+      {/* Image area with gradient background */}
       <div
-        className="rounded-xl h-[100px] relative flex items-center justify-center mb-3"
-        style={{ background: `var(--card-accent-${accentIndex})` }}
+        className="relative h-[140px] flex items-center justify-center"
+        style={{ background: gradient }}
       >
         {/* Rank badge */}
-        <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-black text-white text-xs font-bold flex items-center justify-center">
-          #{index + 1}
+        <div
+          className="absolute top-3 left-3 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
+          style={{ background: 'var(--text)', color: 'var(--background)' }}
+        >
+          {index + 1}
         </div>
-
-        {/* Product image */}
-        <ProductImage name={product.name} imageUrl={imageUrl} />
+        {isPlaceholder ? (
+          <img src={imageUrl} alt="" className="w-12 h-12 opacity-40" />
+        ) : (
+          <img
+            src={imageUrl}
+            alt={product.name}
+            className="max-h-[100px] max-w-[140px] object-contain drop-shadow-md"
+            onError={() => setImgError(true)}
+            loading="lazy"
+          />
+        )}
       </div>
 
-      {/* Middle section: category badge, name, description, score bar */}
-      <div className="mb-3">
-        {/* Category badge pill */}
+      {/* Body */}
+      <div className="p-4">
+        {/* Badge */}
         <span
-          className="px-2 py-0.5 rounded-full text-[11px] font-medium inline-block mb-1"
-          style={{ color: badge.color, backgroundColor: badge.bg }}
+          className="inline-block px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide mb-2"
+          style={{ background: badge.bg, color: badge.color }}
         >
           {badge.label}
         </span>
 
-        {/* Product name */}
-        <p
-          className="font-semibold text-sm line-clamp-2"
-          style={{ color: 'var(--text)' }}
-        >
+        <h3 className="text-[15px] font-semibold mb-1" style={{ color: 'var(--text)' }}>
           {product.name}
-        </p>
+        </h3>
 
-        {/* Description */}
         {product.description && (
-          <p
-            className="text-[11px] line-clamp-2 mt-0.5"
-            style={{ color: 'var(--text-secondary)' }}
-          >
+          <p className="text-xs mb-2.5 line-clamp-1" style={{ color: 'var(--text-muted)' }}>
             {product.description}
           </p>
         )}
 
         {/* Score bar */}
-        <div className="mt-2">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>Score</span>
-            <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
-              {score}
-            </span>
-          </div>
-          <div
-            className="h-1 rounded-full w-full"
-            style={{ backgroundColor: 'var(--surface-hover)' }}
-            role="progressbar"
-            aria-valuenow={score}
-            aria-valuemin={0}
-            aria-valuemax={100}
-          >
+        <div className="flex items-center gap-2">
+          <div className="flex-1 h-1 rounded-full" style={{ background: 'var(--surface)' }}>
             <div
-              className="h-1 rounded-full"
-              style={{ width: `${score}%`, backgroundColor: 'var(--primary)' }}
+              className="h-full rounded-full"
+              style={{ width: `${score}%`, background: 'var(--primary)' }}
             />
           </div>
+          <span className="text-sm font-bold" style={{ color: 'var(--primary)' }}>
+            {(score / 10).toFixed(1)}
+          </span>
         </div>
       </div>
 
-      {/* Bottom section: price + CTA */}
-      <div className="flex items-center justify-between">
-        {product.price != null ? (
-          <span className="font-bold text-lg" style={{ color: 'var(--text)' }}>
-            ${product.price}
-          </span>
-        ) : (
-          <span />
-        )}
-
+      {/* Footer */}
+      <div
+        className="flex items-center justify-between px-4 py-3 border-t"
+        style={{ borderColor: 'var(--border)' }}
+      >
+        <span className="text-base font-bold" style={{ color: 'var(--text)' }}>
+          {product.price ? `$${product.price}` : 'Check Price'}
+        </span>
         <a
-          href={ctaHref}
+          href={linkUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="h-9 px-4 text-sm font-medium rounded-lg flex items-center text-white"
-          style={{ backgroundColor: 'var(--primary)' }}
+          className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white transition-all hover:brightness-110 active:scale-[0.97]"
+          style={{ background: 'var(--primary)' }}
         >
-          Buy on Amazon
+          Check Price
         </a>
       </div>
     </div>
