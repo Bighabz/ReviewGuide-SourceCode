@@ -76,7 +76,7 @@ export default function ResultsMainPanel({ messages, sessionTitle }: ResultsMain
     <div className="flex-1 overflow-y-auto">
       <div
         className="sticky top-0 z-10 flex items-center justify-between px-7 py-4 border-b"
-        style={{ borderColor: 'var(--border)', background: 'var(--surface-elevated)' }}
+        style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}
       >
         <h2 className="font-serif text-xl font-normal italic" style={{ color: 'var(--text)' }}>
           {sessionTitle || 'Research Results'}

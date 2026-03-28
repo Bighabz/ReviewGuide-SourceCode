@@ -39,7 +39,7 @@ export default function ResultsProductCard({ product, index }: ResultsProductCar
   return (
     <div
       className="rounded-2xl border overflow-hidden product-card-hover"
-      style={{ background: 'var(--surface-elevated)', borderColor: 'var(--border)' }}
+      style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
     >
       {/* Image area with gradient background */}
       <div

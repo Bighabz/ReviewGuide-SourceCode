@@ -125,16 +125,13 @@ export default function UnifiedTopbar({
             <Menu size={22} strokeWidth={1.5} />
           </button>
 
-          {/* Logo — Editorial serif wordmark */}
-          <Link href="/" className="flex items-center shrink-0 group">
-            <img
-              src={theme === 'dark'
-                ? '/images/1815e5dc-c4db-4248-9aeb-0a815fd87a4b.png'
-                : '/images/8f4c1971-a5b0-474e-9fb1-698e76324f0b.png'
-              }
-              alt="ReviewGuide.Ai"
-              className="h-12 sm:h-14 w-auto object-contain group-hover:opacity-80 transition-opacity"
-            />
+          {/* Logo — serif italic per Figma */}
+          <Link
+            href="/"
+            className="flex items-center shrink-0 font-serif italic group-hover:opacity-80 transition-opacity"
+            style={{ fontSize: '20px', color: 'var(--text)' }}
+          >
+            ReviewGuide
           </Link>
 
           {/* Navigation — Refined text links */}
@@ -305,12 +302,13 @@ export default function UnifiedTopbar({
               </AnimatePresence>
             </div>
 
-            {/* User Avatar */}
+            {/* User Avatar — gradient fill per Figma */}
             <button
-              className="hidden sm:flex w-8 h-8 rounded-full bg-[var(--surface)] border border-[var(--border)] items-center justify-center text-[var(--text-muted)] hover:border-[var(--primary)] hover:text-[var(--primary)] transition-all"
+              className="hidden sm:flex w-8 h-8 rounded-full items-center justify-center text-white transition-all hover:opacity-90"
+              style={{ background: 'linear-gradient(135deg, var(--primary), #6366f1)' }}
               aria-label="User menu"
             >
-              <User size={14} strokeWidth={1.5} />
+              <User size={14} strokeWidth={2} />
             </button>
           </div>
         </div>
