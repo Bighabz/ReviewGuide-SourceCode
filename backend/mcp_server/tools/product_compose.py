@@ -712,7 +712,7 @@ Products to describe:
 
         blog_data = "\n".join(blog_data_parts)
 
-        llm_tasks['blog_article'] = model_service.generate_compose(
+        llm_tasks['blog_article'] = model_service.generate_compose_with_streaming(
             messages=[
                 {"role": "system", "content": """You are an expert product journalist writing a buying guide for ReviewGuide.ai. Write in a warm, authoritative voice — like a Wirecutter or The Verge review.
 
