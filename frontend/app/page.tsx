@@ -25,7 +25,7 @@ export default function DiscoverPage() {
         {/* Hero section */}
         <div className="flex flex-col items-center pt-2 sm:pt-8 pb-4">
           <h1
-            className="font-serif text-[28px] sm:text-4xl md:text-5xl text-center leading-tight tracking-tight"
+            className="font-serif text-[28px] sm:text-4xl md:text-5xl text-center leading-tight tracking-tight animate-fade-up"
             style={{ color: 'var(--text)' }}
           >
             What are you{' '}
@@ -35,7 +35,7 @@ export default function DiscoverPage() {
             {' '}today?
           </h1>
           <p
-            className="text-sm text-center mt-2 max-w-md"
+            className="text-sm sm:text-[15px] text-center mt-3 max-w-md leading-relaxed"
             style={{ color: 'var(--text-secondary)' }}
           >
             Expert reviews, real data, zero fluff.
