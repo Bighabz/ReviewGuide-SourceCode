@@ -108,8 +108,8 @@ export default function UnifiedTopbar({
 
   return (
     <header
-      className={`sticky top-0 z-[100] transition-all duration-300 ${scrolled
-        ? 'bg-[var(--background)]/95 backdrop-blur-xl shadow-editorial'
+      className={`sticky top-0 z-[100] transition-[box-shadow,background-color] duration-300 ${scrolled
+        ? 'bg-[var(--background)]/90 backdrop-blur-xl shadow-editorial'
         : 'bg-[var(--background)]'
         }`}
     >
@@ -119,7 +119,7 @@ export default function UnifiedTopbar({
           {/* Mobile Menu */}
           <button
             onClick={onMenuClick}
-            className="lg:hidden p-2 -ml-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)]"
+            className="lg:hidden p-2 -ml-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] focus-ring"
             aria-label="Open menu"
           >
             <Menu size={22} strokeWidth={1.5} />
@@ -128,7 +128,7 @@ export default function UnifiedTopbar({
           {/* Logo — serif italic per Figma */}
           <Link
             href="/"
-            className="flex items-center shrink-0 font-serif italic group-hover:opacity-80 transition-opacity"
+            className="flex items-center shrink-0 font-serif italic group-hover:opacity-80 transition-opacity focus-ring"
             style={{ fontSize: '20px', color: 'var(--text)' }}
           >
             ReviewGuide
@@ -139,45 +139,45 @@ export default function UnifiedTopbar({
             <Link
               href="/"
               className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'discover'
-                ? 'text-[var(--text)] bg-[var(--surface)]'
+                ? 'text-[var(--text)] bg-[var(--surface)] shadow-card'
                 : 'text-[var(--text-muted)] hover:text-[var(--text)]'
-                }`}
+                } focus-ring`}
             >
               Discover
             </Link>
             <Link
               href="/saved"
               className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'saved'
-                ? 'text-[var(--text)] bg-[var(--surface)]'
+                ? 'text-[var(--text)] bg-[var(--surface)] shadow-card'
                 : 'text-[var(--text-muted)] hover:text-[var(--text)]'
-                }`}
+                } focus-ring`}
             >
               Saved
             </Link>
             <Link
               href="/chat?new=1"
               className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'ask'
-                ? 'text-[var(--text)] bg-[var(--surface)]'
+                ? 'text-[var(--text)] bg-[var(--surface)] shadow-card'
                 : 'text-[var(--text-muted)] hover:text-[var(--text)]'
-                }`}
+                } focus-ring`}
             >
               Ask
             </Link>
             <Link
               href="/compare"
               className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'compare'
-                ? 'text-[var(--text)] bg-[var(--surface)]'
+                ? 'text-[var(--text)] bg-[var(--surface)] shadow-card'
                 : 'text-[var(--text-muted)] hover:text-[var(--text)]'
-                }`}
+                } focus-ring`}
             >
               Compare
             </Link>
             <Link
               href="/browse"
               className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'profile'
-                ? 'text-[var(--text)] bg-[var(--surface)]'
+                ? 'text-[var(--text)] bg-[var(--surface)] shadow-card'
                 : 'text-[var(--text-muted)] hover:text-[var(--text)]'
-                }`}
+                } focus-ring`}
             >
               Profile
             </Link>
@@ -209,7 +209,7 @@ export default function UnifiedTopbar({
             {/* Mobile Search */}
             <button
               onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
-              className="md:hidden p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)]"
+              className="md:hidden p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] focus-ring"
               aria-label="Search"
             >
               <Search size={20} strokeWidth={1.5} />
@@ -218,7 +218,7 @@ export default function UnifiedTopbar({
             {/* History */}
             <button
               onClick={() => onHistoryClick ? onHistoryClick() : router.push('/chat')}
-              className="p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)]"
+              className="p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] focus-ring"
               aria-label="Chat history"
               title="Chat history"
             >
@@ -228,7 +228,7 @@ export default function UnifiedTopbar({
             {/* New Chat — Primary CTA */}
             <button
               onClick={() => onNewChat ? onNewChat() : router.push('/chat?new=1')}
-              className="hidden sm:flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[var(--primary)] text-white text-sm font-medium hover:bg-[var(--primary-hover)] transition-all active:scale-[0.97]"
+              className="hidden sm:flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[var(--primary)] text-white text-sm font-medium hover:bg-[var(--primary-hover)] transition-all active:scale-[0.97] focus-ring"
             >
               <Plus size={16} strokeWidth={2.5} />
               <span>New Chat</span>
@@ -237,7 +237,7 @@ export default function UnifiedTopbar({
             {/* Mobile New Chat */}
             <button
               onClick={() => onNewChat ? onNewChat() : router.push('/chat?new=1')}
-              className="sm:hidden p-2 rounded-lg bg-[var(--primary)] text-white active:scale-95"
+              className="sm:hidden p-2 rounded-lg bg-[var(--primary)] text-white active:scale-95 focus-ring"
               aria-label="New chat"
             >
               <Plus size={20} />
@@ -248,7 +248,7 @@ export default function UnifiedTopbar({
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)]"
+              className="p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] focus-ring"
               title={theme === 'light' ? 'Dark mode' : 'Light mode'}
               aria-label="Toggle theme"
             >
@@ -265,7 +265,7 @@ export default function UnifiedTopbar({
             <div ref={colorPickerRef} className="relative">
               <button
                 onClick={() => setShowColorPicker(!showColorPicker)}
-                className="p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)]"
+                className="p-2 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text)] hover:bg-[var(--surface-hover)] focus-ring"
                 title="Accent color"
                 aria-label="Change accent color"
               >
@@ -304,7 +304,7 @@ export default function UnifiedTopbar({
 
             {/* User Avatar — gradient fill per Figma */}
             <button
-              className="hidden sm:flex w-8 h-8 rounded-full items-center justify-center text-white transition-all hover:opacity-90"
+              className="hidden sm:flex w-8 h-8 rounded-full items-center justify-center text-white transition-all hover:opacity-90 focus-ring"
               style={{ background: 'linear-gradient(135deg, var(--primary), #6366f1)' }}
               aria-label="User menu"
             >
