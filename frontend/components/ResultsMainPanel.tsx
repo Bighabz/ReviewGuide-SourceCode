@@ -136,7 +136,7 @@ export default function ResultsMainPanel({ messages, sessionTitle }: ResultsMain
                   href={source.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 text-sm hover:underline"
+                  className="flex items-center gap-2.5 text-sm hover:underline transition-colors hover:text-[var(--primary)]"
                   style={{ color: 'var(--text-secondary)' }}
                 >
                   <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: SOURCE_COLORS[idx % SOURCE_COLORS.length] }} />

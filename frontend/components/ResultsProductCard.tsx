@@ -38,7 +38,7 @@ export default function ResultsProductCard({ product, index }: ResultsProductCar
 
   return (
     <div
-      className="rounded-2xl border overflow-hidden product-card-hover"
+      className="rounded-2xl border overflow-hidden product-card-hover transition-all duration-200 hover:shadow-card-hover hover:-translate-y-0.5"
       style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
     >
       {/* Image area with gradient background */}

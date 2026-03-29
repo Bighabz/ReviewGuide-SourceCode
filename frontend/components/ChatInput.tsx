@@ -66,7 +66,7 @@ export default function ChatInput({
           placeholder={placeholder}
           disabled={disabled}
           rows={1}
-          className="w-full resize-none rounded-2xl pl-5 pr-28 py-4 bg-transparent focus:outline-none disabled:cursor-not-allowed text-[15px] text-[var(--text)] placeholder:text-[var(--text-muted)]"
+          className="w-full resize-none rounded-2xl pl-5 pr-28 py-4 bg-transparent focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/20 focus:border-[var(--primary)]/40 disabled:cursor-not-allowed text-[15px] text-[var(--text)] placeholder:text-[var(--text-muted)] transition-all"
           style={{
             minHeight: '52px',
             maxHeight: '240px',
@@ -99,7 +99,7 @@ export default function ChatInput({
         <motion.button
           onClick={() => onSend()}
           disabled={disabled || !hasValue}
-          className="absolute right-3 bottom-3 rounded-xl w-9 h-9 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed"
+          className="absolute right-3 bottom-3 rounded-xl w-9 h-9 flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed active:scale-95 transition-transform"
           style={{
             background: hasValue && !disabled ? 'var(--primary)' : 'var(--surface)',
             color: hasValue && !disabled ? 'white' : 'var(--text-muted)',
