@@ -178,7 +178,7 @@ export default function ProductCarousel() {
         style={{
           background: 'var(--surface)',
           border: '1px solid var(--border)',
-          boxShadow: '0 2px 12px rgba(26,24,22,0.06), 0 8px 24px rgba(26,24,22,0.04)',
+          boxShadow: 'var(--shadow-md)',
         }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
