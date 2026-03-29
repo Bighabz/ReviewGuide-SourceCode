@@ -38,7 +38,7 @@ export default function CategoryChipRow() {
           <button
             key={chip.label}
             onClick={() => handleChipClick(chip)}
-            className="flex-shrink-0"
+            className="flex-shrink-0 focus-ring"
             style={{
               height: '36px',
               padding: '0 14px',

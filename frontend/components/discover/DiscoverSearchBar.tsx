@@ -22,13 +22,13 @@ export default function DiscoverSearchBar() {
     <form
       onSubmit={handleSubmit}
       data-testid="discover-search-bar"
-      className="w-full flex items-center gap-3 px-4"
+      className="w-full flex items-center gap-3 px-4 transition-all focus-within:shadow-float focus-within:border-[var(--primary)]"
       style={{
         height: '52px',
         border: '2px solid var(--border-strong, #D4D1CC)',
         borderRadius: '14px',
         background: 'var(--surface)',
-        boxShadow: '0 2px 8px rgba(26,24,22,0.08), 0 0 0 1px rgba(26,24,22,0.03)',
+        boxShadow: 'var(--shadow-sm)',
       }}
     >
       <Search
