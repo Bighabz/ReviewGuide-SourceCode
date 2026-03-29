@@ -40,9 +40,10 @@ const config: Config = {
       boxShadow: {
         'float': 'var(--shadow-float)',
         'premium': 'var(--gpt-shadow-premium)',
-        'card': '0 1px 3px rgba(0,0,0,0.04), 0 6px 16px rgba(0,0,0,0.04)',
-        'card-hover': '0 4px 12px rgba(0,0,0,0.08), 0 12px 28px rgba(0,0,0,0.06)',
-        'editorial': '0 2px 8px rgba(28,25,23,0.06)',
+        'card': 'var(--shadow-sm)',
+        'card-hover': 'var(--shadow-md)',
+        'editorial': 'var(--shadow-md)',
+        'elevated': 'var(--shadow-lg)',
       },
       borderRadius: {
         'editorial': '0.625rem',
