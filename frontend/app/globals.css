@@ -25,12 +25,12 @@
   --warning: #E5A100;
   --info: #1A73E8;
 
-  /* Backgrounds: Warm Ivory & Paper */
-  --background: #F7F5F0;
-  --surface: #F5F4F0;
-  --surface-hover: #EDECE7;
+  /* Backgrounds: Warm Ivory — clear elevation steps */
+  --background: #FAFAF7;
+  --surface: #FFFFFF;
+  --surface-hover: #F5F4F0;
   --surface-elevated: #FFFFFF;
-  --surface-float: rgba(250, 250, 247, 0.92);
+  --surface-float: rgba(255, 255, 255, 0.95);
 
   /* Text: Deep Ink Scale */
   --text: #1C1917;
@@ -39,14 +39,14 @@
 
   /* Borders: Warm Stone */
   --border: #E7E5E0;
-  --border-strong: #D6D3CD;
+  --border-strong: #D1CEC8;
 
-  /* Shadows: Warm & Soft */
-  --shadow-sm: 0 1px 2px rgba(180, 160, 130, 0.06);
-  --shadow-md: 0 4px 12px rgba(180, 160, 130, 0.08);
-  --shadow-lg: 0 8px 24px rgba(180, 160, 130, 0.10);
-  --shadow-xl: 0 16px 40px rgba(180, 160, 130, 0.12);
-  --shadow-float: 0 12px 32px rgba(27, 77, 255, 0.08);
+  /* Shadows: Dual-layer, more perceptible */
+  --shadow-sm: 0 1px 3px rgba(28, 25, 23, 0.05), 0 1px 2px rgba(28, 25, 23, 0.03);
+  --shadow-md: 0 4px 12px rgba(28, 25, 23, 0.07), 0 2px 4px rgba(28, 25, 23, 0.04);
+  --shadow-lg: 0 8px 24px rgba(28, 25, 23, 0.09), 0 4px 8px rgba(28, 25, 23, 0.04);
+  --shadow-xl: 0 20px 48px rgba(28, 25, 23, 0.12), 0 8px 16px rgba(28, 25, 23, 0.06);
+  --shadow-float: 0 12px 36px rgba(27, 77, 255, 0.10), 0 4px 12px rgba(28, 25, 23, 0.06);
   --price-deal: #16A34A;
   --rating-star: #D97706;
 
@@ -119,12 +119,12 @@
   --success: #22C55E;
   --success-light: rgba(34, 197, 94, 0.12);
 
-  /* Backgrounds: Rich Blue-Black with depth */
-  --background: #0C0E14;
-  --surface: #151822;
-  --surface-hover: #1C2030;
-  --surface-elevated: #1A1E2E;
-  --surface-float: rgba(12, 14, 20, 0.95);
+  /* Backgrounds: Deeper navy-black with clear elevation */
+  --background: #0A0C12;
+  --surface: #12151E;
+  --surface-hover: #1A1E2A;
+  --surface-elevated: #1E2232;
+  --surface-float: rgba(10, 12, 18, 0.96);
 
   /* Text: Cool White */
   --text: #E8EAED;
@@ -137,15 +137,15 @@
   --card-accent-3: #101A18;
   --card-accent-4: #181028;
 
-  /* Borders: Subtle blue-tinted */
-  --border: #1C2233;
-  --border-strong: #2A3348;
+  /* Borders: More visible for depth */
+  --border: #1E2538;
+  --border-strong: #2D3650;
 
-  /* Shadows: Blue-tinted depth */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
-  --shadow-float: 0 12px 32px rgba(59, 130, 246, 0.12);
+  /* Shadows: Deeper, dual-layer */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.3);
+  --shadow-float: 0 12px 36px rgba(59, 130, 246, 0.15), 0 4px 12px rgba(0, 0, 0, 0.4);
 
   /* Glass */
   --gpt-glass-bg: rgba(12, 14, 20, 0.92);
@@ -261,9 +261,19 @@ a, button, input, textarea, select {
 
 .glass {
   background: var(--surface-float);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(20px) saturate(1.1);
+  -webkit-backdrop-filter: blur(20px) saturate(1.1);
   border: 1px solid var(--border);
+}
+
+/* Consistent focus ring for keyboard navigation */
+.focus-ring {
+  outline: none;
+}
+.focus-ring:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: inherit;
 }
 
 .text-balance {
@@ -478,6 +488,9 @@ a, button, input, textarea, select {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .animate-card-enter { animation: none !important; }
+  .animate-pulse { animation: none !important; }
+  .stream-status-text { transition: none; }
   *,
   *::before,
   *::after {
@@ -486,11 +499,7 @@ a, button, input, textarea, select {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-
-  .product-card-hover:hover {
-    transform: none;
-  }
-
+  .product-card-hover:hover { transform: none; }
   .animate-shimmer {
     animation: none;
     background: var(--surface-hover);
