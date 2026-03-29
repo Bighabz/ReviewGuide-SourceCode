@@ -20,6 +20,8 @@ export default function MobileHeader() {
       style={{
         background: showChatHeader ? 'var(--surface)' : 'var(--background)',
         borderBottom: '1px solid var(--border)',
+        backdropFilter: 'blur(20px) saturate(1.1)',
+        WebkitBackdropFilter: 'blur(20px) saturate(1.1)',
       }}
     >
       {showChatHeader ? (
@@ -27,7 +29,7 @@ export default function MobileHeader() {
           {/* Back arrow — goes to /chat from results, or / from chat */}
           <button
             onClick={() => router.push(isResultsRoute ? '/chat' : '/')}
-            className="flex items-center justify-center w-8 h-8 rounded-lg -ml-1"
+            className="flex items-center justify-center w-8 h-8 rounded-lg -ml-1 focus-ring"
             style={{ color: 'var(--text)' }}
             aria-label={isResultsRoute ? 'Back to Chat' : 'Back to Discover'}
           >
@@ -53,7 +55,7 @@ export default function MobileHeader() {
           {/* Share button — hidden on /results */}
           {!isResultsRoute && (
             <button
-              className="flex items-center justify-center w-8 h-8 rounded-lg"
+              className="flex items-center justify-center w-8 h-8 rounded-lg focus-ring"
               style={{ color: 'var(--text-secondary)' }}
               aria-label="Share"
             >
@@ -71,7 +73,7 @@ export default function MobileHeader() {
           {/* Logo — serif italic per Figma */}
           <a
             href="/"
-            className="flex items-center shrink-0 font-serif italic"
+            className="flex items-center shrink-0 font-serif italic focus-ring"
             style={{ fontSize: '22px', color: 'var(--text)' }}
           >
             ReviewGuide
@@ -82,7 +84,7 @@ export default function MobileHeader() {
 
           {/* User avatar — filled gradient circle per Figma */}
           <button
-            className="flex w-8 h-8 rounded-full items-center justify-center transition-all"
+            className="flex w-8 h-8 rounded-full items-center justify-center transition-all focus-ring"
             style={{
               background: 'linear-gradient(135deg, var(--primary), #6366f1)',
               color: 'white',

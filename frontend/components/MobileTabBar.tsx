@@ -105,6 +105,7 @@ export default function MobileTabBar() {
       style={{
         background: 'var(--surface-elevated)',
         borderTop: '1px solid var(--border, #E8E6E1)',
+        boxShadow: '0 -4px 16px rgba(0,0,0,0.04)',
       }}
     >
       <div className="flex items-center justify-around h-14 px-2">
@@ -119,11 +120,11 @@ export default function MobileTabBar() {
             <Link
               key={tab.label}
               href={tab.href}
-              className="flex flex-col items-center gap-0.5 min-w-[56px] py-1 transition-colors"
+              className="flex flex-col items-center gap-0.5 min-w-[56px] py-1 transition-colors focus-ring"
               aria-label={tab.label}
               aria-current={isActive ? 'page' : undefined}
               data-active={isActive ? 'true' : undefined}
-              style={{ color: isActive ? 'var(--primary, #1B4DFF)' : '#9B9B9B' }}
+              style={{ color: isActive ? 'var(--primary)' : 'var(--text-muted)' }}
             >
               <Icon size={22} strokeWidth={isActive ? 2 : 1.5} />
               <span
@@ -142,10 +143,10 @@ export default function MobileTabBar() {
         {/* Settings icon — theme toggle and accent picker */}
         <div ref={settingsRef} className="relative">
           <button
-            className="flex flex-col items-center gap-0.5 min-w-[56px] py-1 transition-colors"
+            className="flex flex-col items-center gap-0.5 min-w-[56px] py-1 transition-colors focus-ring"
             aria-label="Settings"
             onClick={() => setShowSettingsPopover((prev) => !prev)}
-            style={{ color: showSettingsPopover ? 'var(--primary, #1B4DFF)' : '#9B9B9B' }}
+            style={{ color: showSettingsPopover ? 'var(--primary)' : 'var(--text-muted)' }}
           >
             <Settings size={22} strokeWidth={showSettingsPopover ? 2 : 1.5} />
             <span
@@ -170,7 +171,7 @@ export default function MobileTabBar() {
                 style={{
                   background: 'var(--surface-elevated)',
                   borderColor: 'var(--border, #E8E6E1)',
-                  boxShadow: '0 4px 24px rgba(0,0,0,0.12)',
+                  boxShadow: 'var(--shadow-lg)',
                   minWidth: '140px',
                 }}
               >
