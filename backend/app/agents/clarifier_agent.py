@@ -318,6 +318,7 @@ class ClarifierAgent(BaseAgent):
                 "adults": 2,
                 "duration_days": 5,
                 "departure_date": (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d"),
+                "origin": "Any",
             }
             for slot_name, default_value in defaults.items():
                 if slot_name in missing_required_slots and (slot_name not in current_slots or not current_slots[slot_name]):
@@ -338,41 +339,9 @@ class ClarifierAgent(BaseAgent):
             else:
                 logger.info(f"[Clarifier Agent] All travel slots filled via defaults, proceeding")
 
-        # Product intent: detect ambiguous brand-only queries that need category clarification
-        # e.g. "Dyson vs Shark" could mean vacuums OR kitchen appliances
-        if intent == "product" and not missing_required_slots:
-            has_brand = bool(current_slots.get("brand"))
-            has_category = bool(current_slots.get("category"))
-            has_product_name = bool(current_slots.get("product_name"))
-
-            if has_brand and not has_category and not has_product_name:
-                # Brands mentioned without category — check if brands span multiple categories
-                user_msg_lower = (state.get("sanitized_text") or state.get("user_message", "")).lower()
-                # Multi-category brands that commonly cause confusion
-                ambiguous_brands = {
-                    "dyson": ["vacuums", "air purifiers", "hair dryers", "fans"],
-                    "shark": ["vacuums", "steam mops", "hair dryers", "blenders"],
-                    "ninja": ["blenders", "air fryers", "coffee makers", "grills"],
-                    "bissell": ["vacuums", "carpet cleaners", "steam mops"],
-                    "kitchenaid": ["stand mixers", "blenders", "food processors", "cookware"],
-                    "samsung": ["phones", "TVs", "laptops", "tablets", "appliances"],
-                    "apple": ["phones", "laptops", "tablets", "watches", "headphones"],
-                    "sony": ["headphones", "TVs", "cameras", "gaming consoles", "speakers"],
-                    "lg": ["TVs", "monitors", "appliances", "phones"],
-                    "philips": ["shavers", "toothbrushes", "TVs", "kitchen appliances"],
-                    "breville": ["espresso machines", "toaster ovens", "blenders", "juicers"],
-                    "cuisinart": ["food processors", "coffee makers", "cookware", "toasters"],
-                    "dewalt": ["drills", "saws", "impact drivers", "grinders"],
-                    "makita": ["drills", "saws", "impact drivers", "grinders"],
-                    "bosch": ["power tools", "dishwashers", "washing machines", "ovens"],
-                }
-                detected_ambiguous = [
-                    brand for brand in ambiguous_brands
-                    if brand in user_msg_lower
-                ]
-                if detected_ambiguous:
-                    logger.info(f"[Clarifier Agent] Detected ambiguous brand-only query: {detected_ambiguous} — requesting category clarification")
-                    missing_required_slots.append("category")
+        # Product intent: always proceed to results immediately.
+        # Show recommendations first, let users refine — never gate on clarification.
+        # Brand disambiguation is handled downstream by the search/compose tools.
 
         # Check if all slots are now filled after extraction
         if not missing_required_slots:
@@ -527,31 +496,20 @@ class ClarifierAgent(BaseAgent):
                 "proceed_to_execution": True
             }
         else:
-            # Some required slots still missing - regenerate questions for remaining slots
-            logger.info(f"[Clarifier Agent] {len(still_missing_required)} required slots still missing: {still_missing_required}")
+            # Some required slots still missing after user answered once.
+            # Results-first philosophy: proceed with what we have rather than
+            # asking again. One round of clarification is the max — never lose
+            # a user to repeated questions.
+            logger.info(f"[Clarifier Agent] {len(still_missing_required)} required slots still missing after user answer: {still_missing_required} — proceeding anyway (results-first)")
 
-            # Regenerate follow-up questions for remaining missing slots (with fresh intro/closing)
-            followups_data = await self._generate_followup_questions(
-                still_missing_required,
-                current_slots,
-                user_message,
-                intent,
-                conversation_history=conversation_history
-            )
-
-            remaining_followups = followups_data.get("questions", [])
-
-            # Update halt state with new slots and remaining followups
-            halt_state["slots"] = current_slots
-            halt_state["followups"] = remaining_followups
-            await HaltStateManager.update_halt_state(session_id, halt_state)
+            # Clear halt state so we don't loop
+            await HaltStateManager.delete_halt_state(session_id)
 
             return {
                 "slots": current_slots,
-                "followups": remaining_followups,
-                "missing_required_slots": still_missing_required,
-                "next_question": followups_data,  # Full structured data for frontend
-                "proceed_to_execution": False  # HALT - wait for remaining answers
+                "followups": [],
+                "missing_required_slots": [],
+                "proceed_to_execution": True  # Proceed with partial slots — show results, let user refine
             }
 
     async def _generate_followup_questions(
@@ -589,20 +547,6 @@ class ClarifierAgent(BaseAgent):
                 if content:
                     conversation_context += f"- {role}: {content[:200]}{'...' if len(content) > 200 else ''}\n"
 
-        # Build disambiguation hint for product category ambiguity
-        disambiguation_hint = ""
-        if intent == "product" and "category" in missing_slots:
-            brand = current_slots.get("brand", "")
-            if brand:
-                disambiguation_hint = f"""
-IMPORTANT - Category Disambiguation:
-The user mentioned brand(s) "{brand}" without specifying what TYPE of product.
-Many brands make multiple product types. For the "category" question:
-- List 2-3 most likely product types for this brand
-- Example: "Are you comparing Dyson vs Shark vacuums, hair dryers, or something else?"
-- Keep it natural — don't just say "what category?"
-"""
-
         system_prompt = f"""
 You are a warm, human assistant.
 
@@ -611,7 +555,7 @@ Context:
 - Intent: {intent}
 - Missing info: {slots_str}
 - Already provided: {filled_slots_str}
-{conversation_context}{disambiguation_hint}
+{conversation_context}
 Generate a JSON response with:
 1. "intro" - one short sentence acknowledging their request and asking for details (based on FULL conversation context, not just current message)
 2. "questions" - one question per missing slot (friendly, 12-25 words each, no technical terms)

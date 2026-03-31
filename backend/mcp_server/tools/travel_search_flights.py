@@ -102,6 +102,9 @@ async def travel_search_flights(state: Dict[str, Any]) -> Dict[str, Any]:
         # Determine trip type for title
         trip_type = "Round-trip" if return_date else "One-way"
 
+        # Handle "Any" origin — omit from title for cleaner display
+        origin_is_any = not origin or origin.lower() in ("any", "anywhere")
+
         # Loop over all registered PLP flight providers
         flights = []
         citations = []
@@ -121,13 +124,14 @@ async def travel_search_flights(state: Dict[str, Any]) -> Dict[str, Any]:
                     cabin_class="economy",
                 )
                 provider_label = provider_key.replace("_plp", "")
+                title = f"{trip_type} flights to {destination}" if origin_is_any else f"{trip_type} flights from {origin} to {destination}"
                 flight_result = {
                     "type": "plp_link",
                     "provider": provider_label,
-                    "origin": origin,
+                    "origin": origin if not origin_is_any else None,
                     "destination": destination,
                     "search_url": search_url,
-                    "title": f"{trip_type} flights from {origin} to {destination}",
+                    "title": title,
                     "departure_date": departure_date,
                     "return_date": return_date,
                     "passengers": adults + children,

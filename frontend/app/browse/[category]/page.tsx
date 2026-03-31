@@ -12,7 +12,6 @@ export default function CategoryPage({ params }: { params: { category: string } 
   const router = useRouter()
   const category = categories.find((c) => c.slug === params.category)
   const [input, setInput] = useState('')
-
   if (!category) return notFound()
 
   const handleSend = useCallback(() => {
@@ -77,6 +76,7 @@ export default function CategoryPage({ params }: { params: { category: string } 
 
       {/* Editor's Picks — curated affiliate products with images */}
       <EditorsPicks categorySlug={category.slug} />
+
 
       {/* Curated Queries */}
       <section className="px-4 sm:px-6 md:px-8 py-8">

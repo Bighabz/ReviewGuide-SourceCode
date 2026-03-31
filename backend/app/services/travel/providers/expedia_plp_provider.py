@@ -103,7 +103,9 @@ class ExpediaPLPLinkGenerator:
             Expedia flight search URL with affiliate partner ID
         """
         # URL encode origin and destination
-        encoded_origin = quote_plus(origin)
+        # Handle "Any" / missing origin — omit from URL so Expedia shows destination-only search
+        origin_is_any = not origin or origin.lower() in ("any", "anywhere")
+        encoded_origin = "" if origin_is_any else quote_plus(origin)
         encoded_destination = quote_plus(destination)
 
         # Use today + 10 days if departure date not provided
@@ -125,13 +127,22 @@ class ExpediaPLPLinkGenerator:
         if return_date:
             trip_type = "roundtrip"
             return_str = return_date.strftime('%Y-%m-%d')
-            legs = (
-                f"leg1=from:{encoded_origin},to:{encoded_destination},departure:{departure_str}TANYT"
-                f"&leg2=from:{encoded_destination},to:{encoded_origin},departure:{return_str}TANYT"
-            )
+            if origin_is_any:
+                legs = (
+                    f"leg1=to:{encoded_destination},departure:{departure_str}TANYT"
+                    f"&leg2=from:{encoded_destination},departure:{return_str}TANYT"
+                )
+            else:
+                legs = (
+                    f"leg1=from:{encoded_origin},to:{encoded_destination},departure:{departure_str}TANYT"
+                    f"&leg2=from:{encoded_destination},to:{encoded_origin},departure:{return_str}TANYT"
+                )
         else:
             trip_type = "oneway"
-            legs = f"leg1=from:{encoded_origin},to:{encoded_destination},departure:{departure_str}TANYT"
+            if origin_is_any:
+                legs = f"leg1=to:{encoded_destination},departure:{departure_str}TANYT"
+            else:
+                legs = f"leg1=from:{encoded_origin},to:{encoded_destination},departure:{departure_str}TANYT"
 
         # Build full URL
         url = (
