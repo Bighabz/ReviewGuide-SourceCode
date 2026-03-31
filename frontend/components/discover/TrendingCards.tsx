@@ -1,17 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { ChevronRight, Headphones, Plane, Laptop2, Bot, Footprints, Speaker, type LucideIcon } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
 import { trendingTopics } from '@/lib/trendingTopics'
-
-const iconMap: Record<string, LucideIcon> = {
-  Headphones,
-  Plane,
-  Laptop2,
-  Bot,
-  Footprints,
-  Speaker,
-}
 
 export default function TrendingCards() {
   const router = useRouter()
@@ -35,8 +26,6 @@ export default function TrendingCards() {
       {/* Cards grid — show 3 on mobile, all on desktop */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
         {trendingTopics.map((topic, idx) => {
-          const IconComponent = iconMap[topic.icon]
-
           return (
             <button
               key={topic.id}
@@ -54,28 +43,23 @@ export default function TrendingCards() {
                 cursor: 'pointer',
               }}
             >
-              {/* Icon square — Figma: 56x56, rounded 12px, gradient bg */}
+              {/* Thumbnail — 48x48, rounded 12px */}
               <div
                 aria-hidden="true"
+                className="overflow-hidden"
                 style={{
                   width: '48px',
                   height: '48px',
                   borderRadius: '12px',
-                  background: topic.iconBg,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
                   flexShrink: 0,
-                  fontSize: '24px',
                 }}
               >
-                {IconComponent && (
-                  <IconComponent
-                    size={20}
-                    color={topic.iconColor}
-                    aria-hidden="true"
-                  />
-                )}
+                <img
+                  src={topic.image}
+                  alt=""
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
               </div>
 
               {/* Text */}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronLeft, ChevronRight, Star, ArrowRight, Headphones, Plane, Laptop2, Bot, Footprints, Speaker, type LucideIcon } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Star, ArrowRight } from 'lucide-react'
 
 interface ProductSlide {
   id: string
@@ -14,7 +14,7 @@ interface ProductSlide {
   scoreLabel: string
   price?: string
   query: string
-  icon: string
+  image: string
   gradient: string
   iconColor: string
 }
@@ -30,7 +30,7 @@ const SLIDES: ProductSlide[] = [
     scoreLabel: 'Expert Score',
     price: '$348',
     query: 'Best noise-cancelling headphones 2026',
-    icon: 'Headphones',
+    image: '/images/products/headphones.png',
     gradient: 'linear-gradient(135deg, #DBEAFE 0%, #93C5FD 50%, #60A5FA 100%)',
     iconColor: '#2563EB',
   },
@@ -43,7 +43,7 @@ const SLIDES: ProductSlide[] = [
     score: '4.9',
     scoreLabel: 'Traveler Rating',
     query: 'Tokyo travel guide flights hotels hidden gems',
-    icon: 'Plane',
+    image: '/images/products/tokyo.png',
     gradient: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 50%, #FBBF24 100%)',
     iconColor: '#D97706',
   },
@@ -57,7 +57,7 @@ const SLIDES: ProductSlide[] = [
     scoreLabel: 'Expert Score',
     price: '$999',
     query: 'Best laptops for students 2026',
-    icon: 'Laptop2',
+    image: '/images/products/laptop.png',
     gradient: 'linear-gradient(135deg, #D1FAE5 0%, #6EE7B7 50%, #34D399 100%)',
     iconColor: '#059669',
   },
@@ -71,7 +71,7 @@ const SLIDES: ProductSlide[] = [
     scoreLabel: 'Expert Score',
     price: '$649',
     query: 'Best robot vacuums for pet hair',
-    icon: 'Bot',
+    image: '/images/products/vacuum.png',
     gradient: 'linear-gradient(135deg, #F3E8FF 0%, #D8B4FE 50%, #C084FC 100%)',
     iconColor: '#7C3AED',
   },
@@ -85,15 +85,11 @@ const SLIDES: ProductSlide[] = [
     scoreLabel: 'Expert Score',
     price: '$260',
     query: 'Best running shoes trail treadmill 2026',
-    icon: 'Footprints',
+    image: '/images/products/shoes.png',
     gradient: 'linear-gradient(135deg, #FFE4E6 0%, #FDA4AF 50%, #FB7185 100%)',
     iconColor: '#E11D48',
   },
 ]
-
-const iconMap: Record<string, LucideIcon> = {
-  Headphones, Plane, Laptop2, Bot, Footprints, Speaker,
-}
 
 const AUTO_INTERVAL = 4000
 
@@ -137,7 +133,6 @@ export default function ProductCarousel() {
   }
 
   const slide = SLIDES[current]
-  const Icon = iconMap[slide.icon]
 
   return (
     <div>
@@ -186,27 +181,24 @@ export default function ProductCarousel() {
         onTouchEnd={handleTouchEnd}
         onClick={() => router.push(`/chat?q=${encodeURIComponent(slide.query)}&new=1`)}
       >
-        {/* Gradient hero area with icon */}
+        {/* Hero image area */}
         <div
-          className="relative flex items-center justify-center overflow-hidden transition-all duration-700"
-          style={{ background: slide.gradient, height: '120px' }}
+          className="relative overflow-hidden transition-all duration-700"
+          style={{ background: slide.gradient, height: '160px' }}
         >
-          {/* Decorative circles */}
-          <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full opacity-20" style={{ background: slide.iconColor }} />
-          <div className="absolute -left-4 -bottom-4 w-16 h-16 rounded-full opacity-10" style={{ background: slide.iconColor }} />
+          {/* Product image */}
+          <img
+            src={slide.image}
+            alt={slide.title}
+            className="absolute inset-0 w-full h-full object-cover opacity-90 transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
+          />
 
-          {/* Icon */}
-          {Icon && (
-            <div className="relative z-10 transition-transform duration-500 group-hover:scale-110">
-              <div className="w-16 h-16 rounded-2xl flex items-center justify-center backdrop-blur-sm"
-                style={{ background: 'rgba(255,255,255,0.6)', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
-                <Icon size={28} color={slide.iconColor} strokeWidth={1.5} />
-              </div>
-            </div>
-          )}
+          {/* Gradient overlay for text readability */}
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.3) 0%, transparent 60%)' }} />
 
           {/* Tag badge */}
-          <div className="absolute top-3 left-3">
+          <div className="absolute top-3 left-3 z-10">
             <span className="px-2 py-0.5 rounded-md text-[9px] font-bold tracking-wider text-white"
               style={{ background: slide.tagColor }}>
               {slide.tag}
@@ -214,7 +206,7 @@ export default function ProductCarousel() {
           </div>
 
           {/* Score badge */}
-          <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-1 rounded-lg backdrop-blur-sm"
+          <div className="absolute top-3 right-3 z-10 flex items-center gap-1 px-2 py-1 rounded-lg backdrop-blur-sm"
             style={{ background: 'rgba(255,255,255,0.85)' }}>
             <Star size={10} fill={slide.iconColor} color={slide.iconColor} />
             <span className="text-xs font-bold" style={{ color: slide.iconColor }}>{slide.score}</span>
@@ -222,7 +214,7 @@ export default function ProductCarousel() {
         </div>
 
         {/* Info area */}
-        <div className="px-4 py-3">
+        <div className="px-4 py-2.5">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
               <h3 className="text-[15px] font-semibold truncate" style={{ color: 'var(--text)' }}>

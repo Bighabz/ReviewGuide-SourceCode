@@ -1,27 +1,19 @@
 import { curatedLinks } from '@/lib/curatedLinks'
 
 const CATEGORY_PLACEHOLDERS: Record<string, string> = {
-  headphones:
-    'data:image/svg+xml,' +
-    encodeURIComponent(
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#8892A4" stroke-width="1.5"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>',
-    ),
-  laptop:
-    'data:image/svg+xml,' +
-    encodeURIComponent(
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#8892A4" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M2 20h20"/></svg>',
-    ),
-  default:
-    'data:image/svg+xml,' +
-    encodeURIComponent(
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#8892A4" stroke-width="1.5"><rect x="2" y="2" width="20" height="20" rx="2"/><circle cx="12" cy="12" r="3"/></svg>',
-    ),
+  headphones: '/images/products/fallback-headphones.png',
+  laptop: '/images/products/fallback-laptop.png',
+  kitchen: '/images/products/fallback-kitchen.png',
+  fitness: '/images/products/fallback-fitness.png',
+  default: '/images/products/fallback-default.png',
 }
 
 function detectCategory(name: string): string {
   const lower = name.toLowerCase()
   if (lower.match(/headphone|earbud|speaker|audio|airpod|bose|sony wh|jabra/)) return 'headphones'
   if (lower.match(/laptop|macbook|chromebook|notebook|computer/)) return 'laptop'
+  if (lower.match(/blender|mixer|air fryer|coffee|toaster|oven|cookware|kitchen/)) return 'kitchen'
+  if (lower.match(/shoe|sneaker|running|treadmill|yoga|fitness|gym|weight/)) return 'fitness'
   return 'default'
 }
 
@@ -67,5 +59,5 @@ export function resolveProductImage(
 }
 
 export function isPlaceholderImage(url: string): boolean {
-  return url.startsWith('data:image/svg+xml')
+  return url.startsWith('data:image/svg+xml') || url.startsWith('/images/products/fallback-')
 }

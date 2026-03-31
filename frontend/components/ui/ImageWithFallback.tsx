@@ -11,14 +11,14 @@ interface ImageWithFallbackProps {
 }
 
 const CATEGORY_PLACEHOLDERS: Record<string, string> = {
-  electronics: '/placeholders/electronics.svg',
-  travel: '/placeholders/travel.svg',
-  gaming: '/placeholders/gaming.svg',
-  home: '/placeholders/home.svg',
-  fashion: '/placeholders/fashion.svg',
-  beauty: '/placeholders/beauty.svg',
-  sports: '/placeholders/sports.svg',
-  default: '/placeholders/default.svg',
+  electronics: '/placeholders/electronics.png',
+  travel: '/placeholders/travel.png',
+  gaming: '/placeholders/gaming.png',
+  home: '/placeholders/home.png',
+  fashion: '/placeholders/fashion.png',
+  beauty: '/placeholders/beauty.png',
+  sports: '/placeholders/sports.png',
+  default: '/placeholders/default.png',
 }
 
 export function ImageWithFallback({ src, alt, category, className = '' }: ImageWithFallbackProps) {

@@ -3,6 +3,7 @@ export interface TrendingTopic {
   title: string
   subtitle: string
   query: string
+  image: string     // product thumbnail path
   icon: string      // Lucide icon name
   iconBg: string    // pastel background hex
   iconColor: string // icon stroke hex
@@ -14,6 +15,7 @@ export const trendingTopics: TrendingTopic[] = [
     title: 'Best Headphones 2026',
     subtitle: 'Noise-cancelling picks at every price',
     query: 'Best noise-cancelling headphones 2026',
+    image: '/images/products/headphones.png',
     icon: 'Headphones',
     iconBg: '#EFF6FF',
     iconColor: '#3B82F6',
@@ -23,6 +25,7 @@ export const trendingTopics: TrendingTopic[] = [
     title: 'Tokyo Travel Guide',
     subtitle: 'Flights, stays and hidden gems',
     query: 'Tokyo travel guide flights hotels hidden gems',
+    image: '/images/products/tokyo.png',
     icon: 'Plane',
     iconBg: '#FFF7ED',
     iconColor: '#F97316',
@@ -32,6 +35,7 @@ export const trendingTopics: TrendingTopic[] = [
     title: 'Top Laptops for Students',
     subtitle: 'Performance meets portability',
     query: 'Best laptops for students 2026',
+    image: '/images/products/laptop.png',
     icon: 'Laptop2',
     iconBg: '#F0FDF4',
     iconColor: '#22C55E',
@@ -41,6 +45,7 @@ export const trendingTopics: TrendingTopic[] = [
     title: 'Best Robot Vacuums',
     subtitle: 'Hands-free cleaning, tested',
     query: 'Best robot vacuums for pet hair',
+    image: '/images/products/vacuum.png',
     icon: 'Bot',
     iconBg: '#FDF4FF',
     iconColor: '#A855F7',
@@ -50,6 +55,7 @@ export const trendingTopics: TrendingTopic[] = [
     title: 'Running Shoes Ranked',
     subtitle: 'From trail to treadmill',
     query: 'Best running shoes trail treadmill 2026',
+    image: '/images/products/shoes.png',
     icon: 'Footprints',
     iconBg: '#FEF2F2',
     iconColor: '#EF4444',
@@ -59,6 +65,7 @@ export const trendingTopics: TrendingTopic[] = [
     title: 'Smart Home Starter Kit',
     subtitle: 'Automate your home under $200',
     query: 'Smart home starter kit under 200 dollars',
+    image: '/images/products/smart-home.png',
     icon: 'Speaker',
     iconBg: '#ECFDF5',
     iconColor: '#10B981',

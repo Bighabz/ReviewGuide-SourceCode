@@ -1,6 +1,6 @@
 'use client'
 
-import { Car, ExternalLink, Search, Calendar } from 'lucide-react'
+import { Car, ExternalLink, Calendar } from 'lucide-react'
 import { trackAffiliateClick } from '@/lib/trackAffiliate'
 
 interface CarRental {
@@ -64,10 +64,9 @@ export default function CarRentalCard({ cars }: CarRentalCardProps) {
             }}
           >
             <div className="flex flex-col items-center text-center">
-              {/* Search icon */}
-              <div className="w-16 h-16 rounded-full flex items-center justify-center mb-5 bg-[var(--primary-light)]">
-                <Search size={28} strokeWidth={1.5} className="text-[var(--primary)]" />
-              </div>
+              {/* Car fallback image */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/images/products/fallback-car.png" alt="" className="w-12 h-12 rounded object-cover mb-5" />
 
               {/* Title */}
               <h4 className="font-serif text-xl mb-3 text-[var(--text)]">

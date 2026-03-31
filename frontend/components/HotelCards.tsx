@@ -143,9 +143,8 @@ function TraditionalHotelCard({ hotel }: { hotel: HotelCard }) {
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-[var(--text-muted)]">
-              <HotelIcon size={40} strokeWidth={1.5} />
-            </div>
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src="/images/products/fallback-hotel.png" alt="Hotel" className="w-full h-full object-cover" />
           )}
           {/* Rating Badge Overlay */}
           {hotel.rating && (
