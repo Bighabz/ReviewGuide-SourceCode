@@ -1,35 +1,39 @@
 'use client'
 
 import { useState } from 'react'
-import { ExternalLink, Package } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
 import { curatedLinks } from '@/lib/curatedLinks'
 
 interface EditorsPicksProps {
   categorySlug: string
 }
 
-function getImageUrl(asin: string): string {
-  return `https://images-na.ssl-images-amazon.com/images/I/${asin}._SL300_.jpg`
-}
+const IMAGE_URLS = [
+  (asin: string) => `https://m.media-amazon.com/images/P/${asin}.01._SCLZZZZZZZ_SX300_.jpg`,
+  (asin: string) => `https://images-na.ssl-images-amazon.com/images/P/${asin}.01._SCLZZZZZZZ_SL300_.jpg`,
+]
 
 function ProductImage({ asin, alt }: { asin: string; alt: string }) {
-  const [errored, setErrored] = useState(false)
+  const [urlIdx, setUrlIdx] = useState(0)
+  const [allFailed, setAllFailed] = useState(false)
 
-  if (errored) {
-    return (
-      <div className="aspect-square flex items-center justify-center rounded-lg bg-[var(--surface-hover)]">
-        <Package size={24} style={{ color: 'var(--text-muted)' }} />
-      </div>
-    )
+  if (allFailed) {
+    return null
   }
 
   return (
     <img
-      src={getImageUrl(asin)}
+      src={IMAGE_URLS[urlIdx](asin)}
       alt={alt}
       loading="lazy"
-      onError={() => setErrored(true)}
-      className="aspect-square object-cover rounded-lg w-full"
+      onError={() => {
+        if (urlIdx < IMAGE_URLS.length - 1) {
+          setUrlIdx(urlIdx + 1)
+        } else {
+          setAllFailed(true)
+        }
+      }}
+      className="aspect-[4/3] object-contain rounded-lg w-full bg-[var(--surface-hover)] p-2"
     />
   )
 }
@@ -62,22 +66,22 @@ export default function EditorsPicks({ categorySlug }: EditorsPicksProps) {
               {topic.description}
             </p>
 
-            {/* Product image grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            {/* Product grid */}
+            <div className="flex gap-3 overflow-x-auto pb-2">
               {topic.products.map((product, idx) => (
                 <a
                   key={idx}
                   href={product.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] overflow-hidden shadow-card product-card-hover"
+                  className="flex-shrink-0 w-36 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] overflow-hidden shadow-card product-card-hover"
                 >
                   <ProductImage
                     asin={product.asin}
                     alt={`${topic.title} Option ${idx + 1}`}
                   />
-                  <div className="flex items-center justify-between px-2 py-1.5">
-                    <span className="text-xs text-[var(--text-secondary)]">
+                  <div className="flex items-center justify-between px-2.5 py-2">
+                    <span className="text-xs font-medium text-[var(--text-secondary)]">
                       Option {idx + 1}
                     </span>
                     <ExternalLink
