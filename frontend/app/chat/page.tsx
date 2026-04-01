@@ -5,10 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import CategorySidebar from '@/components/CategorySidebar'
 import ChatContainer from '@/components/ChatContainer'
 import ConversationSidebar from '@/components/ConversationSidebar'
-import ResultsMainPanel from '@/components/ResultsMainPanel'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import { CHAT_CONFIG } from '@/lib/constants'
-import type { Message } from '@/components/ChatContainer'
 
 function ChatPageContent() {
   const router = useRouter()
@@ -20,7 +18,6 @@ function ChatPageContent() {
   const [currentSessionId, setCurrentSessionId] = useState<string>('')
   const [switchToSessionId, setSwitchToSessionId] = useState<string | undefined>(undefined)
   const [initialQuery, setInitialQuery] = useState<string | undefined>(undefined)
-  const [chatMessages, setChatMessages] = useState<Message[]>([])
 
   // Track which query we've processed to avoid re-processing after router.replace
   const processedQueryRef = useRef<string | null>(null)
@@ -139,27 +136,8 @@ function ChatPageContent() {
           <CategorySidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         )}
 
-        {/* Desktop: split-pane layout (chat left, results right) */}
-        <main className="hidden lg:flex flex-1 overflow-hidden">
-          <div className="w-[380px] flex-shrink-0 border-r flex flex-col overflow-hidden" style={{ borderColor: 'var(--border)' }}>
-            <ErrorBoundary>
-              <ChatContainer
-                clearHistoryTrigger={clearHistoryTrigger}
-                externalSessionId={switchToSessionId}
-                onSessionChange={handleSessionChange}
-                initialQuery={initialQuery}
-                onMessagesChange={setChatMessages}
-              />
-            </ErrorBoundary>
-          </div>
-          <ResultsMainPanel
-            messages={chatMessages}
-            sessionTitle={initialQuery || ''}
-          />
-        </main>
-
-        {/* Mobile: full-width chat */}
-        <main className="flex lg:hidden flex-1 flex-col overflow-hidden">
+        {/* Full-width chat */}
+        <main className="flex flex-1 flex-col overflow-hidden">
           <ErrorBoundary>
             <ChatContainer
               clearHistoryTrigger={clearHistoryTrigger}
