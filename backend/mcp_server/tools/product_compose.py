@@ -936,11 +936,59 @@ RULES:
             seen_card_names.add(pname)
 
             # Build affiliate_links array for the card
-            # Prioritize eBay offers first (they have real images/prices)
-            sorted_offers = sorted(real_offers, key=lambda o: (o.get("source") != "ebay", not o.get("image_url")))
+            # Image priority: Serper/Google > Amazon > eBay (Google images are cleanest)
+            # Offer priority: Amazon first, then one eBay, then other retailers
+            def _offer_sort_key(o):
+                src = o.get("source", "").lower()
+                url = o.get("url", "").lower()
+                if "amazon" in url or "amzn.to" in url or src == "amazon":
+                    return (0, not o.get("image_url"))
+                if src == "serper_shopping":
+                    return (1, not o.get("image_url"))
+                if src == "ebay":
+                    return (2, not o.get("image_url"))
+                return (3, not o.get("image_url"))
+
+            sorted_offers = sorted(real_offers, key=_offer_sort_key)
+
+            # Dedupe by merchant — keep only 1 offer per merchant (e.g., one eBay, one Amazon)
+            seen_merchants = set()
+            deduped_offers = []
+            for o in sorted_offers:
+                merchant_key = o.get("source", "").lower()
+                if merchant_key == "ebay":
+                    merchant_key = "ebay"  # collapse all eBay sellers
+                elif "amazon" in o.get("url", "").lower():
+                    merchant_key = "amazon"
+                else:
+                    merchant_key = o.get("merchant", "").lower()
+                if merchant_key in seen_merchants:
+                    continue
+                seen_merchants.add(merchant_key)
+                deduped_offers.append(o)
+
+            # Cap at 3 offers per product card
+            capped_offers = deduped_offers[:3]
+
             affiliate_links = []
             best_image = ""
-            for o in sorted_offers:
+
+            # Pick best image separately — prefer Serper > Amazon > eBay
+            def _image_priority(o):
+                src = o.get("source", "").lower()
+                if src == "serper_shopping":
+                    return 0
+                if "amazon" in o.get("url", "").lower() or src == "amazon":
+                    return 1
+                return 2
+
+            for o in sorted(real_offers, key=_image_priority):
+                img = o.get("image_url", "")
+                if img and "placehold" not in img:
+                    best_image = img
+                    break
+
+            for o in capped_offers:
                 img = o.get("image_url", "")
                 affiliate_links.append({
                     "product_id": f"{o.get('source', 'unknown')}-{idx}",
@@ -953,8 +1001,6 @@ RULES:
                     "rating": o.get("rating"),
                     "review_count": o.get("review_count"),
                 })
-                if not best_image and img:
-                    best_image = img
 
             if not affiliate_links:
                 continue
