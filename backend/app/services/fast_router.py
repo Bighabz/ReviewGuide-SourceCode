@@ -57,7 +57,14 @@ TOOL_CHAINS: Dict[str, List[str]] = {
         "next_step_suggestion",
     ],
     "intro": ["intro_compose"],
-    "unclear": ["unclear_compose"],
+    "unclear": [  # Legacy alias — routes to product
+        "product_search",
+        "product_normalize",
+        "review_search",
+        "product_affiliate",
+        "product_compose",
+        "next_step_suggestion",
+    ],
 }
 
 # ---------------------------------------------------------------------------
@@ -100,8 +107,12 @@ PLAN_TEMPLATES: Dict[str, List[Dict[str, Any]]] = {
     "intro": [
         {"id": "step_1", "tools": ["intro_compose"], "parallel": False},
     ],
-    "unclear": [
-        {"id": "step_1", "tools": ["unclear_compose"], "parallel": False},
+    "unclear": [  # Legacy alias — routes to product (this is a product review site)
+        {"id": "step_1", "tools": ["product_search"], "parallel": False},
+        {"id": "step_2", "tools": ["product_normalize", "review_search"], "parallel": True},
+        {"id": "step_3", "tools": ["product_affiliate"], "parallel": False},
+        {"id": "step_4", "tools": ["product_compose"], "parallel": False},
+        {"id": "step_5", "tools": ["next_step_suggestion"], "parallel": False},
     ],
 }
 
@@ -530,53 +541,21 @@ def fast_router_sync(
     last_search_context: Optional[Dict[str, Any]] = None,
 ) -> FastRouterResult:
     """
-    Synchronous entry point for Tier 1 fast routing.
-
-    Calls _classify_tier1; if no intent matches, returns "unclear" with
-    low confidence (0.3) so the caller can escalate to Tier 2 (Haiku).
-
-    Args:
-        query: The raw user message.
-        conversation_history: Prior turns, each {"role": ..., "content": ...}.
-        last_search_context: The last search context dict from GraphState.
-
-    Returns:
-        FastRouterResult with intent, slots, tool_chain, plan, confidence, tier.
+    Synchronous entry point. _classify_tier1 always returns an intent
+    (defaults to product). No more unclear/None path.
     """
     intent = _classify_tier1(query, conversation_history, last_search_context)
-
-    if intent is None:
-        # Before giving up, check if the query mentions a known brand or category
-        # — if so, it's almost certainly a product query even if keywords missed
-        fallback_slots = extract_slots(query)
-        if "brand" in fallback_slots or "category" in fallback_slots:
-            intent = "product"
-        else:
-            return FastRouterResult(
-                intent="unclear",
-                slots=fallback_slots,
-                tool_chain=TOOL_CHAINS["unclear"],
-                plan={"steps": PLAN_TEMPLATES["unclear"]},
-                confidence=0.3,
-                tier=1,
-                needs_clarification=True,
-            )
-
     slots = extract_slots(query)
 
-    # Confidence heuristics
-    q_lower = query.strip().lower()
     if intent == "intro":
         confidence = 0.99
     elif intent == "comparison":
         confidence = 0.95
     elif intent == "travel":
-        # Higher confidence when destination slot extracted
         confidence = 0.92 if "destination" in slots else 0.82
     elif intent == "general":
         confidence = 0.85
     elif intent in ("product", "service"):
-        # Higher confidence when brand or category slot present
         has_slot = "brand" in slots or "category" in slots
         confidence = 0.92 if has_slot else 0.80
     else:
@@ -702,41 +681,31 @@ async def fast_router(
     last_search_context: Optional[Dict[str, Any]] = None,
 ) -> FastRouterResult:
     """
-    Async entry point for the two-tier fast router.
-
-    Tier 1: deterministic keyword classification (zero latency).
-    Tier 2: Haiku LLM fallback when Tier 1 cannot determine intent.
-
-    Args:
-        query: The raw user message.
-        conversation_history: Prior turns, each {"role": ..., "content": ...}.
-        last_search_context: The last search context dict from GraphState.
-
-    Returns:
-        FastRouterResult with intent, slots, tool_chain, plan, confidence, tier.
+    Async entry point. Tier 1 always returns an intent (default: product).
+    Tier 2 (Haiku) only fires for low-confidence results as optional refinement.
+    If Haiku fails, Tier 1 stands. No more "general" fallback trap.
     """
-    # --- Tier 1: keyword classification ---
+    # --- Tier 1: always produces an intent ---
     tier1_intent = _classify_tier1(query, conversation_history, last_search_context)
     tier1_slots = extract_slots(query)
 
-    if tier1_intent is not None:
-        logger.debug("fast_router: Tier 1 hit — intent=%s", tier1_intent)
+    if tier1_intent == "intro":
+        confidence = 0.99
+    elif tier1_intent == "comparison":
+        confidence = 0.95
+    elif tier1_intent == "travel":
+        confidence = 0.92 if "destination" in tier1_slots else 0.82
+    elif tier1_intent == "general":
+        confidence = 0.85
+    elif tier1_intent in ("product", "service"):
+        has_slot = "brand" in tier1_slots or "category" in tier1_slots
+        confidence = 0.92 if has_slot else 0.80
+    else:
+        confidence = 0.75
 
-        q_lower = query.strip().lower()
-        if tier1_intent == "intro":
-            confidence = 0.99
-        elif tier1_intent == "comparison":
-            confidence = 0.95
-        elif tier1_intent == "travel":
-            confidence = 0.92 if "destination" in tier1_slots else 0.82
-        elif tier1_intent == "general":
-            confidence = 0.85
-        elif tier1_intent in ("product", "service"):
-            has_slot = "brand" in tier1_slots or "category" in tier1_slots
-            confidence = 0.92 if has_slot else 0.80
-        else:
-            confidence = 0.75
-
+    # If confident, skip Haiku
+    if confidence >= 0.85:
+        logger.debug("fast_router: Tier 1 confident (%s, %.2f) — skipping Tier 2", tier1_intent, confidence)
         return FastRouterResult(
             intent=tier1_intent,
             slots=tier1_slots,
@@ -747,51 +716,39 @@ async def fast_router(
             needs_clarification=False,
         )
 
-    # --- Tier 2: Haiku LLM fallback ---
-    logger.debug("fast_router: Tier 1 miss — falling back to Tier 2 (Haiku)")
+    # --- Tier 2: optional refinement ---
+    logger.debug("fast_router: Tier 1 low-confidence (%s, %.2f) — trying Tier 2", tier1_intent, confidence)
 
     try:
         haiku_result = await _call_haiku(query, conversation_history)
     except Exception as exc:
-        logger.error("fast_router: Unexpected error calling Haiku: %s", exc)
+        logger.error("fast_router: Tier 2 error: %s — using Tier 1 result", exc)
         haiku_result = None
 
     if haiku_result is not None:
-        intent = haiku_result.get("intent", "general")
-        haiku_slots: Dict[str, Any] = haiku_result.get("slots", {}) or {}
-
-        # Merge slots: regex (Tier 1) wins on conflict for precision
+        intent = haiku_result.get("intent", tier1_intent)
+        haiku_slots = haiku_result.get("slots", {}) or {}
         merged_slots = {**haiku_slots, **tier1_slots}
-
-        logger.debug("fast_router: Tier 2 hit — intent=%s slots=%s", intent, merged_slots)
-
+        logger.info("fast_router: Tier 2 refined %s → %s", tier1_intent, intent)
         return FastRouterResult(
             intent=intent,
             slots=merged_slots,
-            tool_chain=TOOL_CHAINS.get(intent, TOOL_CHAINS["general"]),
-            plan={"steps": PLAN_TEMPLATES.get(intent, PLAN_TEMPLATES["general"])},
-            confidence=0.75,
+            tool_chain=TOOL_CHAINS.get(intent, TOOL_CHAINS["product"]),
+            plan={"steps": PLAN_TEMPLATES.get(intent, PLAN_TEMPLATES["product"])},
+            confidence=0.80,
             tier=2,
             needs_clarification=False,
         )
 
-    # --- Final fallback ---
-    # If query mentions a brand or category, treat as product (not general).
-    # "Top picks for electric skateboards" has no keyword match but IS a product query.
-    fallback_intent = "general"
-    if "brand" in tier1_slots or "category" in tier1_slots:
-        fallback_intent = "product"
-        logger.info("fast_router: Tier 2 failed — brand/category detected, using 'product' fallback")
-    else:
-        logger.debug("fast_router: Tier 2 failed — using 'general' fallback")
-
+    # Tier 2 failed — Tier 1 result stands (product, not general!)
+    logger.info("fast_router: Tier 2 failed — using Tier 1 (%s)", tier1_intent)
     return FastRouterResult(
-        intent=fallback_intent,
+        intent=tier1_intent,
         slots=tier1_slots,
-        tool_chain=TOOL_CHAINS[fallback_intent],
-        plan={"steps": PLAN_TEMPLATES[fallback_intent]},
-        confidence=0.3,
-        tier=2,
+        tool_chain=TOOL_CHAINS[tier1_intent],
+        plan={"steps": PLAN_TEMPLATES[tier1_intent]},
+        confidence=confidence,
+        tier=1,
         needs_clarification=False,
     )
 
