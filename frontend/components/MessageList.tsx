@@ -75,18 +75,18 @@ export default function MessageList({ messages, isStreaming }: MessageListProps)
       userScrolledUpRef.current = false
       setShowJumpButton(false)
 
-      // Find the newest AI message
       const newestAi = [...messages].reverse().find(m => m.role === 'assistant')
       if (newestAi && newestAi.id !== lastAiMessageIdRef.current) {
         lastAiMessageIdRef.current = newestAi.id
-        // Scroll to the top of the new AI message
-        requestAnimationFrame(() => {
-          const el = document.getElementById(`message-${newestAi.id}`)
-          if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-          }
-        })
       }
+
+      // Scroll to bottom so the user can see their sent message + AI loading
+      requestAnimationFrame(() => {
+        const container = containerRef.current
+        if (container) {
+          container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' })
+        }
+      })
     }
   }, [messages.length])
 
