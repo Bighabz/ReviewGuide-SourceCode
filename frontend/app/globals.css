@@ -65,6 +65,9 @@
   --bold-red: #DC2626;
   --bold-amber: #D97706;
 
+  /* Mosaic hero scrim — theme-aware gradient overlay */
+  --mosaic-scrim: linear-gradient(to bottom, rgba(250,250,247,0.45) 0%, rgba(250,250,247,0.80) 55%, #FAFAF7 100%);
+
   /* ═══════════════════════════════════════════
      V3 TYPOGRAPHY SCALE
      Named heading tokens — applied explicitly by components, not global overrides
@@ -186,6 +189,9 @@
   --bold-green: #4ADE80;
   --bold-red: #F87171;
   --bold-amber: #FCD34D;
+
+  /* Mosaic hero scrim — dark mode */
+  --mosaic-scrim: linear-gradient(to bottom, rgba(10,12,18,0.45) 0%, rgba(10,12,18,0.80) 55%, #0A0C12 100%);
 
   /* V3 Typography — same values, declared for completeness */
   --heading-hero: clamp(2.5rem, 5vw, 4.5rem);
