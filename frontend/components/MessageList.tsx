@@ -100,8 +100,20 @@ export default function MessageList({ messages, isStreaming }: MessageListProps)
     }
   }, [lastAiId])
 
+  // Auto-scroll to bottom during streaming, but ONLY if user hasn't scrolled up
+  useEffect(() => {
+    if (!isStreaming || userScrolledUpRef.current) return
+    const container = containerRef.current
+    if (!container) return
+
+    const raf = requestAnimationFrame(() => {
+      container.scrollTop = container.scrollHeight
+    })
+    return () => cancelAnimationFrame(raf)
+  })
+
   return (
-    <div ref={containerRef} className="flex-1 overflow-y-auto p-3 sm:p-6 relative">
+    <div ref={containerRef} className="flex-1 overflow-y-auto p-3 sm:p-6 relative" style={{ overflowAnchor: 'none' }}>
       <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
         {messages.map((message, idx) => (
           <Message
