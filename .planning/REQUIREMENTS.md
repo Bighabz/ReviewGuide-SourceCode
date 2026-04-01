@@ -1,123 +1,117 @@
-# Requirements: ReviewGuide.ai v2.0 Frontend UX Redesign
+# Requirements: ReviewGuide.ai v3.0 Visual Overhaul — Bold Editorial
 
-**Defined:** 2026-03-16
+**Defined:** 2026-04-01
 **Core Value:** Conversational product discovery that searches live reviews and returns blog-style editorial responses with cross-retailer affiliate links.
 
-## v2.0 Requirements
+## v3.0 Requirements
 
-### Navigation
+### Design Tokens
 
-- [x] **NAV-01**: User sees bottom tab bar with 5 tabs (Discover, Saved, Ask, Compare, Profile) on mobile (<768px)
-- [x] **NAV-02**: User sees desktop top navigation bar with logo and nav links on screens >=1024px
-- [x] **NAV-03**: User can tap central FAB button to start a new research chat from any screen
-- [x] **NAV-04**: User sees animated page transitions between routes
-- [x] **NAV-05**: Bottom tab bar handles iOS safe area insets correctly
+- [ ] **TOK-01**: Bold accent color palette added to CSS variables (vibrant blues, terracotta, energetic greens) with light mode values
+- [ ] **TOK-02**: Typography scale upgraded — larger/bolder headings, tighter line heights, stronger visual hierarchy
+- [ ] **TOK-03**: All new tokens have matching `[data-theme="dark"]` counterparts (no dark mode regressions)
 
-### Discover
+### AI Image Generation
 
-- [x] **DISC-01**: User sees editorial hero headline with serif italic accent and search bar on `/`
-- [x] **DISC-02**: User can scroll horizontal category chips (Popular, Tech, Travel, Kitchen, Fitness, etc.)
-- [x] **DISC-03**: User sees trending research cards with icons, titles, subtitles — tapping navigates to chat
-- [x] **DISC-04**: User sees personalized "For You" chip based on recent search history
-- [x] **DISC-05**: Search bar tap navigates to chat screen with input focused
+- [ ] **IMG-01**: Generate 15+ bold & colorful product category hero images (headphones, laptops, kitchen, travel, fitness, etc.) using consistent style prompt
+- [ ] **IMG-02**: Generate 8+ mosaic tile images (diverse products at varied angles) for landing page hero collage
+- [ ] **IMG-03**: All generated images pre-optimized (WebP, <200KB each) and stored in public/images/
 
-### Chat
+### Mosaic Hero
 
-- [x] **CHAT-01**: AI responses follow structured format: summary → ranked inline product cards → source citations → follow-up chips
-- [x] **CHAT-02**: Inline product cards are compact (64px height) with image, rank, name, price, and affiliate link
-- [x] **CHAT-03**: Chat header shows real-time status ("Researching • 4 sources analyzed") during streaming
-- [x] **CHAT-04**: Source citations are clickable links to actual review article URLs from search results
-- [x] **CHAT-05**: User message bubbles are right-aligned blue, AI bubbles are left-aligned white with "✦ ReviewGuide" label
-- [x] **CHAT-06**: Follow-up suggestion chips appear below AI responses and auto-submit on tap
+- [ ] **HERO-01**: User sees Shopify-style mosaic collage of product images as the landing page hero background
+- [ ] **HERO-02**: Search bar and headline float centered over the mosaic with readable contrast
+- [ ] **HERO-03**: Mosaic uses CSS Grid with tilted/overlapping cards — no additional JS library
+- [ ] **HERO-04**: First visible image uses loading="eager" to avoid LCP regression
 
-### Results
+### Discover Page Polish
 
-- [x] **RES-01**: User can navigate to `/results/:id` to see full results for a completed research session
-- [x] **RES-02**: Product cards display in 3-column grid on desktop, horizontal scroll on mobile
-- [x] **RES-03**: Product cards show real Amazon images, prices, and affiliate links from curated static data
-- [x] **RES-04**: Each product card shows rank badge (#1 Top Pick, #2 Best Value, etc.), score bar, and CTA button
-- [x] **RES-05**: Quick actions panel shows: Compare side by side, Export to list, Share results
-- [x] **RES-06**: Sources analyzed section shows colored dots, source names, and clickable article links
+- [ ] **DISC-06**: Category chips and trending cards use bolder colors and stronger visual presence
+- [ ] **DISC-07**: Product carousel uses real product images with loading="eager" on first slide
 
-### Responsive
+### Browse Pages Polish
 
-- [x] **RESP-01**: All screens render mobile-first single-column layout below 768px
-- [x] **RESP-02**: Desktop layout (>=1024px) shows 3-column product grids, persistent sidebar, top nav, max 1200px content
+- [ ] **BRW-01**: Category hero sections use new AI-generated bold images as backgrounds
+- [ ] **BRW-02**: Editor's Picks cards have bolder styling consistent with new visual language
 
-### Placeholder Routes
+### Chat Page Polish
 
-- [x] **PLCH-01**: `/saved` route renders placeholder page indicating feature coming soon
-- [x] **PLCH-02**: `/compare` route renders placeholder page indicating feature coming soon
+- [ ] **CHT-01**: AI response bubbles have updated typography (bolder headings, better spacing)
+- [ ] **CHT-02**: Inline product cards have subtle hover animations and bolder price display
 
-## Future Requirements
+### Product Cards
 
-### Tablet Support
+- [ ] **CARD-01**: ProductReview cards have premium spacing, stronger typography, and subtle entrance animations
+- [ ] **CARD-02**: "Where to Buy" section uses clean 3-column layout with merchant labels derived from URL
+- [ ] **CARD-03**: TopPickBlock has bolder visual treatment — stronger gradient CTA, larger product image
+- [ ] **CARD-04**: Card hover effects use spring animations via Framer Motion
 
-- **RESP-03**: Tablet breakpoint (768-1023px) with 2-column grid, optional sidebar toggle
+### Results Page Polish
 
-### User Profiles
+- [ ] **RES-07**: Product grid cards match new bold visual language
+- [ ] **RES-08**: Sources section has stronger visual presence with bolder dot colors
 
-- **PROF-01**: `/profile` route with user settings, theme toggle, accent picker
-- **PROF-02**: User accounts with login/signup
+### Visual QA
 
-### Desktop Split Panel
+- [ ] **QA-01**: Full site screenshot walk-through on mobile and desktop confirms visual consistency
+- [ ] **QA-02**: designTokens.test.ts updated to cover new tokens
+- [ ] **QA-03**: No hardcoded colors remain in refreshed components (all use CSS variables)
 
-- **RES-07**: Results page shows left conversation sidebar + right content on desktop
+## v4.0 Requirements (Deferred)
 
-### Advanced Features
+### Affiliate Overhaul
 
-- **SAVE-01**: User can save products and conversations to a persistent saved list
-- **COMP-01**: User can compare products side by side on the compare page
-- **ALERT-01**: User can set price alerts for tracked products
+- **AFF-01**: Real eBay EPN campaign ID configured on Railway
+- **AFF-02**: CJ activated on Railway with real credentials
+- **AFF-03**: Expedia affiliate integration
+- **AFF-04**: Amazon PA-API application and integration
 
 ## Out of Scope
 
 | Feature | Reason |
 |---------|--------|
-| User accounts / login | Anonymous-first for v2.0, reduces friction |
-| Price alerts | Requires accounts and notification infrastructure |
-| Voice input | Decorative mic icon only — no speech recognition |
-| Social features | Not a social platform |
-| Backend response restructuring | Separate workstream — v2.0 is frontend-only |
-| Real-time pricing from PA-API | Use curated static Amazon data (120+ products) until key obtained |
-| Mobile app | Web-first, responsive design covers mobile |
+| Dark mode as default | User chose light base with bold accents |
+| Page transition redesign | Existing Framer Motion transitions work well |
+| Video backgrounds | Performance concern, bandwidth cost |
+| Glassmorphism effects | Fragile across browsers, not editorial |
+| Custom cursors | Gimmicky, accessibility concern |
+| Message.tsx structural changes | Protected SSE streaming pipeline |
+| BlockRegistry.tsx changes | Protected block dispatch architecture |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| NAV-01 | Phase 12 | Complete |
-| NAV-02 | Phase 12 | Complete |
-| NAV-03 | Phase 12 | Complete |
-| NAV-04 | Phase 12 | Complete |
-| NAV-05 | Phase 12 | Complete |
-| DISC-01 | Phase 13 | Complete |
-| DISC-02 | Phase 13 | Complete |
-| DISC-03 | Phase 13 | Complete |
-| DISC-04 | Phase 13 | Complete |
-| DISC-05 | Phase 13 | Complete |
-| CHAT-01 | Phase 14 | Complete |
-| CHAT-02 | Phase 14 | Complete |
-| CHAT-03 | Phase 14 | Complete |
-| CHAT-04 | Phase 14 | Complete |
-| CHAT-05 | Phase 14 | Complete |
-| CHAT-06 | Phase 14 | Complete |
-| RES-01 | Phase 15 | Complete |
-| RES-02 | Phase 15 | Complete |
-| RES-03 | Phase 15 | Complete |
-| RES-04 | Phase 15 | Complete |
-| RES-05 | Phase 15 | Complete |
-| RES-06 | Phase 15 | Complete |
-| RESP-01 | Phase 15 | Complete |
-| RESP-02 | Phase 15 | Complete |
-| PLCH-01 | Phase 16 | Complete |
-| PLCH-02 | Phase 16 | Complete |
+| TOK-01 | TBD | Pending |
+| TOK-02 | TBD | Pending |
+| TOK-03 | TBD | Pending |
+| IMG-01 | TBD | Pending |
+| IMG-02 | TBD | Pending |
+| IMG-03 | TBD | Pending |
+| HERO-01 | TBD | Pending |
+| HERO-02 | TBD | Pending |
+| HERO-03 | TBD | Pending |
+| HERO-04 | TBD | Pending |
+| DISC-06 | TBD | Pending |
+| DISC-07 | TBD | Pending |
+| BRW-01 | TBD | Pending |
+| BRW-02 | TBD | Pending |
+| CHT-01 | TBD | Pending |
+| CHT-02 | TBD | Pending |
+| CARD-01 | TBD | Pending |
+| CARD-02 | TBD | Pending |
+| CARD-03 | TBD | Pending |
+| CARD-04 | TBD | Pending |
+| RES-07 | TBD | Pending |
+| RES-08 | TBD | Pending |
+| QA-01 | TBD | Pending |
+| QA-02 | TBD | Pending |
+| QA-03 | TBD | Pending |
 
 **Coverage:**
-- v2.0 requirements: 26 total
-- Mapped to phases: 26
-- Unmapped: 0 ✓
+- v3.0 requirements: 25 total
+- Mapped to phases: 0 (pending roadmap)
+- Unmapped: 25
 
 ---
-*Requirements defined: 2026-03-16*
-*Last updated: 2026-03-16 after roadmap creation (phases 12-16)*
+*Requirements defined: 2026-04-01*
