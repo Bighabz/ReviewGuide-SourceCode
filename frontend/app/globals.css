@@ -56,6 +56,15 @@
   --card-accent-3: #F0FFF4;
   --card-accent-4: #FDF0FF;
 
+  /* ═══════════════════════════════════════════
+     V3 BOLD EDITORIAL ACCENTS
+     Vibrant, energetic — for product card labels, badges, CTAs
+     ═══════════════════════════════════════════ */
+  --bold-blue: #1B4DFF;
+  --bold-green: #16A34A;
+  --bold-red: #DC2626;
+  --bold-amber: #D97706;
+
   /* Legacy Mappings */
   --gpt-accent: var(--primary);
   --gpt-accent-hover: var(--primary-hover);
@@ -153,6 +162,18 @@
   /* Price & rating colors (semantic, dark-only) */
   --price-deal: #22C55E;
   --rating-star: #F59E0B;
+
+  /* Missing dark overrides (pre-existing gaps) */
+  --error: #F87171;
+  --warning: #FCD34D;
+  --info: #60A5FA;
+  --shadow-xl: 0 20px 48px rgba(0, 0, 0, 0.7), 0 8px 16px rgba(0, 0, 0, 0.4);
+
+  /* V3 Bold accents — dark mode */
+  --bold-blue: #60A5FA;
+  --bold-green: #4ADE80;
+  --bold-red: #F87171;
+  --bold-amber: #FCD34D;
 }
 
 /* ═══════════════════════════════════════════
