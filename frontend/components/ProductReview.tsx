@@ -105,14 +105,14 @@ export default function ProductReview({ product }: ProductReviewProps) {
         {/* Pros */}
         {pros && pros.length > 0 && (
           <div>
-            <h4 className="text-sm font-semibold font-serif text-green-700 mb-2 flex items-center gap-1">
+            <h4 className="text-sm font-semibold font-serif text-[var(--success)] mb-2 flex items-center gap-1">
               <ThumbsUp size={14} />
               Pros
             </h4>
             <ul className="space-y-2">
               {pros.map((pro, idx) => (
                 <li key={idx} className="text-sm text-[var(--text-secondary)] flex items-start gap-2">
-                  <span className="text-green-600 mt-0.5">&#10003;</span>
+                  <span className="text-[var(--success)] mt-0.5">&#10003;</span>
                   <span>{pro.description}</span>
                 </li>
               ))}
@@ -123,14 +123,14 @@ export default function ProductReview({ product }: ProductReviewProps) {
         {/* Cons */}
         {cons && cons.length > 0 && (
           <div>
-            <h4 className="text-sm font-semibold font-serif text-red-700 mb-2 flex items-center gap-1">
+            <h4 className="text-sm font-semibold font-serif text-[var(--error)] mb-2 flex items-center gap-1">
               <ThumbsDown size={14} />
               Cons
             </h4>
             <ul className="space-y-2">
               {cons.map((con, idx) => (
                 <li key={idx} className="text-sm text-[var(--text-secondary)] flex items-start gap-2">
-                  <span className="text-red-600 mt-0.5">&#10007;</span>
+                  <span className="text-[var(--error)] mt-0.5">&#10007;</span>
                   <span>{con.description}</span>
                 </li>
               ))}
