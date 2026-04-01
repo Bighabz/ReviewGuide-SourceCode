@@ -10,6 +10,7 @@ import sys
 import os
 import asyncio
 from typing import Dict, Any, List
+from urllib.parse import quote_plus
 from app.core.error_manager import tool_error_handler
 
 # Add backend to path (portable path)
@@ -170,36 +171,65 @@ async def product_affiliate(
         # Skip all live API provider searches.
         if curated_amazon_links and settings.USE_CURATED_LINKS:
             results = []
-            for i, product_name in enumerate(products_to_search):
-                if i < min(len(curated_amazon_links), 5):
-                    curated = curated_amazon_links[i]
-                    if isinstance(curated, dict):
-                        link = curated.get("url", "")
-                        title = curated.get("title", product_name)
-                        price = curated.get("price", 0)
-                        image = curated.get("image_url", "")
-                    else:
-                        link = curated
-                        title = product_name
-                        price = 0
-                        image = ""
-                    results.append({
-                        "product_name": product_name,
-                        "offers": [{
-                            "product_id": f"curated-{curated.get('asin', i)}" if isinstance(curated, dict) else f"curated-{i}",
-                            "title": title,
-                            "price": price,
-                            "currency": "USD",
-                            "url": link,
-                            "image_url": image,
-                            "merchant": "Amazon",
-                            "rating": None,
-                            "review_count": None,
-                            "source": "amazon",
-                        }]
-                    })
-            # Cap at 5 products
-            results = results[:5]
+            # Build a list of available curated links for matching
+            available_curated = list(curated_amazon_links) if curated_amazon_links else []
+            tag = getattr(settings, "AMAZON_ASSOCIATE_TAG", "") or "revguide-20"
+
+            for product_name in products_to_search[:5]:
+                # Try to find a curated link that matches the product name
+                pname_lower = product_name.lower()
+                pname_tokens = set(pname_lower.split())
+                best_curated = None
+                best_score = 0
+
+                for curated in available_curated:
+                    if not isinstance(curated, dict):
+                        continue
+                    ctitle = curated.get("title", "").lower()
+                    ctokens = set(ctitle.split())
+                    # Check if any significant product name words appear in the curated title
+                    # (skip generic words like "the", "with", "and", etc.)
+                    skip_words = {"the", "a", "an", "with", "and", "for", "in", "of", "by", "on", "wireless", "bluetooth", "headphones", "headphone", "active", "noise", "cancelling"}
+                    meaningful_tokens = pname_tokens - skip_words
+                    if not meaningful_tokens:
+                        meaningful_tokens = pname_tokens
+                    overlap = meaningful_tokens & ctokens
+                    score = len(overlap) / max(len(meaningful_tokens), 1)
+                    if score > best_score and score >= 0.4:
+                        best_score = score
+                        best_curated = curated
+
+                if best_curated:
+                    link = best_curated.get("url", "")
+                    title = best_curated.get("title", product_name)
+                    price = best_curated.get("price", 0)
+                    image = best_curated.get("image_url", "")
+                    asin = best_curated.get("asin", "")
+                    # Remove matched curated link so it's not reused
+                    available_curated.remove(best_curated)
+                else:
+                    # No curated match — generate Amazon search URL with affiliate tag
+                    link = f"https://www.amazon.com/s?k={quote_plus(product_name)}&tag={tag}"
+                    title = product_name
+                    price = 0
+                    image = ""
+                    asin = ""
+
+                results.append({
+                    "product_name": product_name,
+                    "offers": [{
+                        "product_id": f"curated-{asin}" if asin else f"search-{quote_plus(product_name)}",
+                        "title": title,
+                        "price": price,
+                        "currency": "USD",
+                        "url": link,
+                        "image_url": image,
+                        "merchant": "Amazon",
+                        "rating": None,
+                        "review_count": None,
+                        "source": "amazon",
+                    }]
+                })
             # Apply Skimlinks wrapping even to curated results
             curated_affiliate = {"amazon": results} if results else {}
             session_id = state.get("session_id", "")
@@ -268,36 +298,49 @@ async def product_affiliate(
             # For Amazon: use curated links if available (matched against user query)
             if provider_name == "amazon" and curated_amazon_links:
                 results = []
-                for i, product_name in enumerate(products_to_search):
-                    if i < min(len(curated_amazon_links), 5):
-                        curated = curated_amazon_links[i]
-                        # Support both old format (string URL) and new format (dict with metadata)
-                        if isinstance(curated, dict):
-                            link = curated.get("url", "")
-                            title = curated.get("title", product_name)
-                            price = curated.get("price", 0)
-                            image = curated.get("image_url", "")
-                        else:
-                            link = curated
-                            title = product_name
-                            price = 0
-                            image = ""
-                        results.append({
-                            "product_name": product_name,
-                            "offers": [{
-                                "merchant": "Amazon",
-                                "price": price,
-                                "currency": "USD",
-                                "url": link,
-                                "condition": "new",
-                                "title": title,
-                                "image_url": image,
-                                "rating": None,
-                                "review_count": None,
-                                "source": "amazon",
-                            }]
-                        })
-                logger.info(f"[product_affiliate] Amazon: used {len(results)} curated links (matched user query)")
+                available = list(curated_amazon_links)
+                _tag = getattr(settings, "AMAZON_ASSOCIATE_TAG", "") or "revguide-20"
+                _skip = {"the", "a", "an", "with", "and", "for", "in", "of", "by", "on", "wireless", "bluetooth", "headphones", "headphone", "active", "noise", "cancelling"}
+
+                for product_name in products_to_search[:5]:
+                    # Match curated link by product name, not by index
+                    pn_tokens = set(product_name.lower().split()) - _skip or set(product_name.lower().split())
+                    best, best_sc = None, 0
+                    for c in available:
+                        if not isinstance(c, dict):
+                            continue
+                        ct = set(c.get("title", "").lower().split())
+                        overlap = pn_tokens & ct
+                        sc = len(overlap) / max(len(pn_tokens), 1)
+                        if sc > best_sc and sc >= 0.4:
+                            best_sc, best = sc, c
+                    if best:
+                        link = best.get("url", "")
+                        title = best.get("title", product_name)
+                        price = best.get("price", 0)
+                        image = best.get("image_url", "")
+                        available.remove(best)
+                    else:
+                        link = f"https://www.amazon.com/s?k={quote_plus(product_name)}&tag={_tag}"
+                        title = product_name
+                        price = 0
+                        image = ""
+                    results.append({
+                        "product_name": product_name,
+                        "offers": [{
+                            "merchant": "Amazon",
+                            "price": price,
+                            "currency": "USD",
+                            "url": link,
+                            "condition": "new",
+                            "title": title,
+                            "image_url": image,
+                            "rating": None,
+                            "review_count": None,
+                            "source": "amazon",
+                        }]
+                    })
+                logger.info(f"[product_affiliate] Amazon: used {len(results)} curated/search links (name-matched)")
                 return {"provider": provider_name, "results": results}
 
             provider = affiliate_manager.get_provider(provider_name)
