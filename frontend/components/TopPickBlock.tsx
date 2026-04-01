@@ -50,7 +50,7 @@ export default function TopPickBlock({
   if (!productName) return null
 
   return (
-    <div className="rounded-xl border-2 border-[var(--primary)] bg-[var(--surface-elevated)] p-5 mb-4 shadow-card product-card-hover">
+    <div className="rounded-xl border-2 border-[var(--primary)] bg-[var(--surface-elevated)] p-3 sm:p-5 mb-4 shadow-card product-card-hover">
       <div className="flex items-center gap-2 mb-3">
         <Award size={16} className="text-[var(--primary)]" />
         <span className="text-xs font-bold uppercase tracking-wider text-[var(--primary)]">
@@ -58,8 +58,8 @@ export default function TopPickBlock({
         </span>
       </div>
 
-      <div className="flex gap-4">
-        <div className="flex-shrink-0 w-[160px] h-[160px] rounded-xl overflow-hidden bg-[var(--surface)]">
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+        <div className="flex-shrink-0 w-full sm:w-[160px] h-[120px] sm:h-[160px] rounded-xl overflow-hidden bg-[var(--surface)]">
           {imageUrl ? (
             <img
               src={imageUrl}
@@ -75,7 +75,7 @@ export default function TopPickBlock({
         </div>
 
         <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-serif font-bold text-[var(--text)] mb-1">
+          <h3 className="text-base sm:text-lg font-serif font-bold text-[var(--text)] mb-1">
             {affiliateUrl ? (
               <a
                 href={affiliateUrl}
@@ -117,7 +117,7 @@ export default function TopPickBlock({
               href={affiliateUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-[0.97]"
+              className="inline-flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg text-xs sm:text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-[0.97]"
               style={{
                 background: 'linear-gradient(135deg, var(--primary), var(--accent))',
               }}

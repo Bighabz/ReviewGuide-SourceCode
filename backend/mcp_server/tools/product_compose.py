@@ -371,6 +371,17 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
                 "success": True
             }
 
+        # Emit skeleton product cards immediately so the user sees product names
+        # while affiliate data and blog article are still loading
+        if normalized_products:
+            skeleton_names = [p.get("name", "") for p in normalized_products[:5] if p.get("name")]
+            if skeleton_names:
+                state["stream_chunk_data"] = {
+                    "type": "skeleton_cards",
+                    "data": [{"name": n} for n in skeleton_names],
+                }
+                logger.info(f"[product_compose] Emitted {len(skeleton_names)} skeleton cards")
+
         # Merge affiliate links into products for UI display
         # Flatten all affiliate offers from all providers for matching
         all_affiliate_groups = []
