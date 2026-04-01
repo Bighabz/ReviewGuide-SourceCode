@@ -132,7 +132,7 @@ export default function TopPickBlock({
       <div className="mt-3 space-y-1.5 text-sm">
         {bestFor && (
           <p className="text-[var(--text-secondary)]">
-            <span className="font-semibold text-emerald-600 dark:text-emerald-400">Best for:</span>{' '}
+            <span className="font-semibold text-[var(--success)]">Best for:</span>{' '}
             {bestFor}
           </p>
         )}
@@ -157,13 +157,13 @@ export default function TopPickBlock({
             <div className="mt-2 space-y-2 text-sm">
               {pros.length > 0 && (
                 <p className="text-[var(--text)]">
-                  <span className="font-semibold text-green-600">Pros:</span>{' '}
+                  <span className="font-semibold text-[var(--success)]">Pros:</span>{' '}
                   {pros.join('. ')}.
                 </p>
               )}
               {cons.length > 0 && (
                 <p className="text-[var(--text)]">
-                  <span className="font-semibold text-red-500">Cons:</span>{' '}
+                  <span className="font-semibold text-[var(--error)]">Cons:</span>{' '}
                   {cons.join('. ')}.
                 </p>
               )}
