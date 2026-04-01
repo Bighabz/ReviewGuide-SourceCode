@@ -1,138 +1,180 @@
 # Stack Research
 
-**Domain:** Mobile-first frontend UX redesign — Next.js 14 / React 18 / Tailwind (brownfield)
-**Researched:** 2026-03-16
+**Domain:** v3.0 Visual Overhaul — Shopify-style mosaic hero, AI-generated product images, premium animated cards (brownfield Next.js 14 + Tailwind + Framer Motion)
+**Researched:** 2026-03-31
 **Confidence:** HIGH
 
 ---
 
 ## Context: What Already Exists (Do Not Re-Research)
 
-The existing stack is locked and validated:
+Prior research (2026-03-16) validated the full stack. No changes to:
 
-- Next.js 14 with App Router — `package.json` confirms `^14.2.35`
-- React 18 with TypeScript — `^18.2.0`
-- Tailwind CSS 3 with custom design tokens — `tailwind.config.ts` has full editorial theme
-- framer-motion — **already installed at `^12.26.2`** (installed version: 12.26.2)
-- lucide-react — **already installed at `^0.294.0`** (latest is ~0.577.0)
-- clsx + tailwind-merge — already installed
+- Next.js 14 App Router (`^14.2.35`)
+- React 18 + TypeScript
+- Tailwind CSS 3 (`^3.3.6`) with editorial design tokens
+- framer-motion `^12.26.2` — already in use across ProductCarousel, UnifiedTopbar
+- lucide-react `^0.294.0` — stay pinned (icon renames between 0.294 and 0.577)
+- clsx `^2.1.1` + tailwind-merge `^3.4.0` — already installed
+- sharp `^0.33.5` — already installed (used by Next.js image optimizer)
 - `@tailwindcss/typography` — already installed
+- `tailwindcss-safe-area` — added in v2.0 milestone
 
-This research covers only **new stack additions** required for the v2.0 milestone features.
+This document covers only **new stack additions** for v3.0.
 
 ---
 
 ## Recommended Stack
 
-### Core Technologies — No Changes Needed
+### Core Technologies — No New Frameworks
 
-The existing core handles everything. No new frameworks required.
+The existing stack handles all layout and animation needs. No additional frameworks.
 
-| Technology | Current Version | Role in Redesign |
-|------------|-----------------|------------------|
-| Next.js 14 App Router | ^14.2.35 | Route structure for `/saved`, `/compare`, `/profile`; `useSelectedLayoutSegment` for active tab state |
-| Tailwind CSS 3 | ^3.3.6 | All layout, responsive breakpoints, bottom nav, FAB positioning |
-| framer-motion | ^12.26.2 (installed: 12.26.2) | Navigation transitions, FAB scale animation, card entrance — already imported in UnifiedTopbar, ProductCarousel |
+| Technology | Current Version | Role in v3.0 |
+|------------|-----------------|--------------|
+| Next.js `next/image` | built-in 14.2.35 | Hero mosaic images with `priority`, `blurDataURL` LQIP, `remotePatterns` for external product images. `sharp` (already installed) is Next.js's native image optimization backend. |
+| Tailwind CSS 3 | ^3.3.6 | CSS Grid `grid-template-areas` for mosaic layout, `group-hover:scale-[1.04]` image zoom, `aspect-[4/3]` tiles, `overflow-hidden rounded-2xl` card shells |
+| framer-motion | ^12.26.2 | `whileInView` + `viewport={{ once: true }}` for card entrance on scroll, `staggerChildren` for mosaic tile reveal, `AnimatePresence` for product card hover expansion, `layoutId` for smooth hero transitions |
 
 ### New Additions Required
 
 | Library | Version to Install | Purpose | Why This Over Alternatives |
 |---------|-------------------|---------|---------------------------|
-| `tailwindcss-safe-area` | `^0.8.0` | iOS safe area insets (`pb-safe`, `h-safe`) for bottom tab nav and FAB | The only clean way to use `env(safe-area-inset-*)` via Tailwind classes. 88k weekly downloads, healthy maintenance. Tailwind 3 compatible via plugin. Required for iPhone notch/home indicator clearance on fixed bottom nav. |
+| `class-variance-authority` | `^0.7.1` | Typed variant API for the premium ProductCard component — size (`compact`/`standard`/`featured`), state (`default`/`loading`/`highlighted`) | The project already has `clsx` + `tailwind-merge` for ad-hoc class merging. CVA adds the structured variant layer needed when one component has 3+ visual modes. 0.7.1 is the stable release (10k+ npm dependents). No new CSS-in-JS runtime — compiles to plain Tailwind strings. |
 
-That is the only new `npm install` this milestone needs.
+That is the only new frontend `npm install` this milestone requires.
 
 ---
 
 ### Supporting Libraries — All Already Present
 
-| Library | Installed Version | How It Serves This Milestone |
-|---------|------------------|------------------------------|
-| `framer-motion` | 12.26.2 | FAB scale spring, bottom nav active indicator (layoutId), card entrance (AnimatePresence). Import from `"framer-motion"` — the `"motion/react"` alias is for framer-motion v12+ and works as an alias, but `"framer-motion"` continues to work and is already used across the codebase. |
-| `lucide-react` | 0.294.0 (pinned) | Tab bar icons (Home, MessageSquare, Bookmark, SlidersHorizontal, User), FAB Plus icon. All needed icons exist at this version. Do NOT upgrade mid-milestone — breaking icon renames occurred between 0.294 and 0.577. |
-| `clsx` + `tailwind-merge` | installed | Active tab conditional classes in bottom nav |
-| `next/navigation` | built-in | `useSelectedLayoutSegment` for tab active state — the correct App Router pattern, avoids `usePathname` string matching |
+| Library | Installed Version | How It Serves v3.0 |
+|---------|------------------|---------------------|
+| `framer-motion` | 12.26.2 | `whileInView` for scroll-triggered card entrances (use `viewport={{ once: true, margin: "-50px" }}` to avoid re-triggering). `staggerChildren: 0.07` on mosaic grid parent for tile-by-tile reveal. `whileHover={{ y: -2 }}` + `transition={{ type: "spring", stiffness: 400, damping: 25 }}` for premium card lift feel. |
+| `sharp` | ^0.33.5 | Already installed as Next.js image backend. Also usable as a build-time script to generate `blurDataURL` base64 strings for local static images (resize to 8px wide → base64). Run once, commit the strings. |
+| `tailwind-merge` | ^3.4.0 | Merge dynamic Tailwind classes safely in CVA compound variants — the two are designed to work together. |
+| `clsx` | ^2.1.1 | Conditional class logic in card render paths. |
+| `next/image` | built-in | Use `placeholder="blur"` + `blurDataURL` for hero mosaic tiles. For static local files (`/images/products/*.png`), Next.js auto-generates blurDataURL. For remote images, generate manually with sharp at build time or use a 10px inline base64 fallback. |
 
 ---
 
-## Implementation Patterns (No Library Needed)
+## Image Generation: Backend Script (Not Frontend Dependency)
 
-These features are pure Tailwind + React — no new dependency required:
+AI-generated product images are a **backend generation task** (run once, commit PNGs), not a runtime frontend dependency.
 
-### Bottom Tab Navigation
+| Component | Approach | Notes |
+|-----------|----------|-------|
+| Image generation model | `gpt-image-1` via `openai` Python SDK | DALL-E 3 was retired March 4, 2026. The replacement is `gpt-image-1` (same `client.images.generate()` call, `model="gpt-image-1"`). $0.015 per 1024×1024 image vs $0.040 for DALL-E 3. Parameters: `quality="medium"`, `size="1024x1024"`, `output_format="png"`. |
+| Storage | `/frontend/public/images/topics/` | Already exists. 20 editorial images already committed here (verified via `ls`). Add new ones to same directory — no CDN or external storage needed for static editorial images. |
+| Backend dependency | `openai>=1.0.0` | Already in backend requirements for GPT-4o. No new Python package needed. |
+| Image spec for hero | 1024×1024 PNG, bold color, editorial product photography style, white/gradient background | Matches the existing topic images pattern (robot-vacuums.png, espresso-machines.png, etc.) |
 
-Build in `components/BottomTabBar.tsx`, rendered in the root layout below the `{children}` div. Use `fixed bottom-0` + `pb-safe` (from tailwindcss-safe-area) + `md:hidden` to suppress on desktop. Track active tab with `useSelectedLayoutSegment` from `next/navigation`.
+Do NOT add a client-side image generation library. Images are pre-generated assets, not runtime API calls.
 
+---
+
+## Mosaic Layout: Pure CSS Grid (No New Library)
+
+The Shopify-style mosaic hero is achievable with CSS Grid and Tailwind arbitrary values — no new grid library needed.
+
+**Pattern (tailwind classes):**
+
+```
+/* 2-column grid where tile 1 spans 2 rows */
+grid grid-cols-2 grid-rows-2
+
+/* Tile 1: tall left panel */
+row-span-2 aspect-[4/5] overflow-hidden rounded-2xl
+
+/* Tiles 2+3: right column */
+aspect-[4/3] overflow-hidden rounded-2xl
+```
+
+For layouts requiring named areas (3-panel asymmetric), use Tailwind's arbitrary CSS:
+
+```html
+<div class="grid [grid-template-areas:'a_b''a_c'] grid-cols-[3fr_2fr] gap-3">
+  <div class="[grid-area:a]">...</div>
+  <div class="[grid-area:b]">...</div>
+  <div class="[grid-area:c]">...</div>
+</div>
+```
+
+This pattern requires no new dependency — Tailwind 3's JIT mode handles arbitrary values.
+
+---
+
+## Animation Patterns: Framer Motion (No New Library)
+
+All required animations are in the existing framer-motion 12.26.2 install.
+
+**Mosaic tile stagger reveal:**
 ```typescript
-// Pattern — no library needed
-<nav className="fixed bottom-0 inset-x-0 md:hidden pb-safe bg-[var(--surface-elevated)] border-t border-[var(--border)] z-50">
-  {tabs.map(tab => (
-    <Link key={tab.href} href={tab.href} className={isActive ? 'text-[var(--primary)]' : 'text-[var(--text-muted)]'}>
-      <tab.icon size={22} />
-      <span>{tab.label}</span>
-    </Link>
-  ))}
-</nav>
+// Parent
+<motion.div
+  initial="hidden"
+  animate="visible"
+  variants={{ visible: { transition: { staggerChildren: 0.07 } } }}
+>
+// Each tile
+<motion.div
+  variants={{
+    hidden: { opacity: 0, scale: 0.96 },
+    visible: { opacity: 1, scale: 1, transition: { duration: 0.3, ease: [0.16, 1, 0.3, 1] } }
+  }}
+>
 ```
 
-### FAB (Floating Action Button)
-
-Fixed position, sits above bottom tab bar. `fixed bottom-20 right-4 md:hidden` with `pb-safe` on the containing wrapper. Spring scale animation via framer-motion `whileTap={{ scale: 0.93 }}`. No library needed beyond existing framer-motion.
-
-### Horizontal Scroll Carousels
-
-Native CSS scroll snap — no new library. Already partially used in `ProductCarousel.tsx` (currently uses prev/next buttons). The upgrade: add `overflow-x-auto snap-x snap-mandatory` on the container and `snap-center shrink-0` on each card. Hide the scrollbar with a global CSS rule in `globals.css`:
-
-```css
-.scroll-hidden::-webkit-scrollbar { display: none; }
-.scroll-hidden { -ms-overflow-style: none; scrollbar-width: none; }
+**Card scroll reveal:**
+```typescript
+<motion.div
+  initial={{ opacity: 0, y: 16 }}
+  whileInView={{ opacity: 1, y: 0 }}
+  viewport={{ once: true, margin: "-50px" }}
+  transition={{ duration: 0.35, ease: "easeOut" }}
+>
 ```
 
-### Desktop Split-Panel Layout
-
-Pure CSS Grid in the chat page layout: `grid-cols-[1fr_400px]` on `lg:`. No resize library needed — the split is fixed proportion (content left, sidebar right), not user-resizable. The framer-motion `AnimatePresence` handles the sidebar appearing/disappearing when results are present.
-
-### Page Navigation Transitions
-
-Use framer-motion `AnimatePresence` with a `template.tsx` file in each route segment (the App Router pattern that works reliably in Next.js 14). Do NOT use the `viewTransition` experimental flag — it requires Next.js ≥15.2.0 and this project is on 14. Do NOT use `AnimatePresence` at the layout level — it breaks in App Router because layouts don't unmount on navigation.
-
+**Premium card hover lift (spring physics):**
+```typescript
+<motion.div
+  whileHover={{ y: -3, boxShadow: "var(--shadow-lg)" }}
+  transition={{ type: "spring", stiffness: 400, damping: 28 }}
+>
 ```
-app/
-  chat/
-    template.tsx  ← motion.div with initial/animate/exit
-    page.tsx
-  browse/
-    template.tsx
+
+Do NOT add `react-spring`, `@formkit/auto-animate`, or any other animation library. framer-motion 12 covers all these patterns.
+
+---
+
+## Image Quality Priority: next/image Configuration
+
+The PROJECT.md specifies image priority order: Serper/Google > Amazon > eBay. Implement in `next.config.js` via `remotePatterns`:
+
+```javascript
+images: {
+  remotePatterns: [
+    { protocol: 'https', hostname: '**.serpapi.com' },
+    { protocol: 'https', hostname: '**.serper.dev' },
+    { protocol: 'https', hostname: 'images-na.ssl-images-amazon.com' },
+    { protocol: 'https', hostname: 'm.media-amazon.com' },
+    { protocol: 'https', hostname: 'i.ebayimg.com' },
+  ]
+}
 ```
+
+Use `next/image` with `onError` fallback to static editorial images in `/public/images/products/`. The `ImageWithFallback` component at `components/ui/ImageWithFallback.tsx` already handles error state — extend it to use `next/image` instead of `<img>` for optimization.
 
 ---
 
 ## Installation
 
 ```bash
-# Only new dependency
-cd frontend && npm install tailwindcss-safe-area@^0.8.0
+# Only new frontend dependency
+cd frontend && npm install class-variance-authority@^0.7.1
 ```
 
-Then add to `tailwind.config.ts` plugins array:
-```typescript
-plugins: [
-  require('@tailwindcss/typography'),
-  require('tailwindcss-safe-area'),  // add this
-]
-```
-
-Then add `viewport-fit=cover` to `layout.tsx` viewport export:
-```typescript
-export const viewport: Viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  maximumScale: 5,
-  userScalable: true,
-  viewportFit: 'cover',  // add this — enables env(safe-area-inset-*)
-  themeColor: [...]
-}
-```
+No backend package changes needed. `openai` is already installed for GPT-4o. Use `gpt-image-1` model name in the image generation script.
 
 ---
 
@@ -140,12 +182,12 @@ export const viewport: Viewport = {
 
 | Recommended | Alternative | Why Not |
 |-------------|-------------|---------|
-| `tailwindcss-safe-area` plugin | Raw `env(safe-area-inset-bottom)` in globals.css | Plugin gives responsive composable classes (`pb-safe`, `h-safe`) vs one-off CSS values. Worth the tiny dep. |
-| Pure CSS scroll snap carousels | `embla-carousel-react` or `keen-slider` | Both are ~15-25kb for what Tailwind's scroll snap achieves natively. The existing ProductCarousel already has the scroll logic — it needs CSS snap added, not a library swap. |
-| framer-motion `template.tsx` pattern | `next-view-transitions` (npm package) | `next-view-transitions` wraps the View Transitions API which has partial browser support (no Firefox stable as of March 2026). framer-motion is already in the bundle. |
-| `useSelectedLayoutSegment` for active tab | `usePathname` + string matching | `useSelectedLayoutSegment` is the App Router-native hook for exactly this use case. Avoids fragile pathname prefix matching. |
-| Fixed-proportion grid split panel | `react-resizable-panels` | No user resize needed per spec. Adding a 6kb library for a static grid proportion is waste. `lg:grid-cols-[1fr_400px]` is 10 characters. |
-| framer-motion (existing) | `@formkit/auto-animate` (2.5kb) | auto-animate handles list reorder animations well but lacks the spring physics needed for FAB/tab indicator animations already designed into the system. framer-motion is already in the bundle. |
+| `class-variance-authority` (CVA) | `tailwind-variants` | Both solve the same problem. CVA is more established (0.7.1, 10k+ dependents, 1 year since last release means stable API). `tailwind-variants` is newer with more features but the API surface CVA provides is sufficient. Either works — CVA was chosen for simplicity. |
+| CSS Grid arbitrary values | `react-masonry-css` or `masonry-layout` | Masonry (variable height) is different from a mosaic (fixed-height tiles in a defined pattern). The hero mosaic uses defined slot shapes, not auto-height columns. CSS Grid with defined template areas is the right tool — no JS layout library needed. |
+| Pre-generated static images | Runtime DALL-E/gpt-image-1 API calls on page load | Runtime generation costs money on every page view and adds ~2-4s latency. These are editorial category images, not personalized content — generate once, commit, serve as static files. |
+| `next/image` with `remotePatterns` | Raw `<img>` tags | `next/image` gives WebP conversion, size optimization, lazy loading, and LQIP blur placeholder automatically. The performance benefit is significant for a product mosaic with 5-8 images. `sharp` is already installed so optimization is free. |
+| framer-motion `whileInView` | `react-intersection-observer` + custom logic | `react-intersection-observer` adds 3.5kb for functionality already in framer-motion's `useInView` hook (0.6kb). Since framer-motion is already in the bundle, `whileInView` is zero cost. |
+| framer-motion spring physics for card hover | CSS `transition: transform 200ms ease` | Both work, but spring physics (`stiffness: 400, damping: 28`) produces the "premium" feel that CSS ease curves cannot replicate. framer-motion is already in bundle — use it where the feel matters. Use plain CSS transitions for non-premium secondary elements. |
 
 ---
 
@@ -153,12 +195,13 @@ export const viewport: Viewport = {
 
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
-| `next/navigation` `viewTransition` flag | Requires Next.js ≥15.2.0. This project is on 14.x and locked per PROJECT.md constraints. | framer-motion `template.tsx` pattern |
-| `react-router` or any client-side router | Already on Next.js App Router. Mixing routers causes hydration chaos. | App Router `Link` + `useRouter` |
-| shadcn/ui component library | Would conflict with the existing editorial design system (CSS variables, custom tokens). Individual component primitives from shadcn would require re-theming all tokens. | Build nav/FAB/carousel components directly — they're ~50-100 lines each |
-| Radix UI tabs for bottom nav | Radix Tabs is semantically a tab panel (content switching), not navigation. Causes ARIA roles mismatch for a nav bar that routes to separate pages. | `<nav>` + `<Link>` + `useSelectedLayoutSegment` |
-| Upgrading lucide-react mid-milestone | Icons were renamed between 0.294 and 0.577 (e.g., `Map` → `MapPin` changes, various renames). Upgrading risks broken icon imports across 20+ components during a visual redesign. | Stay on 0.294.0 until a dedicated upgrade task |
-| Inline `style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}` | Works but bypasses Tailwind's responsive system, can't be combined with other Tailwind padding utilities cleanly. | `tailwindcss-safe-area` plugin classes |
+| `react-spring` | Duplicate animation library — framer-motion 12.26.2 already covers all spring animation needs. Adds ~27kb for zero capability gain. | framer-motion (existing) |
+| `swiper` / `embla-carousel` | The existing ProductCarousel already handles auto-rotate, touch swipe, and arrows without a carousel library. The mosaic hero is a static grid, not a carousel. | Pure CSS scroll snap + existing carousel logic |
+| `@mui/x-data-grid` or similar for product comparison | MUI is already in the bundle for admin-only routes. Do not expand its usage into the main product UI — it conflicts with the editorial design system. | Existing `ComparisonTable.tsx` with styled Tailwind tables |
+| `next/font` with new typefaces | DM Sans + Instrument Serif are already loaded in `layout.tsx` via `next/font/google`. Adding new fonts increases FOUT and bundle size. | Existing font variables (`var(--font-dm-sans)`, `var(--font-instrument)`) |
+| DALL-E 3 (`dall-e-3` model) | Retired March 4, 2026. API calls will fail. | `gpt-image-1` model with same `client.images.generate()` interface |
+| Inline `style` for hover shadows | Cannot be animated by Tailwind's transition system. Bypasses the design token system (`--shadow-*` vars). | framer-motion `whileHover={{ boxShadow: "..." }}` or Tailwind `hover:shadow-elevated` with CSS var tokens |
+| `images.domains` in `next.config.js` | Deprecated in Next.js 14, less secure (no protocol/path scoping). | `images.remotePatterns` with explicit hostname matching |
 
 ---
 
@@ -166,37 +209,26 @@ export const viewport: Viewport = {
 
 | Package | Compatible With | Notes |
 |---------|-----------------|-------|
-| `tailwindcss-safe-area@0.8.0` | Tailwind CSS 3.x | Version 0.8.0 explicitly supports Tailwind v3. Do NOT install latest if it drops v3 support. |
-| `framer-motion@12.26.2` | React 18, Next.js 14 | `AnimatePresence` in `template.tsx` works. `AnimatePresence` in `layout.tsx` does NOT work in App Router — layouts don't unmount. Already validated in UnifiedTopbar. |
-| `useSelectedLayoutSegment` | Next.js 14 App Router only | Client Component hook — must be in a `'use client'` file imported into a Server Component layout. Works in Next.js 14.x (confirmed in official docs). |
-
----
-
-## Responsive Breakpoints (Existing + Required)
-
-The Tailwind config has no custom breakpoints — uses defaults. The redesign targets:
-
-| Breakpoint | Width | Behavior |
-|------------|-------|----------|
-| Mobile (default) | < 768px (`md:`) | Bottom tab bar visible, FAB visible, single-column layout, full-width cards |
-| Tablet | 768px–1023px (`md:` to `lg:`) | Top bar only (no bottom nav), single column, no split panel |
-| Desktop | ≥ 1024px (`lg:`) | Split panel layout, no bottom nav, no FAB |
-
-Classes: `md:hidden` hides bottom nav/FAB on tablet+. `lg:grid-cols-[1fr_400px]` activates split panel. No breakpoint changes to Tailwind config required.
+| `class-variance-authority@0.7.1` | React 18, TypeScript 5.x, tailwind-merge 3.x | Composable with `tailwind-merge` — pass CVA output through `twMerge()` to handle override conflicts. Standard pattern: `const cls = cva(...); return <div className={twMerge(cls({ variant }))} />` |
+| `framer-motion@12.26.2` | Next.js 14 App Router, React 18 | `whileInView` + `viewport` prop stable since framer-motion v6. `staggerChildren` in `variants.transition` stable since v4. No version-specific concerns for v3.0 patterns. |
+| `next/image` with `blurDataURL` | Next.js 14, sharp 0.33.5 | Static local imports auto-generate blurDataURL. Remote images need explicit `blurDataURL` string — generate at build time with the existing `sharp` package. |
+| `gpt-image-1` model | `openai>=1.0.0` (Python) | Same `client.images.generate()` interface as DALL-E 3. Model name changed from `"dall-e-3"` to `"gpt-image-1"`. `quality` param changed from `"standard"/"hd"` to `"low"/"medium"/"high"`. |
 
 ---
 
 ## Sources
 
-- framer-motion installed version confirmed via `package-lock.json` — HIGH confidence
-- `tailwindcss-safe-area` v0.8.0 — [npm package page](https://www.npmjs.com/package/tailwindcss-safe-area) — HIGH confidence
-- Next.js `useSelectedLayoutSegment` — [official docs](https://nextjs.org/docs/app/api-reference/functions/use-selected-layout-segment) — HIGH confidence
-- `viewTransition` requires Next.js ≥15.2.0 — [next.config.js docs](https://nextjs.org/docs/app/api-reference/config/next-config-js/viewTransition) — HIGH confidence
-- framer-motion App Router `template.tsx` pattern — [community-validated pattern](https://dev.to/abdur_rakibrony_97cea0e9/page-transition-in-nextjs-14-app-router-using-framer-motion-2he7) — MEDIUM confidence (no official framer-motion docs, but widely validated pattern)
-- lucide-react icon rename risk between 0.294 and 0.577 — [lucide releases](https://github.com/lucide-icons/lucide/releases) — MEDIUM confidence (renames occur regularly per release notes pattern)
-- CSS scroll snap Tailwind approach — [Tailwind docs](https://tailwindcss.com/docs/scroll-snap-type) — HIGH confidence
+- framer-motion v12 `whileInView` + `staggerChildren` — [motion.dev/docs/react-use-in-view](https://motion.dev/docs/react-use-in-view) — HIGH confidence
+- framer-motion layout animations — [motion.dev/docs/react-layout-animations](https://motion.dev/docs/react-layout-animations) — HIGH confidence
+- DALL-E 3 retirement (March 4, 2026), `gpt-image-1` as replacement — [OpenAI Developer Community thread](https://community.openai.com/t/openai-is-making-a-huge-mistake-by-deprecating-dall-e-3/1367228) + [OpenAI Cookbook gpt-image example](https://cookbook.openai.com/examples/generate_images_with_gpt_image) — HIGH confidence (multiple sources agree)
+- `gpt-image-1` pricing ($0.015/image), quality params (`low`/`medium`/`high`), size options — [WebSearch multiple sources, 2026] — MEDIUM confidence (official docs page returned 403, inferred from community discussion + third-party docs)
+- `class-variance-authority@0.7.1` npm — [npmjs.com/package/class-variance-authority](https://www.npmjs.com/package/class-variance-authority) — HIGH confidence
+- Next.js `remotePatterns` vs deprecated `domains` — [nextjs.org/docs/messages/next-image-unconfigured-host](https://nextjs.org/docs/messages/next-image-unconfigured-host) — HIGH confidence
+- CSS Grid `grid-template-areas` with Tailwind arbitrary values — [Tailwind CSS docs](https://tailwindcss.com/docs/grid-template-areas) — HIGH confidence
+- sharp `blurDataURL` generation pattern — [buildwithmatija.com](https://www.buildwithmatija.com/blog/payload-cms-base64-blur-placeholders-sharp) — MEDIUM confidence (third-party, but consistent with Next.js docs pattern)
+- `framer-motion` react-intersection-observer comparison — [motion.dev/docs/inview](https://motion.dev/docs/inview) — HIGH confidence
 
 ---
 
-*Stack research for: ReviewGuide.ai v2.0 Frontend UX Redesign*
-*Researched: 2026-03-16*
+*Stack research for: ReviewGuide.ai v3.0 Visual Overhaul — Bold Editorial*
+*Researched: 2026-03-31*

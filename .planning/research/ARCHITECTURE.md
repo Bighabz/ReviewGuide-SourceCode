@@ -1,8 +1,8 @@
 # Architecture Research
 
-**Domain:** Mobile-first UX redesign — Discover → Chat → Results screens on existing Next.js 14 app
-**Researched:** 2026-03-16
-**Confidence:** HIGH (based on direct codebase analysis)
+**Domain:** Visual overhaul integration — Next.js 14 App Router frontend (v3.0 Bold Editorial milestone)
+**Researched:** 2026-03-31
+**Confidence:** HIGH (direct codebase analysis — all files read from source)
 
 ---
 
@@ -11,458 +11,458 @@
 ### System Overview
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        NAVIGATION LAYER                          │
-├───────────────────────┬─────────────────────────────────────────┤
-│  Desktop (≥1024px)    │         Mobile (<768px)                  │
-│  UnifiedTopbar        │         BottomTabBar (new)               │
-│  (sticky, full width) │         (fixed bottom, 5 tabs + FAB)     │
-└───────────┬───────────┴───────────────┬─────────────────────────┘
-            │                           │
-┌───────────▼───────────────────────────▼─────────────────────────┐
-│                        ROUTE LAYER (Next.js App Router)          │
-├────────────┬──────────────────┬────────────┬────────────────────┤
-│  / → /browse│  /browse         │  /chat     │  /results/:id (new)│
-│  (redirect) │  (Discover —     │  (Chat     │  (Results —        │
-│             │   REPLACE with   │   screen — │   new route)       │
-│             │   new DiscoverPg)│   MODIFY)  │                    │
-└────────────┴──────────────────┴────────────┴────────────────────┘
-            │                           │
-┌───────────▼───────────────────────────▼─────────────────────────┐
-│                       COMPONENT LAYER                            │
-├─────────────────────────────────────────────────────────────────┤
-│  REUSED (unchanged):          MODIFIED:          NEW:           │
-│  - ChatContainer              - UnifiedTopbar    - BottomTabBar  │
-│  - MessageList / Message      - BrowsePage       - DiscoverPage  │
-│  - ChatInput                  - ChatPage         - ResultsPage   │
-│  - BlockRegistry / UIBlocks   - CategorySidebar  - TrendingCard  │
-│  - All block renderers        - ConvSidebar      - CompactCard   │
-│  - ConversationSidebar        - ChatContainer    - ResultsHeader │
-│  - chatApi.ts / SSE           (welcome screen)  - SourcePanel   │
-│  - normalizeBlocks.ts                            - ResultsSidebar│
-│  - useStreamReducer                              - NavLayout     │
-└─────────────────────────────────────────────────────────────────┘
-            │                           │
-┌───────────▼───────────────────────────▼─────────────────────────┐
-│                        DATA LAYER                                │
-│  localStorage: session_id, messages, user_id, theme, accent     │
-│  Backend API:  SSE /v1/chat/stream  GET /v1/chat/conversations   │
-│  Redis:        halt-state (multi-turn)                           │
-│  PostgreSQL:   conversation history                              │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                          layout.tsx (RootLayout)                     │
+│   Fonts: DM Sans + Instrument Serif via next/font                   │
+│   Theme: data-theme attr injected by inline script (no FOUC)        │
+│   Wraps: NavLayout → ChatStatusProvider                             │
+└────────────────────────────┬────────────────────────────────────────┘
+                             │
+┌────────────────────────────▼────────────────────────────────────────┐
+│                       NavLayout.tsx                                  │
+│  Desktop: UnifiedTopbar (sticky, md+)                               │
+│  Mobile:  MobileHeader (fixed top) + MobileTabBar (fixed bottom)    │
+│  Routes excluded from chrome: /admin /privacy /terms /login         │
+└───┬──────────────┬─────────────────────┬──────────────────┬─────────┘
+    │              │                     │                  │
+┌───▼────┐  ┌──────▼──────┐  ┌──────────▼──────┐  ┌───────▼──────┐
+│  /     │  │  /browse    │  │  /chat          │  │  /results    │
+│ page   │  │  /[category]│  │  page           │  │  /[id]       │
+│ (Dis-  │  │  page       │  │  ChatContainer  │  │  Results-    │
+│ cover) │  │  BrowseLayout│  │  + MessageList  │  │  MainPanel   │
+└───┬────┘  └──────┬──────┘  └──────────┬──────┘  └──────────────┘
+    │              │                    │
+    │    DiscoverSearchBar        Message.tsx +
+    │    ProductCarousel          BlockRegistry
+    │    CategoryChipRow          (17 block types)
+    │    TrendingCards
+    │    CategorySidebar
+    │
+    ▼
+template.tsx — Framer Motion fade transition wraps all routes
 ```
 
-### Component Responsibilities
+### CSS Variable Theme Architecture
 
-| Component | Responsibility | Status |
-|-----------|----------------|--------|
-| `UnifiedTopbar` | Desktop top nav, theme/accent controls | Modify: add route-awareness for new screens |
-| `BottomTabBar` (new) | Mobile 5-tab nav + central FAB | Create new |
-| `NavLayout` (new) | Wrapper that injects correct nav for breakpoint | Create new |
-| `BrowsePage` | Discover screen: hero, chips, trending, categories | Heavily modify (becomes Discover) |
-| `ChatPage` | Chat screen: session mgmt, layout wiring | Modify: new header, remove left sidebar on mobile |
-| `ChatContainer` | SSE streaming, message state, welcome screen | Modify welcome screen only; stream logic untouched |
-| `ResultsPage` (new) | Full results view: split panel desktop, full-width mobile | Create new (reads from session/localStorage) |
-| `CategorySidebar` | Left category nav (desktop) | Keep for desktop chat; hide on mobile in favor of bottom nav |
-| `ConversationSidebar` | Right slide-out history drawer | Reuse unchanged; also becomes left panel on Results desktop |
-| `Message` | Renders user/assistant bubbles with blocks | Modify bubble styling; do not touch block logic |
-| `BlockRegistry / UIBlocks` | Dispatches NormalizedBlock to sub-renderers | Reuse unchanged |
-| All block renderers | ProductCarousel, HotelCards, FlightCards, etc. | Reuse unchanged |
-| `ChatInput` | Composer input + send | Minor style tweak for new pill shape |
-| `chatApi.ts` | SSE streaming client, reconnect logic | Reuse unchanged |
-| `normalizeBlocks.ts` | Converts raw ui_blocks to NormalizedBlock | Reuse unchanged |
-| `useStreamReducer` | FSM for stream state | Reuse unchanged |
+```
+globals.css
+├── :root                  — Light mode tokens (default)
+├── [data-theme="dark"]    — Dark mode token overrides
+├── [data-accent="ocean"]  — Accent palette overrides (6 variants)
+├── [data-accent="sunset"] — Primary + accent + shadow-float only
+├── [data-accent="neon"]
+├── [data-accent="forest"]
+├── [data-accent="berry"]
+└── Legacy mappings        — --gpt-* vars → semantic vars (MUST PRESERVE)
+
+tailwind.config.ts
+├── colors.primary/accent/surface/border/ink — map to CSS vars
+├── boxShadow.card/float/editorial/elevated  — map to CSS vars
+├── fontFamily.sans/serif/heading             — map to CSS font vars
+└── animation.fade-up/card-enter/slide-in    — Tailwind keyframes
+```
+
+### Component Responsibility Map
+
+| Component | Location | Responsibility | Touch for v3.0? |
+|-----------|----------|---------------|-----------------|
+| `NavLayout` | components/ | Layout chrome, theme context | No — stable wrapper |
+| `UnifiedTopbar` | components/ | Desktop nav, search, theme toggle | Minor — font weight/sizing only |
+| `MobileHeader` | components/ | Mobile top bar | Minor — same as topbar |
+| `MobileTabBar` | components/ | Mobile bottom nav | No |
+| `layout.tsx` | app/ | Font loading, data-theme init | No — protected |
+| `template.tsx` | app/ | Framer Motion page transition | No |
+| `page.tsx` (Discover) | app/ | Discover page layout | YES — mosaic hero integration |
+| `ProductCarousel` (discover) | components/discover/ | Sliding hero card (5 slides) | YES — major visual upgrade |
+| `TrendingCards` | components/discover/ | Grid of topic thumbnails | YES — image upgrade |
+| `CategoryChipRow` | components/discover/ | Horizontal chip row | Minor — typography |
+| `DiscoverSearchBar` | components/discover/ | Main search input | Minor — border/focus styling |
+| `CategoryHero` | components/browse/ | Browse page hero with stats | Minor — typography weight |
+| `ResultsProductCard` | components/ | Product card on results panel | YES — major visual upgrade |
+| `ResultsMainPanel` | components/ | Right panel on results page | YES — grid/spacing |
+| `ProductReview` | components/ | Chat response product card | YES — polish pass |
+| `TopPickBlock` | components/ | Featured product block in chat | YES — polish pass |
+| `ProductCards` | components/ | Chat product list cards | YES — polish pass |
+| `InlineProductCard` | components/ | Compact product row in chat | Minor — padding/image size |
+| `BlockRegistry` | components/blocks/ | Dispatches all block types to components | No — logic-only, do not touch |
+| `Message.tsx` | components/ | Message bubble + block rendering | No — protected per MEMORY.md |
 
 ---
 
-## Recommended Project Structure
+## Integration Points for v3.0 Visual Overhaul
+
+### Integration Point 1: Mosaic Hero on Discover Page
+
+**What exists:** `app/page.tsx` renders a centered single-column layout with:
+- `h1` title ("What are you _researching_ today?")
+- `CategoryChipRow`
+- `ProductCarousel` (a single sliding card component)
+- `DiscoverSearchBar`
+
+**What changes:** The mosaic hero replaces or augments the ProductCarousel. The `ProductCarousel` in `components/discover/` is a standalone slideshow component with 5 hardcoded `SLIDES` entries. Images already exist at `public/images/products/*.png`.
+
+**Integration approach:** Create a new `MosaicHero` component at `components/discover/MosaicHero.tsx`. The existing `ProductCarousel` remains for the chat-style block rendering system (the `carousel` block type in `BlockRegistry.tsx` points to a different `components/ProductCarousel.tsx` — note the two ProductCarousel files).
+
+**Naming collision to avoid:** There are TWO `ProductCarousel` components:
+1. `components/discover/ProductCarousel.tsx` — the Discover page slideshow (5 slides, hero visual)
+2. `components/ProductCarousel.tsx` — the chat response carousel (affiliate product cards, used by BlockRegistry)
+
+These are different components with different interfaces. The v3.0 mosaic hero replaces/augments `components/discover/ProductCarousel.tsx` only.
+
+### Integration Point 2: Product Card Visual Upgrade
+
+**Affected components and their data sources:**
+
+| Component | Data Source | Block Type | Notes |
+|-----------|------------|------------|-------|
+| `ResultsProductCard` | `ExtractedProduct` from `lib/extractResultsData` | N/A (Results page direct) | Uses `resolveProductImage()` fallback chain |
+| `ProductReview` | `product` prop with `affiliate_links[]` | `product_review` | Has image, pros/cons, affiliate links |
+| `TopPickBlock` | Named props | `top_pick` | Primary featured card, 140x140 image |
+| `ProductCards` | `ProductCard[]` — dual old/new format | `product_cards` | List view with gradient CTA button |
+| `InlineProductCard` | `ProductItem[]` | `inline_product_card` | Compact 64px row format |
+| `ProductCarousel` (chat) | `Product[]` with affiliate data | `carousel`, `products` | Horizontal scroll carousel |
+
+**Safe to upgrade:** All visual properties (padding, borders, shadows, image size, typography classes). The interface/props contracts must not change.
+
+**Unsafe to touch:** Any logic in `BlockRegistry.tsx`, the `NormalizedBlock` data mapping, or `Message.tsx` render functions.
+
+### Integration Point 3: Bold Color System
+
+**Current token architecture:**
+- `globals.css :root` defines all tokens
+- `tailwind.config.ts` references them via `var(--*)` syntax
+- 6 accent themes override only `--primary`, `--primary-hover`, `--primary-light`, `--accent`, `--accent-hover`, `--accent-light`, `--shadow-float`
+- Dark mode overrides backgrounds, text, borders, and semantic colors
+
+**How to add bolder accents:**
+New tokens can be added alongside existing ones in `:root`. Do NOT rename or remove existing tokens — the `--gpt-*` legacy mappings must remain (protected by `frontend/tests/designTokens.test.ts`). New tokens for "bold editorial" palette additions (e.g., `--accent-bold`, `--hero-gradient-start`, `--card-highlight`) are safe to add.
+
+**Token test contract (from plan doc):**
+Must preserve: `--stream-status-size`, `--stream-status-color`, `--stream-content-color`, `--citation-color`, `--gpt-accent`, `--gpt-text`, `--gpt-background` and utility classes `.stream-status-text`, `.stream-content-text`, `.citation-text`.
+
+### Integration Point 4: AI-Generated Images
+
+**Current image storage structure:**
+```
+frontend/public/images/
+├── products/               — product shots for carousel + trending (PNG)
+│   ├── headphones.png      — used by discover carousel + trendingTopics.ts
+│   ├── laptop.png
+│   ├── shoes.png
+│   ├── smart-home.png
+│   ├── tokyo.png
+│   ├── vacuum.png
+│   ├── fallback-*.png      — category fallback icons (6 files)
+│   └── bluetooth-speakers.png  — trending topic images (16 files)
+│       noise-cancelling-headphones.png
+│       robot-vacuums.png
+│       ... (16 topic-specific images)
+├── topics/                 — same topic images, alternate directory
+│   └── (16 files — same as products/ topic set)
+├── categories/             — browse category hero images (JPG)
+│   ├── electronics.jpg
+│   ├── health-wellness.jpg
+│   └── ... (10 category images)
+└── trending/               — (empty — reserved)
+```
+
+**Image references wired in code:**
+- `lib/trendingTopics.ts` — 6 entries hardcode `/images/products/*.png` paths
+- `components/discover/ProductCarousel.tsx` (discover) — 5 slides hardcode `/images/products/*.png`
+- `lib/productImages.ts` — `CATEGORY_PLACEHOLDERS` hardcodes `/images/products/fallback-*.png`
+- `components/browse/CategoryHero.tsx` — receives `heroGradient` as CSS gradient string (no image, just color)
+- `lib/categoryConfig.ts` — may contain category image paths (check before adding)
+
+**Adding new AI-generated images:**
+1. Save to `frontend/public/images/products/[name].png` — this is the established convention
+2. For topic-specific images: same directory, named after the topic slug
+3. Reference via `/images/products/[name].png` (no `next/image` component used — all are `<img>` tags)
+4. Update `lib/trendingTopics.ts` or `components/discover/ProductCarousel.tsx` to reference new paths
+
+**No `next/image` optimization:** The codebase uses raw `<img>` tags throughout, not Next.js `<Image>`. This means no automatic WebP conversion or responsive sizes. Images should be pre-optimized (PNG, reasonable file size ~100-300KB max per image).
+
+---
+
+## Recommended Project Structure (for new v3.0 components)
 
 ```
 frontend/
-├── app/
-│   ├── layout.tsx              # Root — add NavLayout wrapper here
-│   ├── page.tsx                # Redirect / → /browse (keep)
-│   ├── browse/
-│   │   ├── layout.tsx          # Becomes NavLayout (wraps BrowseLayout)
-│   │   └── page.tsx            # REPLACE with new DiscoverPage content
-│   ├── chat/
-│   │   └── page.tsx            # MODIFY: new ChatPage layout
-│   └── results/
-│       └── [sessionId]/
-│           └── page.tsx        # NEW: ResultsPage
 ├── components/
-│   ├── nav/                    # NEW folder — navigation components
-│   │   ├── BottomTabBar.tsx    # Mobile 5-tab + FAB
-│   │   ├── NavLayout.tsx       # Breakpoint-aware nav wrapper
-│   │   └── ChatHeader.tsx      # NEW: Chat screen header (back, title, expand)
-│   ├── discover/               # NEW folder — Discover screen
-│   │   ├── TrendingCard.tsx    # Individual trending research card
-│   │   └── CategoryChips.tsx   # Horizontal scroll chip row
-│   ├── results/                # NEW folder — Results screen
-│   │   ├── ResultsHeader.tsx   # Title, action buttons, summary
-│   │   ├── SourcesPanel.tsx    # Collapsible sources list
-│   │   ├── ResultsSidebar.tsx  # Desktop left conversation panel
-│   │   └── CompactProductCard.tsx  # 170/200px inline product card
-│   ├── ChatContainer.tsx       # Modify welcome screen section only
-│   ├── Message.tsx             # Modify bubble CSS only
-│   ├── UnifiedTopbar.tsx       # Modify: hide on mobile when BottomTabBar active
-│   └── [all existing]          # Keep unchanged
-└── lib/
-    ├── sessionRouter.ts        # NEW: utility to navigate /results/:sessionId
-    └── [all existing]          # Keep unchanged
+│   └── discover/
+│       ├── MosaicHero.tsx        ← NEW: Shopify-style mosaic hero
+│       ├── ProductCarousel.tsx   ← MODIFY: upgraded slides
+│       ├── TrendingCards.tsx     ← MODIFY: bolder image presentation
+│       ├── CategoryChipRow.tsx   ← MODIFY: typography/spacing
+│       └── DiscoverSearchBar.tsx ← MODIFY: border/focus styling
+├── app/
+│   └── page.tsx                  ← MODIFY: wire MosaicHero into layout
+├── public/
+│   └── images/
+│       └── products/
+│           └── [new-ai-images].png ← NEW: generated product imagery
+└── app/globals.css               ← MODIFY: new bold color tokens only
 ```
 
 ### Structure Rationale
 
-- **`components/nav/`:** All navigation components isolated so BottomTabBar and UnifiedTopbar never know about each other's existence — NavLayout mediates.
-- **`components/discover/`:** New Discover-specific components separated from the now-generic browse components that may still serve category pages.
-- **`components/results/`:** Results screen is new enough to warrant its own folder; reuses existing block renderers via imports.
-- **`app/results/[sessionId]/`:** Dynamic route allows direct linking to a completed research session. `sessionId` matches the existing UUID-based session IDs already in localStorage.
+- **components/discover/:** All new Discover-page components go here. Keeps page-specific components separate from shared chat components.
+- **No new CSS files:** All styling goes into existing `globals.css` token additions or Tailwind utility classes inline. Avoids CSS fragmentation.
+- **No new lib/ files:** Image paths and topic data already live in `trendingTopics.ts` — extend those rather than creating new data files.
 
 ---
 
 ## Architectural Patterns
 
-### Pattern 1: Responsive Nav Injection via NavLayout
+### Pattern 1: CSS Variable Token Extension
 
-**What:** A single wrapper component (`NavLayout`) renders either `UnifiedTopbar` (desktop) or `BottomTabBar + ChatHeader` (mobile) based on Tailwind breakpoints. Pages do not decide which nav to render.
-
-**When to use:** All app routes except `/admin/*`, `/login`, `/privacy`, `/terms`.
-
-**Trade-offs:** Centralizes nav logic; pages stay nav-agnostic. Slight prop-drilling required for page-specific callbacks (onNewChat, onHistoryClick). Accept this rather than using global state for nav events.
+**What:** Add new semantic tokens to `:root` in `globals.css` without modifying existing ones.
+**When to use:** Adding new color ranges (bold palette), new spacing scales, or new gradient presets.
+**Trade-offs:** Keeps backward compat with legacy `--gpt-*` mappings. New tokens aren't automatically dark-mode aware — must add overrides in `[data-theme="dark"]` block too.
 
 **Example:**
-```typescript
-// NavLayout.tsx
-export default function NavLayout({ children, chatProps }: NavLayoutProps) {
-  return (
-    <>
-      {/* Desktop top nav — hidden below lg */}
-      <div className="hidden lg:block">
-        <UnifiedTopbar {...chatProps} />
-      </div>
-      {/* Content */}
-      <main>{children}</main>
-      {/* Mobile bottom nav — hidden at lg and above */}
-      <div className="lg:hidden">
-        <BottomTabBar />
-      </div>
-    </>
-  )
+```css
+/* In :root — safe additions for Bold Editorial */
+--hero-bg-start: #1B4DFF;
+--hero-bg-end: #E85D3A;
+--card-highlight: rgba(27, 77, 255, 0.08);
+--bold-heading-weight: 800;
+
+/* Also add in [data-theme="dark"] */
+[data-theme="dark"] {
+  --hero-bg-start: #3B82F6;
+  --hero-bg-end: #F59E0B;
 }
 ```
 
-### Pattern 2: Results Route as Session Reader
+### Pattern 2: Component Wrapper (not modification)
 
-**What:** `/results/[sessionId]` reads the session from localStorage (primary) or the backend conversations API (fallback) and renders the last AI response's `ui_blocks` and `next_suggestions` in the full Results layout. It does NOT run a new stream — it displays a completed session.
-
-**When to use:** User taps expand icon from Chat header, or navigates back to a prior session.
-
-**Trade-offs:** No new API needed. Reuses `fetchConversationHistory` from `chatApi.ts`. The Results page becomes a "view" over existing data. Risk: localStorage may be cleared between chat and results — always fall back to backend API.
+**What:** For the mosaic hero, create `MosaicHero.tsx` as a new component rather than heavily modifying `ProductCarousel.tsx` (discover).
+**When to use:** When the visual treatment is substantially different (mosaic grid vs. single card slideshow).
+**Trade-offs:** `page.tsx` decides which to render. Both components can coexist. Reduces risk of breaking existing carousel behavior.
 
 **Example:**
-```typescript
-// results/[sessionId]/page.tsx
-const session = await fetchConversationHistory(sessionId)
-const lastAssistantMessage = session.messages.findLast(m => m.role === 'assistant')
-const blocks = normalizeBlocks(lastAssistantMessage?.ui_blocks ?? [])
-// Render ResultsHeader + SourcesPanel + CompactProductCard list
+```tsx
+// app/page.tsx
+import MosaicHero from '@/components/discover/MosaicHero'
+// or swap with existing:
+// import ProductCarousel from '@/components/discover/ProductCarousel'
+
+// Render as replacement for the carousel slot
+<div className="mt-4 max-w-xl mx-auto w-full">
+  <MosaicHero />
+</div>
 ```
 
-### Pattern 3: Suggestion Chips Stay on CustomEvent Bus
+### Pattern 3: Inline Style for Dynamic Gradients, Tailwind for Static Structure
 
-**What:** Follow-up suggestion chips in Results and Chat continue to use `window.dispatchEvent(new CustomEvent('sendSuggestion', { detail: { question } }))`. ChatContainer already has the listener registered.
+**What:** Use `style={{ background: gradient }}` for per-product color values. Use Tailwind classes for layout, spacing, border-radius, and typography.
+**When to use:** Everywhere. This is the established pattern in `ProductCarousel`, `ResultsProductCard`, `TrendingCards`.
+**Trade-offs:** Consistent with existing code. Avoids Tailwind JIT purge issues with dynamic color strings. The `cn()` utility is not in use — use template literals or className concatenation.
 
-**When to use:** Any new component that renders suggestion chips (ResultsPage, TrendingCard click from Discover).
+**Example:**
+```tsx
+// Correct — matches existing patterns
+<div
+  className="rounded-2xl overflow-hidden product-card-hover"
+  style={{ background: 'linear-gradient(135deg, #EEF2FF, #E0E7FF)' }}
+>
+```
 
-**Trade-offs:** Keeps the established contract. No refactor of ChatContainer's event listener. Navigating from Results to Chat with a chip tap requires routing to `/chat` first and then firing the event after mount — use `?q=` URL param pattern that already exists.
+### Pattern 4: Avoid `Math.random()` in SSR
+
+**What:** All deterministic values (gradients, badge colors, product ordering) must use stable inputs — index, id, or slug — not `Math.random()`.
+**When to use:** Always, on any component that could be server-rendered or hydrated.
+**Trade-offs:** Required. `Math.random()` in SSR causes React hydration errors per CLAUDE.md.
+
+**Example:**
+```tsx
+// Correct — index-based
+const GRADIENT_BGS = ['linear-gradient(135deg, #EEF2FF, #E0E7FF)', ...]
+const gradient = GRADIENT_BGS[index % GRADIENT_BGS.length]
+```
 
 ---
 
 ## Data Flow
 
-### Discover → Chat Flow (existing, keep as-is)
+### Discover Page Render Flow
 
 ```
-User types in hero search input (BrowsePage)
-    ↓
-router.push('/chat?q=QUERY&new=1')
-    ↓
-ChatPage reads searchParams, generates new sessionId
-    ↓
-ChatContainer receives initialQuery + externalSessionId props
-    ↓
-handleStream() called → SSE to /v1/chat/stream
-    ↓
-Messages accumulate in useState(messages)
-    ↓
-Persisted to localStorage (MESSAGES_STORAGE_KEY)
+page.tsx (SSR shell)
+  └── CategorySidebar (static, sidebar)
+  └── h1 + subtitle (static text)
+  └── CategoryChipRow (static data from lib/)
+  └── ProductCarousel / MosaicHero
+        └── hardcoded SLIDES array (no API call)
+        └── images from /public/images/products/
+  └── TrendingCards
+        └── trendingTopics from lib/trendingTopics.ts (static)
+  └── DiscoverSearchBar
+        └── router.push('/chat?q=...') on submit
 ```
 
-### Chat → Results Flow (new)
+### Chat Response Block Rendering
 
 ```
-User taps expand icon in ChatHeader (new component)
-    ↓
-router.push('/results/' + currentSessionId)
-    ↓
-ResultsPage reads sessionId from route params
-    ↓
-fetchConversationHistory(sessionId) → backend or localStorage
-    ↓
-Find last assistant message with ui_blocks
-    ↓
-normalizeBlocks(ui_blocks) → NormalizedBlock[]
-    ↓
-Render: ResultsHeader + SourcesPanel + CompactProductCard carousel + UIBlocks
+ChatContainer (SSE stream)
+  └── MessageList
+        └── Message.tsx (per message)
+              └── UIBlocks (from BlockRegistry.tsx)
+                    └── BLOCK_RENDERERS map
+                          └── ProductReview / TopPickBlock / ProductCards
+                                └── Product data from LangGraph backend
+                                └── resolveProductImage() for fallback images
 ```
 
-### Bottom Nav → New Chat Flow (new)
+### Image Resolution Fallback Chain
 
 ```
-User taps central FAB on BottomTabBar
-    ↓
-router.push('/chat?new=1')
-    ↓
-ChatPage generates new sessionId, clears localStorage messages
-    ↓
-ChatContainer shows welcome screen (messages.length === 0)
+API response image_url
+  └── valid URL? → use it
+  └── null/error?
+        └── lookupCuratedImage(name) — match against curatedLinks topic titles
+              └── found ASIN? → https://images-na.ssl-images-amazon.com/...
+              └── not found?
+                    └── detectCategory(name) → /images/products/fallback-[category].png
 ```
-
-### State Management
-
-```
-localStorage (client-only)
-    ↓ (read on mount)
-ChatContainer.sessionId / messages
-    ↓ (write on change)
-localStorage (session_id, chat_messages, user_id, theme, accent)
-    ↑
-External session switches via externalSessionId prop (from ChatPage)
-    ↑
-ConversationSidebar.onSelectConversation callback
-```
-
-**Key constraint:** The `window.dispatchEvent('sendSuggestion')` custom event is the only inter-component communication channel for suggestion clicks. Do not replace with context or props — ChatContainer already relies on this.
-
-### Key Data Flows
-
-1. **Block rendering:** Backend `ui_blocks` → `onComplete` callback in `chatApi.ts` → `setMessages()` in `ChatContainer` → `Message.tsx` → `normalizeBlocks()` → `UIBlocks` → individual block renderers. This pipeline is complete and must not be modified.
-
-2. **Session identity:** `session_id` is a UUID generated client-side in `ChatPage`. It flows into `ChatContainer` as `externalSessionId`, then into `streamChat()` as the session identifier. The same ID is the key for `/results/:sessionId` lookup.
-
-3. **Theme/accent:** Set on `document.documentElement` by `UnifiedTopbar`. The inline `<script>` in `layout.tsx` hydrates theme before first paint. `BottomTabBar` must NOT re-implement this — read from DOM attribute only.
-
----
-
-## Component Boundaries — What Talks to What
-
-```
-ChatPage (page-level state: sessionId, sidebarOpen)
-  ├── NavLayout (provides nav for breakpoint)
-  │   ├── UnifiedTopbar [desktop] — callbacks: onNewChat, onHistoryClick, onSearch
-  │   ├── ChatHeader [mobile, new] — callbacks: onBack, onExpand
-  │   └── BottomTabBar [mobile, new] — no callbacks needed (uses router directly)
-  ├── CategorySidebar [desktop only, fixed left] — navigates via router
-  ├── ChatContainer [main content] — props: externalSessionId, initialQuery, onSessionChange
-  │   ├── MessageList → Message[] → UIBlocks → block renderers
-  │   ├── ChatInput — props: value, onChange, onSend, disabled
-  │   ├── BlockSkeleton — shown during tool execution
-  │   └── ErrorBanner / MessageRecoveryUI
-  └── ConversationSidebar [right overlay] — props: isOpen, onSelectConversation
-
-BrowsePage (Discover — page-level state: heroInput, recentSearches, activeChip)
-  ├── NavLayout
-  ├── CategoryChips [new] — horizontal scroll, navigates via router
-  ├── TrendingCard list [new] — each navigates to /chat?q=QUERY&new=1
-  └── Category grid (existing markup, keep)
-
-ResultsPage (new — reads session, no streaming)
-  ├── NavLayout
-  ├── ResultsHeader [new] — title, share/save/refresh buttons, summary
-  ├── ResultsSidebar [desktop only, new] — wraps ConversationSidebar content
-  ├── SourcesPanel [new] — collapsible sources from review_sources block
-  ├── CompactProductCard carousel [new] — 170px mobile / 200px desktop
-  └── UIBlocks (existing) — renders full block output below compact cards
-```
-
----
-
-## New vs Modified vs Reused
-
-### New (create from scratch)
-
-| Component | Location | Purpose |
-|-----------|----------|---------|
-| `BottomTabBar` | `components/nav/` | 5-tab mobile nav with central FAB |
-| `NavLayout` | `components/nav/` | Breakpoint-aware nav wrapper |
-| `ChatHeader` | `components/nav/` | Chat screen header: back, title, expand |
-| `TrendingCard` | `components/discover/` | Trending research card with icon, title, subtitle |
-| `CategoryChips` | `components/discover/` | Horizontal scrollable chip row |
-| `ResultsPage` | `app/results/[sessionId]/` | Full results screen route |
-| `ResultsHeader` | `components/results/` | Title + action buttons + summary |
-| `SourcesPanel` | `components/results/` | Collapsible sources list |
-| `ResultsSidebar` | `components/results/` | Desktop left panel (conversation list) |
-| `CompactProductCard` | `components/results/` | 170/200px product card for results grid |
-| `sessionRouter.ts` | `lib/` | Navigate to /results/:sessionId from ChatHeader |
-
-### Modified (change existing)
-
-| Component | Change Needed | Risk |
-|-----------|--------------|------|
-| `BrowsePage` | Replace hero + add CategoryChips + TrendingCard sections | Low — pure UI |
-| `ChatPage` | Add ChatHeader (mobile), pass sessionId to expand handler | Low |
-| `ChatContainer` | Modify welcome screen JSX only; do NOT touch streaming logic | Low |
-| `Message.tsx` | Update bubble CSS to match spec (radius, border, colors) | Low |
-| `UnifiedTopbar` | Add `hidden lg:block` wrapper so mobile hides it | Low |
-| `BrowseLayout` | Pass through NavLayout instead of owning nav itself | Medium — layout shift risk |
-| `app/layout.tsx` | Add `pb-16 lg:pb-0` to `<body>` for bottom tab clearance | Low |
-| `globals.css` | Add `.hide-scrollbar` utility for CategoryChips horizontal scroll | Low |
-
-### Reused (zero change)
-
-| Component | Reason |
-|-----------|--------|
-| `ChatContainer` stream logic | Verified working, RFC-compliant FSM |
-| `chatApi.ts` | SSE client with reconnect — do not touch |
-| `normalizeBlocks.ts` | Correct block normalizer |
-| `BlockRegistry / UIBlocks` | All 14+ block types working |
-| All block renderers | ProductCarousel, HotelCards, FlightCards, etc. |
-| `useStreamReducer` | 120s watchdog, interruption handling |
-| `ConversationSidebar` | Reused in Results desktop split-panel |
-| `CategorySidebar` | Stays on desktop chat view |
-| `ErrorBanner`, `MessageRecoveryUI` | Working error recovery |
-| `BlockSkeleton` | Tool-execution skeleton loading |
-| `lib/constants.ts` | CHAT_CONFIG keys, TRENDING_PRODUCTS |
-| `lib/recentSearches.ts` | Recent searches on Discover |
-
----
-
-## Build Order (Phase Dependencies)
-
-Build in this order to minimize re-work:
-
-**Phase 1 — Navigation Foundation**
-Build `BottomTabBar`, `NavLayout`, `ChatHeader` first. These have no dependencies on other new components and unblock all subsequent work. Modify `UnifiedTopbar` to self-hide on mobile.
-
-**Phase 2 — Discover Screen**
-Build `CategoryChips` and `TrendingCard`, then wire them into `BrowsePage`. Depends on NavLayout (Phase 1) for correct layout context. The existing category grid and recent searches carry over.
-
-**Phase 3 — Chat Screen Modifications**
-Add `ChatHeader` to `ChatPage` layout. Modify `Message.tsx` bubble styles and `ChatContainer` welcome screen. Depends on NavLayout (Phase 1). The streaming pipeline is untouched.
-
-**Phase 4 — Results Route**
-Build `ResultsPage`, `ResultsHeader`, `SourcesPanel`, `CompactProductCard`, `ResultsSidebar`. Depends on Phase 3 (needs Chat → Results expand navigation working). Reuses `UIBlocks` and `ConversationSidebar`.
-
-**Phase 5 — Placeholder Routes**
-Add `/saved`, `/compare`, `/profile` as static pages with bottom tab support. These are layout-only stubs.
-
-**Dependency graph:**
-```
-BottomTabBar + NavLayout + ChatHeader  (Phase 1, no deps)
-         ↓
-  BrowsePage Discover  (Phase 2, needs Phase 1)
-         ↓
-  ChatPage modifications  (Phase 3, needs Phase 1)
-         ↓
-  ResultsPage  (Phase 4, needs Phase 3 for expand nav)
-         ↓
-  Placeholder routes  (Phase 5, needs Phase 1)
-```
-
----
-
-## Anti-Patterns
-
-### Anti-Pattern 1: Duplicating the SSE/Stream Logic
-
-**What people do:** Create a new streaming hook or copy `handleStream` into `ResultsPage` to "refresh" results.
-
-**Why it's wrong:** `ChatContainer` owns all stream state including `useStreamReducer`, recovery UI, skeleton, and error handling. Duplicating this creates two sources of truth. Results are a read view over completed sessions — they never stream.
-
-**Do this instead:** `ResultsPage` calls `fetchConversationHistory()` (read-only) and renders `UIBlocks` directly. No streaming in Results.
-
-### Anti-Pattern 2: Putting BottomTabBar in RootLayout
-
-**What people do:** Add BottomTabBar to `app/layout.tsx` so it's global.
-
-**Why it's wrong:** The `/admin/*`, `/login`, `/privacy`, `/terms`, and `/affiliate-disclosure` routes must not show the bottom tab bar. Putting it in root layout forces complex route exclusion logic.
-
-**Do this instead:** Put BottomTabBar inside `NavLayout`, and only use `NavLayout` in the routes that need it (browse, chat, results, saved, compare, profile).
-
-### Anti-Pattern 3: Replacing CategorySidebar on Desktop
-
-**What people do:** Remove the desktop `CategorySidebar` (left 56px-wide panel) because the mobile design has no sidebar.
-
-**Why it's wrong:** The desktop chat layout explicitly uses the sidebar as the left navigation. The spec says "No bottom tab bar on desktop — use top navigation instead". The sidebar provides quick-search and category access that bottom tabs do not.
-
-**Do this instead:** Keep `CategorySidebar` for desktop. `BottomTabBar` only renders below the `lg` breakpoint. The sidebar renders only at `lg` and above.
-
-### Anti-Pattern 4: Modifying Message.tsx Block Logic
-
-**What people do:** "Simplify" the block rendering in `Message.tsx` while restyling bubbles.
-
-**Why it's wrong:** The MEMORY.md explicitly flags this: "All render functions in Message.tsx are protected — never modify ui_blocks logic." Block rendering is the core product output.
-
-**Do this instead:** Touch only the bubble container CSS (background, border-radius, padding). The `<UIBlocks blocks={normalizedBlocks} />` call and everything inside it stays untouched.
-
-### Anti-Pattern 5: Generating Session IDs with Math.random() in SSR
-
-**What people do:** Add session ID generation or random-based content to new server components.
-
-**Why it's wrong:** CLAUDE.md explicitly warns: "Don't use Math.random() in components rendered on server (causes hydration errors)."
-
-**Do this instead:** Mark all components that use session IDs or random-based content as `'use client'`. The existing pattern in `ChatPage` uses Math.random() only inside a `useEffect`, which is correct.
-
----
-
-## Integration Points
-
-### External Services
-
-| Service | Integration Pattern | Notes |
-|---------|---------------------|-------|
-| Backend API (`/v1/chat/stream`) | SSE via `chatApi.ts` — do not change | All auth headers, reconnect logic is in this file |
-| Backend API (`/v1/chat/conversations`) | `fetchConversationHistory()` in `chatApi.ts` | Used by ResultsPage for session read |
-| Vercel deployment | Static export of Next.js 14 App Router | CORS regex `CORS_ORIGIN_REGEX` set on Railway covers preview URLs |
-
-### Internal Boundaries
-
-| Boundary | Communication | Notes |
-|----------|---------------|-------|
-| ChatPage ↔ ChatContainer | Props: `externalSessionId`, `initialQuery`, `onSessionChange` | Props are the contract; do not add more |
-| Message ↔ ChatContainer | None (Message is pure display; ChatContainer passes `messages` array via MessageList) | No callbacks up |
-| Suggestion chips → ChatContainer | `window.dispatchEvent(CustomEvent('sendSuggestion'))` | This is the established pattern — keep it for ResultsPage chips too |
-| BottomTabBar → Routes | `useRouter().push()` directly | No callbacks needed; BottomTabBar is navigation-only |
-| ResultsPage → ConversationSidebar | Props: `isOpen`, `onSelectConversation`, `currentSessionId` | Same interface as ChatPage — no changes to ConversationSidebar |
-| NavLayout → BottomTabBar / UnifiedTopbar | Renders each conditionally via Tailwind `lg:hidden` / `hidden lg:block` | CSS-only breakpoint switch, no JS resize listener needed |
 
 ---
 
 ## Scaling Considerations
 
-| Scale | Architecture Adjustments |
-|-------|--------------------------|
-| Current (100s of users) | Current architecture is correct. localStorage + PostgreSQL handles this comfortably. |
-| 1k-10k users | No frontend changes needed. Backend rate limiting (already implemented) is the bottleneck. |
-| 10k+ users | Consider moving conversation history to a dedicated endpoint with pagination. `fetchConversationHistory` currently returns all messages — add `?limit=` param. |
+These are frontend-only visual concerns — scaling is irrelevant at this layer. Performance considerations for v3.0:
 
-### Scaling Priorities
+| Concern | Current Approach | v3.0 Risk | Mitigation |
+|---------|-----------------|-----------|------------|
+| Image file sizes | Raw PNG, no optimization | Bold editorial images may be larger | Pre-compress to <250KB, use PNG-8 where possible |
+| Framer Motion bundle | Already in use (template.tsx, UnifiedTopbar) | Adding more animations increases JS | Reuse existing motion variants, avoid new dependencies |
+| CSS specificity | Flat CSS var system | New tokens could conflict with accent overrides | Add to all theme selectors (`:root`, dark, accents) |
+| CLS (layout shift) | No `next/image`, no size hints | Large mosaic images can shift layout | Set explicit width/height on all `<img>` tags in mosaic |
 
-1. **First bottleneck:** `ConversationSidebar` fetches ALL session IDs from localStorage on open. At 100+ conversations, this list can be large. Add a limit in `fetchConversations()` early.
-2. **Second bottleneck:** `ResultsPage` loads full conversation history to find the last assistant message. A dedicated `/v1/chat/sessions/{id}/last-result` endpoint would be faster than deserializing the full history.
+---
+
+## Anti-Patterns
+
+### Anti-Pattern 1: Modifying BlockRegistry.tsx or Message.tsx
+
+**What people do:** Touch block rendering logic when upgrading visual polish of product cards.
+**Why it's wrong:** `BlockRegistry.tsx` is the central dispatch for all 17 chat block types. `Message.tsx` has explicit protection in project memory ("All render functions in Message.tsx are protected"). Breaking these breaks all chat responses.
+**Do this instead:** Modify only the leaf components that BlockRegistry calls: `ProductReview.tsx`, `TopPickBlock.tsx`, `ProductCards.tsx`, `InlineProductCard.tsx`. Change their visual output, not their interfaces.
+
+### Anti-Pattern 2: Creating a New CSS File
+
+**What people do:** Create `mosaic.css` or `hero-styles.css` for new components.
+**Why it's wrong:** The project uses a single `globals.css` for all token definitions and a single `tailwind.config.ts` for utilities. Fragmentation causes specificity conflicts and makes dark mode/accent overrides miss new styles.
+**Do this instead:** All new tokens in `globals.css`. All layout/spacing in Tailwind classes inline on components.
+
+### Anti-Pattern 3: Using `next/image` for New Images
+
+**What people do:** Switch to `<Image>` from `next/image` thinking it's "best practice."
+**Why it's wrong:** The entire codebase uses raw `<img>` tags. `next/image` requires explicit width/height props and a configured `domains` whitelist in `next.config.js` for external URLs. Mixing `<Image>` and `<img>` creates inconsistency. External product images (Amazon CDN, eBay) would require domains config changes.
+**Do this instead:** Use `<img>` consistently. Pre-optimize images before saving to `public/`. For CLS prevention, add explicit `width` and `height` attributes on images where dimensions are known.
+
+### Anti-Pattern 4: Hardcoding Colors Instead of Using CSS Variables
+
+**What people do:** Write `bg-blue-600` or `color: '#1B4DFF'` in new components.
+**Why it's wrong:** The theme system (light/dark + 6 accents) is entirely CSS-variable-driven. Hardcoded colors break dark mode and accent switching.
+**Do this instead:** Use `var(--primary)`, `var(--accent)`, `var(--surface)` etc. For per-card gradient arrays (like `GRADIENT_BGS` in ResultsProductCard), hardcoded gradient values are acceptable because they're decorative accents that don't participate in the theme system.
+
+### Anti-Pattern 5: Adding Data Fetching to Discover Page
+
+**What people do:** Fetch trending data from an API to make the Discover page "live."
+**Why it's wrong:** The Discover page is intentionally static (no backend calls). All content is hardcoded in `trendingTopics.ts` and the `SLIDES` array. Adding fetch introduces loading states, SSR complexity, and potential hydration issues.
+**Do this instead:** Update the static data in `lib/trendingTopics.ts` and the `SLIDES` array in `ProductCarousel.tsx` when content needs updating.
+
+---
+
+## Build Order (Dependency Graph)
+
+The visual overhaul has clear dependency relationships. This is the correct sequencing:
+
+```
+1. CSS Tokens (globals.css additions)
+        ↓ (all components inherit)
+2. AI-Generated Images (save to public/images/products/)
+        ↓ (carousel + trending reference these)
+3. MosaicHero component (new — no dependencies on other new work)
+        ↓ (wired into page.tsx)
+4. ProductCarousel upgrade (discover) — uses new images
+        ↓ (parallel with 3)
+4. TrendingCards upgrade — uses new images
+        ↓ (parallel with 3, 4)
+5. page.tsx layout (wires MosaicHero, adjusts spacing)
+        ↓ (depends on 3, 4, 4)
+6. ResultsProductCard upgrade (chat/results product cards)
+        ↓ (parallel)
+6. TopPickBlock upgrade (parallel)
+        ↓
+6. ProductReview upgrade (parallel)
+        ↓
+7. Browse page: CategoryHero typography upgrade (lowest priority)
+```
+
+**Phase grouping for implementation:**
+
+| Phase | Work | Dependencies |
+|-------|------|-------------|
+| Phase 1 | CSS token additions (globals.css) | None — do first |
+| Phase 2 | AI image generation + saving to public/ | None — parallel with Phase 1 |
+| Phase 3 | MosaicHero component creation | Phase 1 (tokens), Phase 2 (images) |
+| Phase 4 | Discover page wiring (page.tsx + carousel/trending upgrades) | Phase 3 |
+| Phase 5 | Product card polish (ProductReview, TopPickBlock, ProductCards) | Phase 1 only |
+| Phase 6 | Browse/results polish (CategoryHero, ResultsProductCard) | Phase 1 only |
+
+---
+
+## Integration Summary: New vs Modified Components
+
+### New Components (create from scratch)
+
+| File | Purpose | Dependencies |
+|------|---------|-------------|
+| `components/discover/MosaicHero.tsx` | Shopify mosaic grid hero | CSS tokens, new images |
+
+### Modified Components (visual changes only — no interface changes)
+
+| File | Change Scope | Risk | Notes |
+|------|------------|------|-------|
+| `app/globals.css` | Add new tokens to `:root` and `[data-theme="dark"]` | Low | Must not remove legacy `--gpt-*` vars |
+| `app/page.tsx` | Swap or augment ProductCarousel with MosaicHero | Low | Layout adjustment only |
+| `components/discover/ProductCarousel.tsx` | Bold visual upgrade, leverage existing images | Low | Static SLIDES array — no data contract |
+| `components/discover/TrendingCards.tsx` | Larger thumbnails, bolder typography | Low | Static data from trendingTopics.ts |
+| `components/discover/CategoryChipRow.tsx` | Typography/color tokens | Very low | Style-only |
+| `components/discover/DiscoverSearchBar.tsx` | Border, focus ring, input height | Very low | Style-only |
+| `components/ResultsProductCard.tsx` | Image area, badge styling, spacing | Low | Uses resolveProductImage() — preserve |
+| `components/ResultsMainPanel.tsx` | Grid layout, card spacing | Low | Product card grid wrapper |
+| `components/ProductReview.tsx` | Card elevation, spacing, image size | Low | Props interface unchanged |
+| `components/TopPickBlock.tsx` | Card prominence, image size | Low | Props interface unchanged |
+| `components/ProductCards.tsx` | List card polish, CTA button | Low | Dual-format data handling preserved |
+| `components/UnifiedTopbar.tsx` | Font weight, subtle spacing | Very low | Logic and nav links unchanged |
+
+### Do Not Touch
+
+| File | Reason |
+|------|--------|
+| `components/blocks/BlockRegistry.tsx` | Central dispatch — logic protected |
+| `components/Message.tsx` | Render functions protected per project memory |
+| `app/layout.tsx` | Font loading and data-theme init — stable |
+| `app/template.tsx` | Framer Motion transition — stable |
+| `lib/normalizeBlocks.ts` | Block normalization logic |
+| `lib/chatApi.ts` | SSE streaming client |
+| `components/ChatContainer.tsx` | Streaming logic — do not modify |
+| `frontend/tests/designTokens.test.ts` | Test contract — must pass after globals.css changes |
 
 ---
 
 ## Sources
 
-- Direct codebase analysis: `frontend/app/chat/page.tsx`, `frontend/app/browse/page.tsx`, `frontend/components/ChatContainer.tsx`, `frontend/components/UnifiedTopbar.tsx`, `frontend/components/blocks/BlockRegistry.tsx`
-- Design spec: `# ReviewGuide.ai — frontendredesign.txt` (in project root)
+- Direct source analysis: `frontend/app/globals.css`, `tailwind.config.ts`, `app/layout.tsx`, `app/page.tsx`
+- Component inventory: `components/discover/`, `components/browse/`, `components/blocks/BlockRegistry.tsx`
+- Image asset survey: `frontend/public/images/` directory listing
+- Plan document: `docs/superpowers/plans/2026-03-29-frontend-visual-overhaul.md`
 - Project context: `.planning/PROJECT.md`
-- CLAUDE.md development notes (hydration warnings, component protection notes)
-- MEMORY.md (Message.tsx block logic protection, editorial theme patterns)
+- Next.js config: `frontend/next.config.js`
 
 ---
-
-*Architecture research for: ReviewGuide.ai v2.0 Frontend UX Redesign — Discover / Chat / Results*
-*Researched: 2026-03-16*
+*Architecture research for: ReviewGuide.ai v3.0 Visual Overhaul — Next.js 14 frontend integration*
+*Researched: 2026-03-31*
