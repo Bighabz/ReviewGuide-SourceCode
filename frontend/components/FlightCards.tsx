@@ -178,7 +178,7 @@ function TraditionalFlightCard({ flight }: { flight: FlightCard }) {
           {/* Carrier Logo/Name */}
           <div className="flex items-center gap-3 min-w-[140px]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/images/products/fallback-flight.png" alt="" className="w-12 h-12 rounded object-cover" />
+            <img src="/images/products/fallback-flight.webp" alt="" className="w-12 h-12 rounded object-cover" />
             <div>
               <div className="font-medium text-sm text-[var(--text)]">{flight.carrier}</div>
               <div className="text-xs text-[var(--text-muted)] tracking-wide">{flight.flight_number}</div>

@@ -144,7 +144,7 @@ function TraditionalHotelCard({ hotel }: { hotel: HotelCard }) {
             />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src="/images/products/fallback-hotel.png" alt="Hotel" className="w-full h-full object-cover" />
+            <img src="/images/products/fallback-hotel.webp" alt="Hotel" className="w-full h-full object-cover" />
           )}
           {/* Rating Badge Overlay */}
           {hotel.rating && (

@@ -66,7 +66,7 @@ export default function CarRentalCard({ cars }: CarRentalCardProps) {
             <div className="flex flex-col items-center text-center">
               {/* Car fallback image */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/images/products/fallback-car.png" alt="" className="w-12 h-12 rounded object-cover mb-5" />
+              <img src="/images/products/fallback-car.webp" alt="" className="w-12 h-12 rounded object-cover mb-5" />
 
               {/* Title */}
               <h4 className="font-serif text-xl mb-3 text-[var(--text)]">

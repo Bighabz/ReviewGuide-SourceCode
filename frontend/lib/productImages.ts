@@ -1,11 +1,11 @@
 import { curatedLinks } from '@/lib/curatedLinks'
 
 const CATEGORY_PLACEHOLDERS: Record<string, string> = {
-  headphones: '/images/products/fallback-headphones.png',
-  laptop: '/images/products/fallback-laptop.png',
-  kitchen: '/images/products/fallback-kitchen.png',
-  fitness: '/images/products/fallback-fitness.png',
-  default: '/images/products/fallback-default.png',
+  headphones: '/images/products/fallback-headphones.webp',
+  laptop: '/images/products/fallback-laptop.webp',
+  kitchen: '/images/products/fallback-kitchen.webp',
+  fitness: '/images/products/fallback-fitness.webp',
+  default: '/images/products/fallback-default.webp',
 }
 
 function detectCategory(name: string): string {
