@@ -22,7 +22,7 @@ export default function MosaicHero() {
   return (
     <div
       className="relative w-full"
-      style={{ height: 'clamp(280px, 40vw, 420px)', overflow: 'visible' }}
+      style={{ height: 'clamp(200px, 28vw, 280px)', overflow: 'visible' }}
       aria-hidden="true"
     >
       {MOSAIC_TILES.map((tile, index) => (

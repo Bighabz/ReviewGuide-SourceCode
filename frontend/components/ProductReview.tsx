@@ -63,23 +63,23 @@ export default function ProductReview({ product }: ProductReviewProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
       whileHover={{ y: -2, boxShadow: '0 8px 30px rgba(0,0,0,0.08)' }}
-      className="border border-[var(--border)] rounded-xl p-6 bg-[var(--surface-elevated)] shadow-card transition-colors">
+      className="border border-[var(--border)] rounded-xl p-3 sm:p-6 bg-[var(--surface-elevated)] shadow-card transition-colors">
       {/* Product Header with Image */}
-      <div className="mb-4">
-        <div className="flex gap-4">
+      <div className="mb-3 sm:mb-4">
+        <div className="flex gap-3 sm:gap-4">
           {image_url && (
             <div className="flex-shrink-0">
               <img
                 src={image_url}
                 alt={product_name}
-                className="w-28 h-28 object-contain rounded-xl bg-white"
+                className="w-16 h-16 sm:w-28 sm:h-28 object-contain rounded-lg sm:rounded-xl bg-white"
                 loading="lazy"
               />
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between">
-              <h3 className="text-xl font-bold font-serif text-[var(--text)] tracking-tight">{product_name}</h3>
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="text-base sm:text-xl font-bold font-serif text-[var(--text)] tracking-tight">{product_name}</h3>
               {rating && rating !== 'N/A' && rating !== '0/5' && (
                 <div className="flex items-center gap-1 text-amber-500">
                   <Star size={16} fill="currentColor" />
@@ -149,7 +149,7 @@ export default function ProductReview({ product }: ProductReviewProps) {
       {affiliate_links && affiliate_links.length > 0 && (
         <div className="mt-4 pt-4 border-t border-[var(--border)]">
           <h4 className="text-sm font-semibold font-serif text-[var(--text-secondary)] mb-3">Where to Buy</h4>
-          <div className={`grid gap-3 ${affiliate_links.length >= 3 ? 'grid-cols-1 sm:grid-cols-3' : affiliate_links.length === 2 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 max-w-sm'}`}>
+          <div className={`grid gap-2 sm:gap-3 ${affiliate_links.length >= 3 ? 'grid-cols-1 md:grid-cols-3' : affiliate_links.length === 2 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 max-w-sm'}`}>
             {affiliate_links.map((link, idx) => {
               // Clean merchant name: "eBay (lawrenow-0)" → "eBay"
               const cleanMerchant = link.merchant
@@ -175,7 +175,7 @@ export default function ProductReview({ product }: ProductReviewProps) {
                         <span className="text-xs">{link.rating}</span>
                       </span>
                     )}
-                    <p className="text-lg font-bold text-[var(--text)] mt-1">
+                    <p className="text-base sm:text-lg font-bold text-[var(--text)] mt-1">
                       {priceStr || 'Check price →'}
                     </p>
                   </div>

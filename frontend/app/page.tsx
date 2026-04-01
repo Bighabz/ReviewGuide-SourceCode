@@ -24,7 +24,7 @@ export default function DiscoverPage() {
       {/* Main content — pt-16 on mobile clears the fixed h-14 header + breathing room */}
       <div className="flex-1 flex flex-col px-4 sm:px-6 md:px-8 pt-16 md:pt-0 pb-20 md:pb-8 overflow-x-hidden">
         {/* Hero section — full-width mosaic background + floating text */}
-        <div className="relative min-h-[320px] sm:min-h-[380px] flex flex-col items-center justify-center">
+        <div className="relative min-h-[200px] sm:min-h-[260px] flex flex-col items-center justify-center">
           {/* Mosaic fills the hero — no overflow clipping so tiles can extend */}
           <div className="absolute inset-0 z-0">
             <MosaicHero />
