@@ -312,7 +312,10 @@ Plans:
   2. Toggling dark mode in the browser does not produce any white/light color flashes on ProductReview, TopPickBlock, or ProductCards components (hardcoded `text-green-700` / `text-red-700` / `text-emerald-600` eliminated)
   3. Running `npm run test:run` passes with zero failures after all globals.css edits — the designTokens.test.ts contract is intact
   4. Larger, bolder heading sizes are visible in the browser: category hero h1 renders at `clamp(2.5rem, 5vw, 4.5rem)` measured in DevTools
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 17-01-PLAN.md — Bold accent palette, typography scale tokens, missing dark mode gap fixes in globals.css (TOK-01, TOK-02, TOK-03)
+- [ ] 17-02-PLAN.md — Convert 9 hardcoded color classes in ProductReview, TopPickBlock, ProductCards to semantic tokens (TOK-03)
 
 ### Phase 18: AI Image Generation
 **Goal**: A complete, visually consistent batch of AI-generated product and category images is committed to the repository — all sharing a single canonical style, pre-optimized as WebP under 200KB — so every subsequent component that references images can finalize its implementation without waiting.
@@ -396,7 +399,7 @@ v3.0 phases execute in order: 17 -> 18 -> 19 -> 20 -> 21 -> 22. Phases 17 and 18
 | 14. Chat Screen | v2.0 | 4/4 | Complete | 2026-03-17 |
 | 15. Results Screen | v2.0 | 3/3 | Complete | 2026-03-17 |
 | 16. Placeholder Routes and Build QA | v2.0 | 1/1 | Complete | 2026-03-17 |
-| 17. Token Foundation + Dark Mode Fixes | v3.0 | 0/TBD | Not started | - |
+| 17. Token Foundation + Dark Mode Fixes | v3.0 | 0/2 | In progress | - |
 | 18. AI Image Generation | v3.0 | 0/TBD | Not started | - |
 | 19. Mosaic Hero | v3.0 | 0/TBD | Not started | - |
 | 20. Discover + Browse Page Upgrades | v3.0 | 0/TBD | Not started | - |
