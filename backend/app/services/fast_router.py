@@ -463,72 +463,60 @@ def _classify_tier1(
     query: str,
     conversation_history: Optional[List[Dict[str, str]]] = None,
     last_search_context: Optional[Dict[str, Any]] = None,
-) -> Optional[str]:
+) -> str:
     """
-    Deterministic keyword-based intent classification.
+    Deterministic intent classification — DEFAULT IS PRODUCT.
 
-    Returns the intent string or None if confidence is too low.
+    This is a product review site. When in doubt, search for products.
+    Only routes AWAY from product when clearly something else.
 
-    Priority order (descending):
-        1. intro (short greetings)
+    Explicitly routed away:
+        1. intro (short greetings, <= 4 words)
         2. comparison (explicit vs / compare)
-        3. travel
-        4. general informational (what is X, how does Y)
-        5. service (overrides product when both match)
-        6. service alone
-        7. product
-        8. follow-up with existing product context
+        3. travel (trip, hotel, flight keywords)
+        4. general (pure knowledge questions with NO product signal)
+        5. service (only when clearly a service, not a product)
+
+    Everything else → product.
     """
     q = query.strip().lower()
 
-    # 1. Intro — only pure greetings (short messages).
-    #    If the user says "hi I need a lawn mower", that's a product query,
-    #    not an intro. Anything over 4 words is NOT just a greeting.
+    # 1. Intro — only pure short greetings
     is_greeting = any(pat.search(q) for pat in _INTRO_PATTERNS)
     if is_greeting and len(q.split()) <= 4:
         return "intro"
-    # If greeting + substance, fall through to classify the real intent
 
     # 2. Comparison — explicit compare signals
     if _has_keyword(q, _COMPARISON_KEYWORDS):
         return "comparison"
 
-    # 3. Travel
+    # 3. Travel — clear travel intent
     if _has_keyword(q, _TRAVEL_KEYWORDS):
         return "travel"
 
-    # 4. General informational — check BEFORE product so "what is the best X"
-    #    still falls through (product keywords take priority when both match)
-    has_general = _has_keyword(q, _GENERAL_KEYWORDS)
-    has_product = _has_keyword(q, _PRODUCT_KEYWORDS)
-    has_service = _has_keyword(q, _SERVICE_KEYWORDS)
+    # 4. General — ONLY if clearly a knowledge question AND has
+    #    no product/brand/category signal at all
+    if _has_keyword(q, _GENERAL_KEYWORDS):
+        has_brand = any(re.search(r"\b" + re.escape(b) + r"\b", q) for b in KNOWN_BRANDS)
+        has_category = any(re.search(r"\b" + re.escape(c) + r"\b", q) for c in KNOWN_CATEGORIES)
+        has_product_kw = _has_keyword(q, _PRODUCT_KEYWORDS)
+        if not has_brand and not has_category and not has_product_kw:
+            return "general"
+        # Has product signal + general signal → product wins
+        # e.g. "what is the best laptop" → product, not general
 
-    # If general but no product signal → informational
-    if has_general and not has_product:
-        return "general"
-
-    # 5. Service + product co-occurrence → service wins
-    if has_service and has_product:
+    # 5. Service — only when clearly a service query with no product overlap
+    if _has_keyword(q, _SERVICE_KEYWORDS) and not _has_keyword(q, _PRODUCT_KEYWORDS):
         return "service"
 
-    # 6. Service alone
-    if has_service:
-        return "service"
-
-    # 7. Product
-    if has_product:
-        return "product"
-
-    # 8. Follow-up: user hasn't triggered any keywords but there's product context
+    # 6. Follow-up context
     if last_search_context and last_search_context.get("intent") in (
-        "product",
-        "comparison",
-        "service",
+        "product", "comparison", "service",
     ):
         return last_search_context["intent"]
 
-    # No match — caller should fall back to Tier 2 or "unclear"
-    return None
+    # DEFAULT: product. This is a product review site.
+    return "product"
 
 
 # ---------------------------------------------------------------------------
