@@ -63,21 +63,20 @@ Conversational product discovery that searches live reviews and returns blog-sty
 - Stored product database — live search is the differentiator (always fresh data)
 - Post-purchase support — we're an affiliate, not a retailer
 
-## Current Milestone: v2.0 Frontend UX Redesign
+## Current Milestone: v3.0 Visual Overhaul — "Bold Editorial"
 
-**Goal:** Complete frontend redesign — unified Discover → Chat → Results flow with mobile-first, app-like navigation and structured AI responses, evolving the editorial luxury aesthetic.
+**Goal:** Full site visual refresh with Shopify-level polish — bold colors, AI-generated product imagery, premium product cards — while keeping the warm editorial foundation.
 
 **Target features:**
-- Unified Discover screen replacing separate Browse/Chat landing pages
-- Redesigned Chat with structured AI responses (summary → ranked inline product cards → source citations → follow-up chips)
-- Full Results view with desktop split-panel and mobile full-width layouts
-- Bottom tab navigation (mobile) with central FAB for new research
-- App-like fluidity: card-based navigation, suggestion chips, contextual actions
-- New routes: `/saved`, `/compare`, `/profile` (placeholder pages)
-- Responsive breakpoints: mobile (<768px), tablet (768-1023px), desktop (≥1024px)
-- Curated Amazon product images, prices, and affiliate links from existing static data (120+ products in `curated_amazon_links.py`)
+- Shopify-style mosaic hero on landing page with bold & colorful AI-generated product images
+- Full site visual refresh: landing, browse, chat, results, product cards
+- Keep light/ivory base but inject bold accent colors, stronger typography, more visual punch
+- Rich info product cards: keep pros/cons/ratings but premium polish, better spacing, subtle animations
+- Cleaner "Where to Buy" section (max 3 deduped offers, proper merchant labels)
+- Image priority: Serper/Google > Amazon > eBay (highest quality first)
+- AI-generated product category images (bold, colorful, editorial) for hero, browse, and fallbacks
 
-**Design reference:** Figma file "ReviewGuide.ai — New UX Concept" + detailed spec in `# ReviewGuide.ai — frontendredesign.txt`
+**Design reference:** Shopify free-trial page (product mosaic collage), adapted to ReviewGuide editorial voice
 
 ## Context
 
@@ -120,4 +119,4 @@ The existing plan doc (`docs/plans/2026-02-27-cj-integration-and-curated-content
 | Use curated static Amazon data for product cards | 120+ products with verified images/prices/affiliate links already exist | ✓ Good |
 
 ---
-*Last updated: 2026-03-16 after v2.0 milestone start*
+*Last updated: 2026-04-01 after v3.0 milestone start*
