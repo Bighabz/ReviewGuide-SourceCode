@@ -472,24 +472,13 @@ def _classify_tier1(
     """
     q = query.strip().lower()
 
-    # 1. Intro — short query matching greeting patterns
-    #    Only classify as intro if no substantive intent is also present.
-    #    "hi i need a lawn mower" should be product, not intro.
+    # 1. Intro — only pure greetings (short messages).
+    #    If the user says "hi I need a lawn mower", that's a product query,
+    #    not an intro. Anything over 4 words is NOT just a greeting.
     is_greeting = any(pat.search(q) for pat in _INTRO_PATTERNS)
-    if is_greeting:
-        has_substance = (
-            _has_keyword(q, _PRODUCT_KEYWORDS)
-            or _has_keyword(q, _TRAVEL_KEYWORDS)
-            or _has_keyword(q, _COMPARISON_KEYWORDS)
-            or _has_keyword(q, _SERVICE_KEYWORDS)
-            or _has_keyword(q, _GENERAL_KEYWORDS)
-            or any(re.search(r"\b" + re.escape(b) + r"\b", q) for b in KNOWN_BRANDS)
-            or any(re.search(r"\b" + re.escape(c) + r"\b", q) for c in KNOWN_CATEGORIES)
-            or len(q.split()) > 6  # long messages are not just greetings
-        )
-        if not has_substance:
-            return "intro"
-        # Fall through — let the substantive intent be classified below
+    if is_greeting and len(q.split()) <= 4:
+        return "intro"
+    # If greeting + substance, fall through to classify the real intent
 
     # 2. Comparison — explicit compare signals
     if _has_keyword(q, _COMPARISON_KEYWORDS):
