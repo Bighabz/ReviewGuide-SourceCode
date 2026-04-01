@@ -10,6 +10,7 @@ import os
 import json
 from datetime import datetime
 from typing import Dict, Any, List
+from urllib.parse import quote_plus
 from app.core.error_manager import tool_error_handler
 
 # Add backend to path (portable path)
@@ -1056,6 +1057,66 @@ RULES:
             review_card_count += 1
 
         logger.info(f"[product_compose] Built {review_card_count} unified product_review cards")
+
+        # ── Fallback cards for blog-mentioned products without product_review blocks ──
+        # Every product mentioned in the blog article must have a clickable card
+        fallback_card_count = 0
+        for pname in blog_product_names:
+            if pname in seen_card_names or review_card_count + fallback_card_count >= 5:
+                break
+
+            # Build Amazon search URL as fallback affiliate link
+            amazon_search_url = f"https://www.amazon.com/s?k={quote_plus(pname)}&tag=revguide-20"
+
+            # Get review data if available
+            review_bundle = review_data.get(pname, {})
+            consensus = _get_result(f'consensus:{pname}', '')
+            avg_rating = review_bundle.get("avg_rating", 0)
+            label = editorial_labels.get(pname, "")
+
+            # Try to find image from any source
+            fallback_image = ""
+            for p in products_with_offers:
+                if _fuzzy_product_match(p.get("name", ""), pname):
+                    for o in p.get("all_offers", []):
+                        if o.get("image_url") and "placehold" not in o.get("image_url", ""):
+                            fallback_image = o["image_url"]
+                            break
+                    break
+
+            fallback_links = [{
+                "product_id": f"amazon-search-{fallback_card_count + 1}",
+                "title": f"Amazon - {pname}",
+                "price": 0,
+                "currency": "USD",
+                "affiliate_link": amazon_search_url,
+                "merchant": "Amazon",
+                "image_url": "",
+                "rating": None,
+                "review_count": None,
+            }]
+
+            card_data = {
+                "product_name": pname,
+                "image_url": fallback_image,
+                "rating": f"{avg_rating}/5" if avg_rating else "",
+                "summary": consensus if consensus else "",
+                "features": [label] if label else [],
+                "pros": [],
+                "cons": [],
+                "affiliate_links": fallback_links,
+                "rank": review_card_count + fallback_card_count + 1,
+            }
+
+            ui_blocks.append({
+                "type": "product_review",
+                "data": card_data,
+            })
+            seen_card_names.add(pname)
+            fallback_card_count += 1
+
+        if fallback_card_count > 0:
+            logger.info(f"[product_compose] Added {fallback_card_count} fallback product cards with Amazon search links")
 
         # ── Restore review_sources UI block (deleted in bd4b5c3) ──
         if review_data and review_bundles:
