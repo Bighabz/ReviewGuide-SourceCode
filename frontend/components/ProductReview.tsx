@@ -143,33 +143,40 @@ export default function ProductReview({ product }: ProductReviewProps) {
       {affiliate_links && affiliate_links.length > 0 && (
         <div className="mt-4 pt-4 border-t border-[var(--border)]">
           <h4 className="text-sm font-semibold font-serif text-[var(--text-secondary)] mb-3">Where to Buy</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {affiliate_links.map((link, idx) => (
-              <a
-                key={idx}
-                href={link.affiliate_link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-between p-3 border border-[var(--border)] rounded-lg hover:border-[var(--border-strong)] hover:bg-[var(--surface-hover)] transition-colors group"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-medium text-[var(--text-muted)] uppercase">{link.merchant}</span>
+          <div className={`grid gap-3 ${affiliate_links.length >= 3 ? 'grid-cols-1 sm:grid-cols-3' : affiliate_links.length === 2 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 max-w-sm'}`}>
+            {affiliate_links.map((link, idx) => {
+              // Clean merchant name: "eBay (lawrenow-0)" → "eBay"
+              const cleanMerchant = link.merchant
+                .replace(/\s*\(.*?\)\s*/g, '')
+                .replace(/^ebay.*/i, 'eBay')
+                .trim() || 'Retailer'
+              const priceStr = link.price > 0
+                ? (link.currency === 'USD' ? `$${link.price.toFixed(2)}` : `${link.currency} ${link.price.toFixed(2)}`)
+                : null
+              return (
+                <a
+                  key={idx}
+                  href={link.affiliate_link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-3 border border-[var(--border)] rounded-lg hover:border-[var(--primary)] hover:bg-[var(--surface-hover)] transition-colors group"
+                >
+                  <div className="flex-1 min-w-0">
+                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">{cleanMerchant}</span>
                     {link.rating && (
-                      <div className="flex items-center gap-0.5 text-amber-500">
+                      <span className="inline-flex items-center gap-0.5 text-amber-500 ml-2">
                         <Star size={10} fill="currentColor" />
                         <span className="text-xs">{link.rating}</span>
-                      </div>
+                      </span>
                     )}
+                    <p className="text-lg font-bold text-[var(--text)] mt-1">
+                      {priceStr || 'Check price →'}
+                    </p>
                   </div>
-                  <p className="text-sm font-semibold text-[var(--text)] truncate">{link.title}</p>
-                  <p className="text-lg font-bold text-[var(--text)] mt-1">
-                    {link.price > 0 ? `${link.currency} ${link.price.toFixed(2)}` : 'Check price →'}
-                  </p>
-                </div>
-                <ExternalLink size={16} className="text-[var(--text-muted)] group-hover:text-[var(--text-secondary)] flex-shrink-0 ml-2" />
-              </a>
-            ))}
+                  <ExternalLink size={16} className="text-[var(--text-muted)] group-hover:text-[var(--primary)] flex-shrink-0 ml-2" />
+                </a>
+              )
+            })}
           </div>
         </div>
       )}
