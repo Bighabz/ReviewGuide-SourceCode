@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { ThumbsUp, ThumbsDown, ExternalLink, Star } from 'lucide-react'
+import { ExternalLink, Star } from 'lucide-react'
 
 interface AffiliateLink {
   product_id: string
@@ -52,8 +52,6 @@ export default function ProductReview({ product }: ProductReviewProps) {
     summary,
     image_url,
     features,
-    pros,
-    cons,
     affiliate_links,
   } = product
 
@@ -88,67 +86,24 @@ export default function ProductReview({ product }: ProductReviewProps) {
               )}
             </div>
             {summary && (
-              <p className="mt-2 text-[var(--text-secondary)] text-sm">{summary}</p>
+              <p className="mt-2 text-[var(--text-secondary)] text-sm line-clamp-2">{summary}</p>
             )}
           </div>
         </div>
       </div>
 
-      {/* Features */}
+      {/* Editorial label badges */}
       {features && features.length > 0 && (
-        <div className="mb-4">
-          <h4 className="text-sm font-semibold font-serif text-[var(--text-secondary)] mb-2">Key Features</h4>
-          <ul className="list-disc list-inside space-y-1">
-            {features.map((feature, idx) => (
-              <li key={idx} className="text-sm text-[var(--text-secondary)]">{feature}</li>
-            ))}
-          </ul>
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {features.map((feature, idx) => (
+            <span key={idx} className="text-xs font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-[var(--primary)]/10 text-[var(--primary)]">{feature}</span>
+          ))}
         </div>
       )}
 
-      {/* Pros and Cons */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-        {/* Pros */}
-        {pros && pros.length > 0 && (
-          <div>
-            <h4 className="text-sm font-semibold font-serif text-[var(--success)] mb-2 flex items-center gap-1">
-              <ThumbsUp size={14} />
-              Pros
-            </h4>
-            <ul className="space-y-2">
-              {pros.map((pro, idx) => (
-                <li key={idx} className="text-sm text-[var(--text-secondary)] flex items-start gap-2">
-                  <span className="text-[var(--success)] mt-0.5">&#10003;</span>
-                  <span>{pro.description}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Cons */}
-        {cons && cons.length > 0 && (
-          <div>
-            <h4 className="text-sm font-semibold font-serif text-[var(--error)] mb-2 flex items-center gap-1">
-              <ThumbsDown size={14} />
-              Cons
-            </h4>
-            <ul className="space-y-2">
-              {cons.map((con, idx) => (
-                <li key={idx} className="text-sm text-[var(--text-secondary)] flex items-start gap-2">
-                  <span className="text-[var(--error)] mt-0.5">&#10007;</span>
-                  <span>{con.description}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-
       {/* Affiliate Links */}
       {affiliate_links && affiliate_links.length > 0 && (
-        <div className="mt-4 pt-4 border-t border-[var(--border)]">
-          <h4 className="text-sm font-semibold font-serif text-[var(--text-secondary)] mb-3">Where to Buy</h4>
+        <div className="mt-3 pt-3 border-t border-[var(--border)]">
           <div className={`grid gap-2 sm:gap-3 ${affiliate_links.length >= 3 ? 'grid-cols-1 md:grid-cols-3' : affiliate_links.length === 2 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 max-w-sm'}`}>
             {affiliate_links.map((link, idx) => {
               // Clean merchant name: "eBay (lawrenow-0)" → "eBay"
