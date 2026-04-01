@@ -7,9 +7,9 @@
 
 ### Design Tokens
 
-- [ ] **TOK-01**: Bold accent color palette added to CSS variables (vibrant blues, terracotta, energetic greens) with light mode values
-- [ ] **TOK-02**: Typography scale upgraded — larger/bolder headings, tighter line heights, stronger visual hierarchy
-- [ ] **TOK-03**: All new tokens have matching `[data-theme="dark"]` counterparts (no dark mode regressions)
+- [x] **TOK-01**: Bold accent color palette added to CSS variables (vibrant blues, terracotta, energetic greens) with light mode values
+- [x] **TOK-02**: Typography scale upgraded — larger/bolder headings, tighter line heights, stronger visual hierarchy
+- [x] **TOK-03**: All new tokens have matching `[data-theme="dark"]` counterparts (no dark mode regressions)
 
 ### AI Image Generation
 
@@ -82,9 +82,9 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TOK-01 | Phase 17 | Pending |
-| TOK-02 | Phase 17 | Pending |
-| TOK-03 | Phase 17 | Pending |
+| TOK-01 | Phase 17 | Complete |
+| TOK-02 | Phase 17 | Complete |
+| TOK-03 | Phase 17 | Complete |
 | IMG-01 | Phase 18 | Pending |
 | IMG-02 | Phase 18 | Pending |
 | IMG-03 | Phase 18 | Pending |

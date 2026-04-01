@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
 milestone: v3.0
-milestone_name: "Visual Overhaul — Bold Editorial"
-status: ready_to_plan
-stopped_at: null
-last_updated: "2026-04-01T07:00:00.000Z"
-last_activity: "2026-04-01 — Roadmap created for v3.0 (Phases 17-22)"
+milestone_name: Visual Overhaul — Bold Editorial
+status: planning
+stopped_at: Completed 17-token-foundation-dark-mode-fixes 17-01-PLAN.md
+last_updated: "2026-04-01T08:29:27.653Z"
+last_activity: 2026-04-01 — Roadmap created, 25 requirements mapped to 6 phases (17-22)
 progress:
-  total_phases: 6
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_phases: 22
+  completed_phases: 14
+  total_plans: 46
+  completed_plans: 42
   percent: 0
 ---
 
@@ -46,6 +46,7 @@ Progress: [░░░░░░░░░░] 0%
 | - | - | - | - |
 
 *Updated after each plan completion*
+| Phase 17-token-foundation-dark-mode-fixes P01 | 2 | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -58,6 +59,9 @@ Progress: [░░░░░░░░░░] 0%
 - [v3.0]: Use `gpt-image-1` (not DALL-E 3 — retired March 4, 2026) for image generation
 - [v3.0]: Generate all images in one batch session before any component references them
 - [v3.0]: Add `class-variance-authority@0.7.1` for ProductCard multi-mode variant API
+- [Phase 17-token-foundation-dark-mode-fixes]: Typography tokens declared identically in dark block for completeness even though values are theme-neutral
+- [Phase 17-token-foundation-dark-mode-fixes]: Bold accent dark values use Tailwind 400-range pastels for accessible contrast on dark backgrounds
+- [Phase 17-token-foundation-dark-mode-fixes]: Global h1/h2/h3 rules unchanged — typography tokens are opt-in utilities for Phase 20+ components
 
 ### Pending Todos
 
@@ -71,6 +75,6 @@ Progress: [░░░░░░░░░░] 0%
 
 ## Session Continuity
 
-Last session: 2026-04-01
-Stopped at: Roadmap created — ready to plan Phase 17
+Last session: 2026-04-01T08:29:27.649Z
+Stopped at: Completed 17-token-foundation-dark-mode-fixes 17-01-PLAN.md
 Resume file: None
