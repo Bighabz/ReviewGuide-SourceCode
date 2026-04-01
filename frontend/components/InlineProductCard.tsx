@@ -131,7 +131,9 @@ export default function InlineProductCard({ products }: InlineProductCardProps) 
                 className="text-xs font-medium whitespace-nowrap"
                 style={{ color: 'var(--primary)' }}
               >
-                Buy on Amazon
+                {linkUrl.includes('amazon.com') || linkUrl.includes('amzn.to') ? 'Buy on Amazon' :
+                 linkUrl.includes('ebay.com') ? 'Buy on eBay' :
+                 'View deal'}
               </a>
             </div>
           </div>

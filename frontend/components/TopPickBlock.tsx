@@ -28,12 +28,24 @@ export default function TopPickBlock({
   affiliateUrl,
   price,
   currency = 'USD',
-  merchant = 'Amazon',
+  merchant: merchantProp,
   rating,
   pros = [],
   cons = [],
 }: TopPickBlockProps) {
   const [showDetails, setShowDetails] = useState(false)
+
+  // Derive merchant from URL if not explicitly provided
+  const merchant = merchantProp || (() => {
+    if (!affiliateUrl) return 'Amazon'
+    const url = affiliateUrl.toLowerCase()
+    if (url.includes('amazon.com') || url.includes('amzn.to')) return 'Amazon'
+    if (url.includes('ebay.com')) return 'eBay'
+    if (url.includes('walmart.com')) return 'Walmart'
+    if (url.includes('bestbuy.com')) return 'Best Buy'
+    if (url.includes('target.com')) return 'Target'
+    return 'retailer'
+  })()
 
   if (!productName) return null
 

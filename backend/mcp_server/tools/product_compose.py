@@ -816,13 +816,30 @@ RULES:
                     )
                     best_product_name = sorted_by_quality[0][0] if sorted_by_quality else ""
                     # Find image and affiliate URL from products_with_offers
+                    # Prefer Amazon offer for the buy button; fall back to best_offer
                     best_image = ""
                     best_url = ""
                     for p in products_with_offers:
                         if _fuzzy_product_match(p.get("name", ""), best_product_name):
-                            offer = p.get("best_offer", {})
-                            best_image = offer.get("image_url", "")
-                            best_url = offer.get("url", "")
+                            all_p_offers = p.get("all_offers", [])
+                            # Pick Amazon offer first (don't send users to eBay with "Buy on Amazon")
+                            amazon_offer = next(
+                                (o for o in all_p_offers if "amazon" in o.get("url", "").lower() or "amzn.to" in o.get("url", "").lower()),
+                                None
+                            )
+                            if amazon_offer:
+                                best_url = amazon_offer.get("url", "")
+                                best_image = amazon_offer.get("image_url", "")
+                            else:
+                                offer = p.get("best_offer", {})
+                                best_url = offer.get("url", "")
+                                best_image = offer.get("image_url", "")
+                            # If Amazon offer had no image, grab from any offer that has one
+                            if not best_image:
+                                for o in all_p_offers:
+                                    if o.get("image_url"):
+                                        best_image = o["image_url"]
+                                        break
                             break
                     ui_blocks.insert(0, {
                         "type": "top_pick",
