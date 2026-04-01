@@ -11,7 +11,7 @@ const CHIPS: ChipConfig[] = [
   { label: 'For You' },
   { label: 'Tech', query: 'Best noise-cancelling headphones' },
   { label: 'Travel', query: 'Top all-inclusive resorts in the Caribbean' },
-  { label: 'Kitchen', query: 'Best robot vacuums for pet hair' },
+  { label: 'Kitchen', query: 'Best kitchen appliances and gadgets' },
   { label: 'Fitness', query: 'Best hiking boots for beginners' },
   { label: 'Audio', query: 'Best wireless earbuds and headphones' },
 ]
