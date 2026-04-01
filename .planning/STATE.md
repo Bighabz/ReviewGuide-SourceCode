@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Visual Overhaul — Bold Editorial
 status: planning
-stopped_at: Completed 18-ai-image-generation 18-01-PLAN.md
-last_updated: "2026-04-01T09:05:55.292Z"
+stopped_at: "Checkpoint 18-02 Task 2: human-verify category hero images"
+last_updated: "2026-04-01T09:14:19.281Z"
 last_activity: 2026-04-01 — Roadmap created, 25 requirements mapped to 6 phases (17-22)
 progress:
   total_phases: 22
   completed_phases: 15
   total_plans: 49
-  completed_plans: 44
+  completed_plans: 45
   percent: 0
 ---
 
@@ -49,6 +49,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 17-token-foundation-dark-mode-fixes P01 | 2 | 2 tasks | 1 files |
 | Phase 17-token-foundation-dark-mode-fixes P02 | 110s | 3 tasks | 3 files |
 | Phase 18-ai-image-generation P01 | 8 | 2 tasks | 2 files |
+| Phase 18-ai-image-generation P02 | 5 | 1 tasks | 16 files |
 
 ## Accumulated Context
 
@@ -68,6 +69,8 @@ Progress: [░░░░░░░░░░] 0%
 - [Phase 18-ai-image-generation]: Tests use existsSync guard + early return (not it.skip) — Vitest throws error if it.skip called inside running test
 - [Phase 18-ai-image-generation]: optimize-images.mjs uses createRequire to load sharp from frontend/node_modules so script runs from project root
 - [Phase 18-ai-image-generation]: Re-encode at quality=60 if first WebP pass exceeds 200KB — keeps batch automation unattended
+- [Phase 18-ai-image-generation]: Used Gemini Imagen 4.0 (imagen-4.0-generate-001) instead of Imagen 3 — Imagen 3 not listed in models; Imagen 4.0 available and produced excellent quality
+- [Phase 18-ai-image-generation]: Used direct REST API instead of MCP tool — nano-banana MCP not connected in session, direct API call achieved identical results
 
 ### Pending Todos
 
@@ -81,6 +84,6 @@ Progress: [░░░░░░░░░░] 0%
 
 ## Session Continuity
 
-Last session: 2026-04-01T09:05:55.283Z
-Stopped at: Completed 18-ai-image-generation 18-01-PLAN.md
+Last session: 2026-04-01T09:14:19.271Z
+Stopped at: Checkpoint 18-02 Task 2: human-verify category hero images
 Resume file: None
