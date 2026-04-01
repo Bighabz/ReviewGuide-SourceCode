@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Visual Overhaul — Bold Editorial
 status: executing
-stopped_at: Completed 19-01-PLAN.md
-last_updated: "2026-04-01T09:54:00.571Z"
+stopped_at: "Checkpoint 19-02 Task 2: awaiting visual verification"
+last_updated: "2026-04-01T09:57:32.361Z"
 last_activity: 2026-04-01 — 18-02 complete (15 category hero images approved)
 progress:
   total_phases: 22
-  completed_phases: 16
+  completed_phases: 17
   total_plans: 51
-  completed_plans: 47
+  completed_plans: 48
   percent: 92
 ---
 
@@ -53,6 +53,7 @@ Progress: [█████████░] 92%
 | Phase 18-ai-image-generation P03 | 8 | 2 tasks | 54 files |
 | Phase 18-ai-image-generation P03 | 35 | 3 tasks | 54 files |
 | Phase 19-mosaic-hero P01 | 12 | 1 tasks | 3 files |
+| Phase 19-mosaic-hero P02 | 6 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -80,6 +81,8 @@ Progress: [█████████░] 92%
 - [Phase 19-mosaic-hero]: Use raw <img> tags (not next/image) — consistent with entire codebase convention
 - [Phase 19-mosaic-hero]: Static MOSAIC_TILES const array (not Math.random()) — avoids SSR hydration mismatch
 - [Phase 19-mosaic-hero]: overflow: visible on MosaicHero container — rotated tile edges should not clip; outer wrapper clips in Plan 02
+- [Phase 19-mosaic-hero]: outer hero wrapper gains relative + overflow-hidden + rounded-2xl to clip rotated tile bleed at container boundary
+- [Phase 19-mosaic-hero]: scrim uses var(--mosaic-scrim) CSS variable — dark mode gradient works without JS
 
 ### Pending Todos
 
@@ -93,6 +96,6 @@ Progress: [█████████░] 92%
 
 ## Session Continuity
 
-Last session: 2026-04-01T09:54:00.565Z
-Stopped at: Completed 19-01-PLAN.md
+Last session: 2026-04-01T09:57:17.130Z
+Stopped at: Checkpoint 19-02 Task 2: awaiting visual verification
 Resume file: None
