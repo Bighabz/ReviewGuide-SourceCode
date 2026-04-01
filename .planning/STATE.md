@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Visual Overhaul — Bold Editorial
 status: planning
-stopped_at: Completed 17-token-foundation-dark-mode-fixes 17-02-PLAN.md
-last_updated: "2026-04-01T08:37:42.187Z"
+stopped_at: Completed 18-ai-image-generation 18-01-PLAN.md
+last_updated: "2026-04-01T09:05:55.292Z"
 last_activity: 2026-04-01 — Roadmap created, 25 requirements mapped to 6 phases (17-22)
 progress:
   total_phases: 22
   completed_phases: 15
-  total_plans: 46
-  completed_plans: 43
+  total_plans: 49
+  completed_plans: 44
   percent: 0
 ---
 
@@ -48,6 +48,7 @@ Progress: [░░░░░░░░░░] 0%
 *Updated after each plan completion*
 | Phase 17-token-foundation-dark-mode-fixes P01 | 2 | 2 tasks | 1 files |
 | Phase 17-token-foundation-dark-mode-fixes P02 | 110s | 3 tasks | 3 files |
+| Phase 18-ai-image-generation P01 | 8 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -64,6 +65,9 @@ Progress: [░░░░░░░░░░] 0%
 - [Phase 17-token-foundation-dark-mode-fixes]: Bold accent dark values use Tailwind 400-range pastels for accessible contrast on dark backgrounds
 - [Phase 17-token-foundation-dark-mode-fixes]: Global h1/h2/h3 rules unchanged — typography tokens are opt-in utilities for Phase 20+ components
 - [Phase 17-token-foundation-dark-mode-fixes]: Removed dark:text-emerald-400 from TopPickBlock.tsx — the data-theme strategy renders all Tailwind dark: prefixes silently inert
+- [Phase 18-ai-image-generation]: Tests use existsSync guard + early return (not it.skip) — Vitest throws error if it.skip called inside running test
+- [Phase 18-ai-image-generation]: optimize-images.mjs uses createRequire to load sharp from frontend/node_modules so script runs from project root
+- [Phase 18-ai-image-generation]: Re-encode at quality=60 if first WebP pass exceeds 200KB — keeps batch automation unattended
 
 ### Pending Todos
 
@@ -77,6 +81,6 @@ Progress: [░░░░░░░░░░] 0%
 
 ## Session Continuity
 
-Last session: 2026-04-01T08:33:12.743Z
-Stopped at: Completed 17-token-foundation-dark-mode-fixes 17-02-PLAN.md
+Last session: 2026-04-01T09:05:55.283Z
+Stopped at: Completed 18-ai-image-generation 18-01-PLAN.md
 Resume file: None

@@ -13,9 +13,9 @@
 
 ### AI Image Generation
 
-- [ ] **IMG-01**: Generate 15+ bold & colorful product category hero images (headphones, laptops, kitchen, travel, fitness, etc.) using consistent style prompt
-- [ ] **IMG-02**: Generate 8+ mosaic tile images (diverse products at varied angles) for landing page hero collage
-- [ ] **IMG-03**: All generated images pre-optimized (WebP, <200KB each) and stored in public/images/
+- [x] **IMG-01**: Generate 15+ bold & colorful product category hero images (headphones, laptops, kitchen, travel, fitness, etc.) using consistent style prompt
+- [x] **IMG-02**: Generate 8+ mosaic tile images (diverse products at varied angles) for landing page hero collage
+- [x] **IMG-03**: All generated images pre-optimized (WebP, <200KB each) and stored in public/images/
 
 ### Mosaic Hero
 
@@ -85,9 +85,9 @@
 | TOK-01 | Phase 17 | Complete |
 | TOK-02 | Phase 17 | Complete |
 | TOK-03 | Phase 17 | Complete |
-| IMG-01 | Phase 18 | Pending |
-| IMG-02 | Phase 18 | Pending |
-| IMG-03 | Phase 18 | Pending |
+| IMG-01 | Phase 18 | Complete |
+| IMG-02 | Phase 18 | Complete |
+| IMG-03 | Phase 18 | Complete |
 | HERO-01 | Phase 19 | Pending |
 | HERO-02 | Phase 19 | Pending |
 | HERO-03 | Phase 19 | Pending |
