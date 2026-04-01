@@ -65,6 +65,18 @@
   --bold-red: #DC2626;
   --bold-amber: #D97706;
 
+  /* ═══════════════════════════════════════════
+     V3 TYPOGRAPHY SCALE
+     Named heading tokens — applied explicitly by components, not global overrides
+     ═══════════════════════════════════════════ */
+  --heading-hero: clamp(2.5rem, 5vw, 4.5rem);
+  --heading-xl: clamp(1.875rem, 3vw, 2.5rem);
+  --heading-lg: 1.875rem;
+  --heading-md: 1.375rem;
+  --heading-sm: 1.125rem;
+  --heading-weight: 700;
+  --heading-line-height: 1.15;
+
   /* Legacy Mappings */
   --gpt-accent: var(--primary);
   --gpt-accent-hover: var(--primary-hover);
@@ -174,6 +186,15 @@
   --bold-green: #4ADE80;
   --bold-red: #F87171;
   --bold-amber: #FCD34D;
+
+  /* V3 Typography — same values, declared for completeness */
+  --heading-hero: clamp(2.5rem, 5vw, 4.5rem);
+  --heading-xl: clamp(1.875rem, 3vw, 2.5rem);
+  --heading-lg: 1.875rem;
+  --heading-md: 1.375rem;
+  --heading-sm: 1.125rem;
+  --heading-weight: 700;
+  --heading-line-height: 1.15;
 }
 
 /* ═══════════════════════════════════════════
