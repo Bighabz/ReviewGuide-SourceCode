@@ -19,10 +19,10 @@
 
 ### Mosaic Hero
 
-- [ ] **HERO-01**: User sees Shopify-style mosaic collage of product images as the landing page hero background
+- [x] **HERO-01**: User sees Shopify-style mosaic collage of product images as the landing page hero background
 - [ ] **HERO-02**: Search bar and headline float centered over the mosaic with readable contrast
-- [ ] **HERO-03**: Mosaic uses CSS Grid with tilted/overlapping cards — no additional JS library
-- [ ] **HERO-04**: First visible image uses loading="eager" to avoid LCP regression
+- [x] **HERO-03**: Mosaic uses CSS Grid with tilted/overlapping cards — no additional JS library
+- [x] **HERO-04**: First visible image uses loading="eager" to avoid LCP regression
 
 ### Discover Page Polish
 
@@ -88,10 +88,10 @@
 | IMG-01 | Phase 18 | Complete |
 | IMG-02 | Phase 18 | Complete |
 | IMG-03 | Phase 18 | Complete |
-| HERO-01 | Phase 19 | Pending |
+| HERO-01 | Phase 19 | Complete |
 | HERO-02 | Phase 19 | Pending |
-| HERO-03 | Phase 19 | Pending |
-| HERO-04 | Phase 19 | Pending |
+| HERO-03 | Phase 19 | Complete |
+| HERO-04 | Phase 19 | Complete |
 | DISC-06 | Phase 20 | Pending |
 | DISC-07 | Phase 20 | Pending |
 | BRW-01 | Phase 20 | Pending |
