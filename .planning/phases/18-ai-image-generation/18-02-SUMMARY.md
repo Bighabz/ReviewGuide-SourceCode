@@ -68,7 +68,7 @@ completed: 2026-04-01
 - **Duration:** ~5 min
 - **Started:** 2026-04-01T09:07:29Z
 - **Completed:** 2026-04-01T09:12:00Z
-- **Tasks:** 1 of 2 (Task 2 is checkpoint:human-verify — awaiting human approval)
+- **Tasks:** 2 of 2 (Task 2 checkpoint:human-verify — approved by user)
 - **Files modified:** 16
 
 ## Accomplishments
@@ -81,8 +81,9 @@ completed: 2026-04-01
 ## Task Commits
 
 1. **Task 1: Generate 15 category hero images** - `9de31dc` (feat)
+2. **Task 2: Visual quality check** - `0b3b5b1` (checkpoint:human-verify — approved)
 
-**Plan metadata:** TBD (docs commit after checkpoint approval)
+**Plan metadata:** `0b3b5b1` (docs: complete category hero image generation plan)
 
 ## Files Created/Modified
 
@@ -138,7 +139,7 @@ None - no external service configuration required.
 
 - All 15 category PNGs ready for Plan 18-03 WebP optimization pipeline
 - Phase 20 (BRW-01) browse page can reference `frontend/public/images/categories/cat-{slug}.png` or the WebP equivalents after Plan 03
-- Human visual QA checkpoint (Task 2) still pending — run after viewing the images in file explorer
+- Human visual QA checkpoint (Task 2) approved — all 15 images confirmed visually consistent and production-ready
 
 ## Self-Check: PASSED
 
