@@ -114,6 +114,9 @@ _PRODUCT_KEYWORDS: List[str] = [
     "buy",
     "recommend",
     "top rated",
+    "top picks",
+    "top pick",
+    "picks for",
     "review",
     "cheap",
     "affordable",
@@ -128,6 +131,12 @@ _PRODUCT_KEYWORDS: List[str] = [
     "shopping for",
     "searching for",
     "in the market for",
+    "where to buy",
+    "price of",
+    "how much",
+    "ranked",
+    "rating",
+    "vs",
 ]
 
 _COMPARISON_KEYWORDS: List[str] = [
@@ -549,15 +558,21 @@ def fast_router_sync(
     intent = _classify_tier1(query, conversation_history, last_search_context)
 
     if intent is None:
-        return FastRouterResult(
-            intent="unclear",
-            slots={},
-            tool_chain=TOOL_CHAINS["unclear"],
-            plan={"steps": PLAN_TEMPLATES["unclear"]},
-            confidence=0.3,
-            tier=1,
-            needs_clarification=True,
-        )
+        # Before giving up, check if the query mentions a known brand or category
+        # — if so, it's almost certainly a product query even if keywords missed
+        fallback_slots = extract_slots(query)
+        if "brand" in fallback_slots or "category" in fallback_slots:
+            intent = "product"
+        else:
+            return FastRouterResult(
+                intent="unclear",
+                slots=fallback_slots,
+                tool_chain=TOOL_CHAINS["unclear"],
+                plan={"steps": PLAN_TEMPLATES["unclear"]},
+                confidence=0.3,
+                tier=1,
+                needs_clarification=True,
+            )
 
     slots = extract_slots(query)
 
