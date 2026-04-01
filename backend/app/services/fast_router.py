@@ -122,10 +122,12 @@ _PRODUCT_KEYWORDS: List[str] = [
     "worth it",
     "which",
     "should i get",
-    "looking for a",
+    "looking for",
     "need a",
     "want a",
     "shopping for",
+    "searching for",
+    "in the market for",
 ]
 
 _COMPARISON_KEYWORDS: List[str] = [
@@ -239,6 +241,26 @@ KNOWN_BRANDS: List[str] = [
     "whirlpool",
     "bosch",
     "siemens",
+    "john deere",
+    "husqvarna",
+    "honda",
+    "toro",
+    "dewalt",
+    "makita",
+    "milwaukee",
+    "bissell",
+    "hoover",
+    "roomba",
+    "ecovacs",
+    "toyota",
+    "weber",
+    "traeger",
+    "peloton",
+    "garmin",
+    "fitbit",
+    "gopro",
+    "nikon",
+    "canon",
 ]
 
 # Known categories (longer phrases first for greedy matching)
@@ -280,6 +302,23 @@ KNOWN_CATEGORIES: List[str] = [
     "tv",
     "projector",
     "soundbar",
+    "lawn mower",
+    "lawnmower",
+    "pressure washer",
+    "grill",
+    "air fryer",
+    "blender",
+    "toaster",
+    "dishwasher",
+    "dryer",
+    "washer",
+    "refrigerator",
+    "mattress",
+    "stroller",
+    "car seat",
+    "treadmill",
+    "exercise bike",
+    "massage gun",
 ]
 
 # ---------------------------------------------------------------------------
@@ -434,10 +473,23 @@ def _classify_tier1(
     q = query.strip().lower()
 
     # 1. Intro — short query matching greeting patterns
-    #    Also accept very short queries (<= 3 words) that match greeting patterns
-    for pat in _INTRO_PATTERNS:
-        if pat.search(q):
+    #    Only classify as intro if no substantive intent is also present.
+    #    "hi i need a lawn mower" should be product, not intro.
+    is_greeting = any(pat.search(q) for pat in _INTRO_PATTERNS)
+    if is_greeting:
+        has_substance = (
+            _has_keyword(q, _PRODUCT_KEYWORDS)
+            or _has_keyword(q, _TRAVEL_KEYWORDS)
+            or _has_keyword(q, _COMPARISON_KEYWORDS)
+            or _has_keyword(q, _SERVICE_KEYWORDS)
+            or _has_keyword(q, _GENERAL_KEYWORDS)
+            or any(re.search(r"\b" + re.escape(b) + r"\b", q) for b in KNOWN_BRANDS)
+            or any(re.search(r"\b" + re.escape(c) + r"\b", q) for c in KNOWN_CATEGORIES)
+            or len(q.split()) > 6  # long messages are not just greetings
+        )
+        if not has_substance:
             return "intro"
+        # Fall through — let the substantive intent be classified below
 
     # 2. Comparison — explicit compare signals
     if _has_keyword(q, _COMPARISON_KEYWORDS):
