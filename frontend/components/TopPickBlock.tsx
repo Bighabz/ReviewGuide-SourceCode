@@ -59,7 +59,7 @@ export default function TopPickBlock({
       </div>
 
       <div className="flex gap-4">
-        <div className="flex-shrink-0 w-[140px] h-[140px] rounded-lg overflow-hidden bg-[var(--surface)]">
+        <div className="flex-shrink-0 w-[160px] h-[160px] rounded-xl overflow-hidden bg-[var(--surface)]">
           {imageUrl ? (
             <img
               src={imageUrl}

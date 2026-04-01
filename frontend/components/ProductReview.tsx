@@ -1,5 +1,6 @@
 'use client'
 
+import { motion } from 'framer-motion'
 import { ThumbsUp, ThumbsDown, ExternalLink, Star } from 'lucide-react'
 
 interface AffiliateLink {
@@ -57,7 +58,12 @@ export default function ProductReview({ product }: ProductReviewProps) {
   } = product
 
   return (
-    <div className="border border-[var(--border)] rounded-xl p-6 bg-[var(--surface-elevated)] shadow-card">
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+      whileHover={{ y: -2, boxShadow: '0 8px 30px rgba(0,0,0,0.08)' }}
+      className="border border-[var(--border)] rounded-xl p-6 bg-[var(--surface-elevated)] shadow-card transition-colors">
       {/* Product Header with Image */}
       <div className="mb-4">
         <div className="flex gap-4">
@@ -66,14 +72,14 @@ export default function ProductReview({ product }: ProductReviewProps) {
               <img
                 src={image_url}
                 alt={product_name}
-                className="w-24 h-24 object-contain rounded-lg bg-white"
+                className="w-28 h-28 object-contain rounded-xl bg-white"
                 loading="lazy"
               />
             </div>
           )}
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between">
-              <h3 className="text-xl font-semibold font-serif text-[var(--text)]">{product_name}</h3>
+              <h3 className="text-xl font-bold font-serif text-[var(--text)] tracking-tight">{product_name}</h3>
               {rating && rating !== 'N/A' && rating !== '0/5' && (
                 <div className="flex items-center gap-1 text-amber-500">
                   <Star size={16} fill="currentColor" />
@@ -180,6 +186,6 @@ export default function ProductReview({ product }: ProductReviewProps) {
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   )
 }

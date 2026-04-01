@@ -191,7 +191,7 @@ export default function ProductCarousel() {
             src={slide.image}
             alt={slide.title}
             className="absolute inset-0 w-full h-full object-cover opacity-90 transition-transform duration-500 group-hover:scale-105"
-            loading="lazy"
+            loading="eager"
           />
 
           {/* Gradient overlay for text readability */}

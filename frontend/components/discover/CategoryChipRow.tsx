@@ -40,16 +40,17 @@ export default function CategoryChipRow() {
             onClick={() => handleChipClick(chip)}
             className="flex-shrink-0 focus-ring"
             style={{
-              height: '36px',
-              padding: '0 14px',
+              height: '38px',
+              padding: '0 18px',
               borderRadius: '20px',
-              background: isActive ? 'var(--text)' : 'var(--surface)',
-              border: isActive ? '1px solid var(--text)' : '1px solid var(--border)',
-              color: isActive ? 'var(--background)' : 'var(--text-secondary)',
+              background: isActive ? 'var(--primary)' : 'var(--surface)',
+              border: isActive ? '1px solid var(--primary)' : '1.5px solid var(--border)',
+              color: isActive ? '#fff' : 'var(--text)',
               fontSize: '13px',
-              fontWeight: 500,
+              fontWeight: 600,
               cursor: 'pointer',
               whiteSpace: 'nowrap',
+              transition: 'all 0.15s ease',
             }}
           >
             {chip.label}

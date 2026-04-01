@@ -22,22 +22,22 @@ export default function DiscoverPage() {
       </div>
 
       {/* Main content — pt-16 on mobile clears the fixed h-14 header + breathing room */}
-      <div className="flex-1 flex flex-col px-4 sm:px-6 md:px-8 pt-16 md:pt-0 pb-20 md:pb-8">
-        {/* Hero section — mosaic background + floating text */}
-        <div className="relative flex flex-col items-center pt-2 sm:pt-8 pb-4 overflow-hidden rounded-2xl">
-          {/* Mosaic sits behind everything — z-0 */}
+      <div className="flex-1 flex flex-col px-4 sm:px-6 md:px-8 pt-16 md:pt-0 pb-20 md:pb-8 overflow-x-hidden">
+        {/* Hero section — full-width mosaic background + floating text */}
+        <div className="relative min-h-[320px] sm:min-h-[380px] flex flex-col items-center justify-center">
+          {/* Mosaic fills the hero — no overflow clipping so tiles can extend */}
           <div className="absolute inset-0 z-0">
             <MosaicHero />
           </div>
 
-          {/* Gradient scrim for text readability — z-[1], above mosaic, below text */}
+          {/* Gradient scrim for text readability */}
           <div
-            className="absolute inset-0 z-[1]"
+            className="absolute inset-0 z-[1] pointer-events-none"
             style={{ background: 'var(--mosaic-scrim)' }}
           />
 
-          {/* Text content floats on top — z-[2] */}
-          <div className="relative z-[2] flex flex-col items-center">
+          {/* Text content floats on top */}
+          <div className="relative z-[2] flex flex-col items-center py-8 sm:py-12">
             <h1
               className="font-serif text-[28px] sm:text-4xl md:text-5xl text-center leading-tight tracking-tight animate-fade-up"
               style={{ color: 'var(--text)' }}
