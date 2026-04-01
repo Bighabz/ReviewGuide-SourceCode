@@ -122,13 +122,13 @@ export default function ProductCards({ products }: ProductCardsProps) {
                 <div className="mt-3 mb-4 space-y-2 text-sm leading-relaxed">
                   {displayPros.length > 0 && (
                     <p className="text-[var(--text)]">
-                      <span className="font-semibold text-green-600">What we like:</span>{' '}
+                      <span className="font-semibold text-[var(--success)]">What we like:</span>{' '}
                       {displayPros.join('. ')}.
                     </p>
                   )}
                   {displayCons.length > 0 && (
                     <p className="text-[var(--text)]">
-                      <span className="font-semibold text-red-500">Watch out for:</span>{' '}
+                      <span className="font-semibold text-[var(--error)]">Watch out for:</span>{' '}
                       {displayCons.join('. ')}.
                     </p>
                   )}
