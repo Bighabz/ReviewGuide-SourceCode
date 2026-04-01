@@ -674,6 +674,17 @@ async def _call_haiku(
         )
 
         raw_text = response.content[0].text.strip()
+        # Handle Haiku sometimes wrapping JSON in markdown code blocks
+        if raw_text.startswith("```"):
+            raw_text = raw_text.split("```")[1]
+            if raw_text.startswith("json"):
+                raw_text = raw_text[4:]
+            raw_text = raw_text.strip()
+        # Try to extract JSON if there's text before it
+        if not raw_text.startswith("{"):
+            json_start = raw_text.find("{")
+            if json_start >= 0:
+                raw_text = raw_text[json_start:]
         result = json.loads(raw_text)
 
         # Validate structure
@@ -776,14 +787,21 @@ async def fast_router(
             needs_clarification=False,
         )
 
-    # --- Final fallback: general intent with low confidence ---
-    logger.debug("fast_router: Tier 2 failed — using general fallback")
+    # --- Final fallback ---
+    # If query mentions a brand or category, treat as product (not general).
+    # "Top picks for electric skateboards" has no keyword match but IS a product query.
+    fallback_intent = "general"
+    if "brand" in tier1_slots or "category" in tier1_slots:
+        fallback_intent = "product"
+        logger.info("fast_router: Tier 2 failed — brand/category detected, using 'product' fallback")
+    else:
+        logger.debug("fast_router: Tier 2 failed — using 'general' fallback")
 
     return FastRouterResult(
-        intent="general",
+        intent=fallback_intent,
         slots=tier1_slots,
-        tool_chain=TOOL_CHAINS["general"],
-        plan={"steps": PLAN_TEMPLATES["general"]},
+        tool_chain=TOOL_CHAINS[fallback_intent],
+        plan={"steps": PLAN_TEMPLATES[fallback_intent]},
         confidence=0.3,
         tier=2,
         needs_clarification=False,
