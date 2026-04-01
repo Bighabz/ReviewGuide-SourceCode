@@ -82,36 +82,37 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| TOK-01 | TBD | Pending |
-| TOK-02 | TBD | Pending |
-| TOK-03 | TBD | Pending |
-| IMG-01 | TBD | Pending |
-| IMG-02 | TBD | Pending |
-| IMG-03 | TBD | Pending |
-| HERO-01 | TBD | Pending |
-| HERO-02 | TBD | Pending |
-| HERO-03 | TBD | Pending |
-| HERO-04 | TBD | Pending |
-| DISC-06 | TBD | Pending |
-| DISC-07 | TBD | Pending |
-| BRW-01 | TBD | Pending |
-| BRW-02 | TBD | Pending |
-| CHT-01 | TBD | Pending |
-| CHT-02 | TBD | Pending |
-| CARD-01 | TBD | Pending |
-| CARD-02 | TBD | Pending |
-| CARD-03 | TBD | Pending |
-| CARD-04 | TBD | Pending |
-| RES-07 | TBD | Pending |
-| RES-08 | TBD | Pending |
-| QA-01 | TBD | Pending |
-| QA-02 | TBD | Pending |
-| QA-03 | TBD | Pending |
+| TOK-01 | Phase 17 | Pending |
+| TOK-02 | Phase 17 | Pending |
+| TOK-03 | Phase 17 | Pending |
+| IMG-01 | Phase 18 | Pending |
+| IMG-02 | Phase 18 | Pending |
+| IMG-03 | Phase 18 | Pending |
+| HERO-01 | Phase 19 | Pending |
+| HERO-02 | Phase 19 | Pending |
+| HERO-03 | Phase 19 | Pending |
+| HERO-04 | Phase 19 | Pending |
+| DISC-06 | Phase 20 | Pending |
+| DISC-07 | Phase 20 | Pending |
+| BRW-01 | Phase 20 | Pending |
+| BRW-02 | Phase 20 | Pending |
+| CHT-01 | Phase 21 | Pending |
+| CHT-02 | Phase 21 | Pending |
+| CARD-01 | Phase 21 | Pending |
+| CARD-02 | Phase 21 | Pending |
+| CARD-03 | Phase 21 | Pending |
+| CARD-04 | Phase 21 | Pending |
+| RES-07 | Phase 21 | Pending |
+| RES-08 | Phase 21 | Pending |
+| QA-01 | Phase 22 | Pending |
+| QA-02 | Phase 22 | Pending |
+| QA-03 | Phase 22 | Pending |
 
 **Coverage:**
 - v3.0 requirements: 25 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 25
+- Mapped to phases: 25
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-01*
+*Traceability mapped: 2026-04-01*

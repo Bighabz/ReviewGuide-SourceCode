@@ -2,13 +2,14 @@
 
 ## Milestones
 
-- 🚧 **v1.0 Core Platform** - Phases 1-11 (in progress)
-- 📋 **v2.0 Frontend UX Redesign** - Phases 12-16 (planned)
+- ✅ **v1.0 Core Platform** - Phases 1-11 (shipped 2026-03-26)
+- ✅ **v2.0 Frontend UX Redesign** - Phases 12-16 (shipped 2026-03-17)
+- 🚧 **v3.0 Visual Overhaul — Bold Editorial** - Phases 17-22 (in progress)
 
 ## Phases
 
 <details>
-<summary>🚧 v1.0 Core Platform (Phases 1-11) — In Progress</summary>
+<summary>✅ v1.0 Core Platform (Phases 1-11) — SHIPPED 2026-03-26</summary>
 
 **Phase Numbering:**
 - Integer phases (1, 2, 3): Planned milestone work
@@ -17,16 +18,16 @@
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Response Experience Overhaul** - True token streaming, progressive product cards, parallelized backend, blog narrative with buy links (completed 2026-03-17)
-- [x] **Phase 2: Fix Review Source Links** - Restore clickable review citations in blog-style responses (completed 2026-03-25)
-- [ ] **Phase 3: Serper Shopping Provider** - Add multi-retailer product search with images as a new affiliate provider
-- [ ] **Phase 4: Browse Page Fixes** - Fix broken amzn.to links and truncated affiliate URL on browse pages
-- [ ] **Phase 5: Amazon Creators API Migration** - Migrate Amazon provider from PA-API v5 to Creators API before May 15, 2026 deadline
-- [ ] **Phase 6: Skimlinks Link Wrapper** - Implement server-side affiliate monetization for non-Amazon, non-eBay product URLs
-- [ ] **Phase 7: Skimlinks Middleware + Editor's Picks** - Wire Skimlinks as post-processing middleware and re-enable curated content on browse pages
-- [ ] **Phase 8: Clarifier Suggestion Chips** - Add tappable suggestion chips to clarifier agent responses
-- [ ] **Phase 9: Top Pick Block + Help Me Decide** - Add editorial top pick UI block and comparison intent detection
-- [ ] **Phase 10: Impact.com Provider** - Integrate Impact.com affiliate catalog for keyword product search
-- [ ] **Phase 11: Viator + CJ Expansion** - Add Viator activity provider and apply to high-value CJ advertisers
+- [x] **Phase 2: Fix Review Source Links** - Restore clickable review citations in blog-style responses (completed 2026-03-25)
+- [x] **Phase 3: Serper Shopping Provider** - Add multi-retailer product search with images as a new affiliate provider
+- [x] **Phase 4: Browse Page Fixes** - Fix broken amzn.to links and truncated affiliate URL on browse pages
+- [x] **Phase 5: Amazon Creators API Migration** - Migrate Amazon provider from PA-API v5 to Creators API before May 15, 2026 deadline
+- [x] **Phase 6: Skimlinks Link Wrapper** - Implement server-side affiliate monetization for non-Amazon, non-eBay product URLs
+- [x] **Phase 7: Skimlinks Middleware + Editor's Picks** - Wire Skimlinks as post-processing middleware and re-enable curated content on browse pages
+- [x] **Phase 8: Clarifier Suggestion Chips** - Add tappable suggestion chips to clarifier agent responses
+- [x] **Phase 9: Top Pick Block + Help Me Decide** - Add editorial top pick UI block and comparison intent detection
+- [x] **Phase 10: Impact.com Provider** - Integrate Impact.com affiliate catalog for keyword product search
+- [x] **Phase 11: Viator + CJ Expansion** - Add Viator activity provider and apply to high-value CJ advertisers
 
 ### Phase 1: Response Experience Overhaul
 **Goal**: Users see product cards within 5 seconds and a streaming blog narrative with buy links — not a 90-second "Thinking..." wall. True token streaming from OpenAI, progressive UI, parallelized backend.
@@ -43,12 +44,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   8. No regressions in response quality — products, prices, review summaries, and affiliate links still appear
 **Plans**: 6 plans
 Plans:
-- [ ] 01-01-PLAN.md — Wave 0 test scaffolds for all 8 RX requirements
-- [ ] 01-02-PLAN.md — Backend parallelism (RX-03, RX-04, RX-05)
-- [ ] 01-03-PLAN.md — product_compose cleanup: remove opener/conclusion, thread source URLs (RX-06, RX-07)
-- [ ] 01-04-PLAN.md — Early product card streaming via artifact callback (RX-01, RX-08)
-- [ ] 01-05-PLAN.md — Blog article token streaming via token callback (RX-02)
-- [ ] 01-06-PLAN.md — Human verification checkpoint
+- [x] 01-01-PLAN.md — Wave 0 test scaffolds for all 8 RX requirements
+- [x] 01-02-PLAN.md — Backend parallelism (RX-03, RX-04, RX-05)
+- [x] 01-03-PLAN.md — product_compose cleanup: remove opener/conclusion, thread source URLs (RX-06, RX-07)
+- [x] 01-04-PLAN.md — Early product card streaming via artifact callback (RX-01, RX-08)
+- [x] 01-05-PLAN.md — Blog article token streaming via token callback (RX-02)
+- [x] 01-06-PLAN.md — Human verification checkpoint
 
 ### Phase 2: Fix Review Source Links
 **Goal**: Blog-style responses attribute sources with working links to Wirecutter, Tom's Guide, Reddit, and other review sites
@@ -75,7 +76,7 @@ Plans:
   5. The Serper shopping provider requires no new API credentials (reuses existing SERPER_API_KEY)
 **Plans**: 1 plan
 Plans:
-- [ ] 03-01-PLAN.md — SerperShoppingProvider: create provider, register in loader and product_compose (FIX-02, FIX-03, SRCH-01, SRCH-02, SRCH-03)
+- [x] 03-01-PLAN.md — SerperShoppingProvider: create provider, register in loader and product_compose (FIX-02, FIX-03, SRCH-01, SRCH-02, SRCH-03)
 
 ### Phase 4: Browse Page Fixes
 **Goal**: All affiliate links on browse category pages resolve correctly with no broken or truncated URLs
@@ -87,7 +88,7 @@ Plans:
   3. No 404 or redirect errors appear in the browser console when clicking curated affiliate links
 **Plans**: 1 plan
 Plans:
-- [ ] 04-01-PLAN.md — Guard amzn.to in health checker, fix menopause URL, wire CuratedProductCard into category page (FIX-04, FIX-05)
+- [x] 04-01-PLAN.md — Guard amzn.to in health checker, fix menopause URL, wire CuratedProductCard into category page (FIX-04, FIX-05)
 
 ### Phase 5: Amazon Creators API Migration
 **Goal**: Amazon product search continues working after May 15, 2026 using the Creators API with OAuth2 authentication
@@ -101,8 +102,8 @@ Plans:
   5. Amazon integration is live on Railway before May 15, 2026
 **Plans**: 2 plans
 Plans:
-- [ ] 05-01-PLAN.md — Wave 0 RED test scaffolds, python-amazon-paapi dependency, config + loader updates (AMZN-01, AMZN-02, AMZN-03, AMZN-04)
-- [ ] 05-02-PLAN.md — Rewrite amazon_provider.py: replace PA-API v5 with Creators API library (AMZN-01, AMZN-02, AMZN-03, AMZN-04)
+- [x] 05-01-PLAN.md — Wave 0 RED test scaffolds, python-amazon-paapi dependency, config + loader updates (AMZN-01, AMZN-02, AMZN-03, AMZN-04)
+- [x] 05-02-PLAN.md — Rewrite amazon_provider.py: replace PA-API v5 with Creators API library (AMZN-01, AMZN-02, AMZN-03, AMZN-04)
 
 ### Phase 6: Skimlinks Link Wrapper
 **Goal**: Product URLs from Serper Shopping and other non-Amazon, non-eBay sources are monetized via Skimlinks affiliate tracking
@@ -145,9 +146,9 @@ Plans:
   4. The clarifier_chips field is present in GraphState with a default value so LangGraph channels do not crash on existing sessions
 **Plans**: 3 plans
 Plans:
-- [ ] 08-01-PLAN.md — Wave 0 RED test scaffolds for clarifier chip rendering and click dispatch (UX-01, UX-02)
-- [ ] 08-02-PLAN.md — Backend: GraphState field, initial_state default, clarifier prompt chip generation (UX-01, UX-02)
-- [ ] 08-03-PLAN.md — Frontend: FollowupQuestion interface update, chip pill rendering in Message.tsx (UX-01, UX-02)
+- [x] 08-01-PLAN.md — Wave 0 RED test scaffolds for clarifier chip rendering and click dispatch (UX-01, UX-02)
+- [x] 08-02-PLAN.md — Backend: GraphState field, initial_state default, clarifier prompt chip generation (UX-01, UX-02)
+- [x] 08-03-PLAN.md — Frontend: FollowupQuestion interface update, chip pill rendering in Message.tsx (UX-01, UX-02)
 
 ### Phase 9: Top Pick Block + Help Me Decide
 **Goal**: Product responses lead with a single opinionated editorial recommendation, product counts are capped at 5, and comparison intent triggers a comparison table automatically
@@ -196,19 +197,14 @@ Plans:
 
 </details>
 
----
-
-### v2.0 Frontend UX Redesign (Phases 12-16)
-
-**Milestone Goal:** Complete frontend redesign — unified Discover -> Chat -> Results flow with mobile-first, app-like navigation and structured AI responses, evolving the editorial luxury aesthetic. No backend changes required.
+<details>
+<summary>✅ v2.0 Frontend UX Redesign (Phases 12-16) — SHIPPED 2026-03-17</summary>
 
 - [x] **Phase 12: Navigation Shell** - Mobile bottom tab bar, desktop top nav, central FAB, iOS safe area, layout baseline (completed 2026-03-17)
 - [x] **Phase 13: Discover Screen** - Unified entry point replacing Browse/Chat split — hero search, category chips, trending cards (completed 2026-03-17)
 - [x] **Phase 14: Chat Screen** - Restructured AI responses, compact inline product cards, suggestion chips, source citations (completed 2026-03-17)
 - [x] **Phase 15: Results Screen** - Dedicated `/results/:id` route with desktop split panel and mobile full-width layouts (completed 2026-03-17)
 - [x] **Phase 16: Placeholder Routes and Build QA** - `/saved`, `/compare` stubs, Suspense wrappers, `next build` clean pass (completed 2026-03-17)
-
-## Phase Details
 
 ### Phase 12: Navigation Shell
 **Goal**: App-like navigation is in place on all screens — mobile gets a fixed bottom tab bar with central FAB, desktop keeps the existing top nav, and every new component is built on the correct `h-dvh` / CSS variable / dark mode baseline from day one.
@@ -238,9 +234,9 @@ Plans:
   5. Tapping the search bar (not typing, just tapping) navigates to the chat screen with the input immediately focused and ready to type
 **Plans**: 3 plans
 Plans:
-- [ ] 13-01-PLAN.md — Wave 0 test scaffolds for all DISC requirements (DISC-01 through DISC-05)
-- [ ] 13-02-PLAN.md — Discover screen components: trendingTopics data, DiscoverSearchBar, CategoryChipRow, TrendingCards, page.tsx orchestrator (DISC-01 through DISC-05)
-- [ ] 13-03-PLAN.md — Route migration: update MobileTabBar/UnifiedTopbar hrefs, /browse redirect, visual verification (DISC-01, DISC-02, DISC-05)
+- [x] 13-01-PLAN.md — Wave 0 test scaffolds for all DISC requirements (DISC-01 through DISC-05)
+- [x] 13-02-PLAN.md — Discover screen components: trendingTopics data, DiscoverSearchBar, CategoryChipRow, TrendingCards, page.tsx orchestrator (DISC-01 through DISC-05)
+- [x] 13-03-PLAN.md — Route migration: update MobileTabBar/UnifiedTopbar hrefs, /browse redirect, visual verification (DISC-01, DISC-02, DISC-05)
 
 ### Phase 14: Chat Screen
 **Goal**: AI responses follow a predictable structure users can scan — summary, ranked product cards, source links, follow-up chips — and the chat UI is visually polished with correct bubble alignment and a live status indicator during streaming.
@@ -255,10 +251,10 @@ Plans:
   6. Follow-up suggestion chips appear below each AI response and submitting one (by tap) sends it as the next user message without any typing
 **Plans**: 4 plans
 Plans:
-- [ ] 14-01-PLAN.md — Wave 0 test scaffolds for all CHAT requirements (CHAT-01 through CHAT-06)
-- [ ] 14-02-PLAN.md — Backend review_sources fix, InlineProductCard, SourceCitations, ChatStatusContext (CHAT-02, CHAT-03, CHAT-04)
-- [ ] 14-03-PLAN.md — Integration: Message.tsx bubbles, BlockRegistry wiring, MobileHeader status, chip restyle (CHAT-01, CHAT-03, CHAT-05, CHAT-06)
-- [ ] 14-04-PLAN.md — Full test suite, build check, and human visual verification (all CHAT requirements)
+- [x] 14-01-PLAN.md — Wave 0 test scaffolds for all CHAT requirements (CHAT-01 through CHAT-06)
+- [x] 14-02-PLAN.md — Backend review_sources fix, InlineProductCard, SourceCitations, ChatStatusContext (CHAT-02, CHAT-03, CHAT-04)
+- [x] 14-03-PLAN.md — Integration: Message.tsx bubbles, BlockRegistry wiring, MobileHeader status, chip restyle (CHAT-01, CHAT-03, CHAT-05, CHAT-06)
+- [x] 14-04-PLAN.md — Full test suite, build check, and human visual verification (all CHAT requirements)
 
 ### Phase 15: Results Screen
 **Goal**: Users can navigate to a dedicated, shareable Results page for any completed research session — with a full product grid, source panel, and quick actions — laid out in a desktop split panel and a mobile full-width view.
@@ -273,9 +269,9 @@ Plans:
   6. The Results page includes a quick actions panel with Compare side by side, Export to list, and Share results — and a Sources section listing colored dots, source names, and clickable article links
 **Plans**: 3 plans
 Plans:
-- [ ] 15-01-PLAN.md — Wave 0 RED tests, extractResultsData utility, CSS card accent variables (RES-01 through RES-06, RESP-01, RESP-02)
-- [ ] 15-02-PLAN.md — ResultsProductCard, ResultsQuickActions, ResultsHeader components (RES-02, RES-03, RES-04, RES-05, RESP-01, RESP-02)
-- [ ] 15-03-PLAN.md — Results page.tsx, MobileHeader wiring, MobileTabBar active state, human verification (RES-01, RES-02, RES-06, RESP-01, RESP-02)
+- [x] 15-01-PLAN.md — Wave 0 RED tests, extractResultsData utility, CSS card accent variables (RES-01 through RES-06, RESP-01, RESP-02)
+- [x] 15-02-PLAN.md — ResultsProductCard, ResultsQuickActions, ResultsHeader components (RES-02, RES-03, RES-04, RES-05, RESP-01, RESP-02)
+- [x] 15-03-PLAN.md — Results page.tsx, MobileHeader wiring, MobileTabBar active state, human verification (RES-01, RES-02, RES-06, RESP-01, RESP-02)
 
 ### Phase 16: Placeholder Routes and Build QA
 **Goal**: All bottom tab destinations have working routes that don't throw errors, every new page uses correct Suspense wrappers, and `next build` passes cleanly — confirming the entire milestone is production-deployable.
@@ -288,28 +284,121 @@ Plans:
   4. On a real iOS device, the bottom tab bar does not overlap the keyboard when the chat input is focused, dark mode renders all new components correctly, and carousel swipe works on `/results/:id`
 **Plans**: 1 plan
 Plans:
-- [ ] 16-01-PLAN.md — Placeholder pages (/saved, /compare), nav href updates, build QA (PLCH-01, PLCH-02)
+- [x] 16-01-PLAN.md — Placeholder pages (/saved, /compare), nav href updates, build QA (PLCH-01, PLCH-02)
+
+</details>
+
+---
+
+### v3.0 Visual Overhaul — Bold Editorial (Phases 17-22)
+
+**Milestone Goal:** Full site visual refresh with Shopify-level polish — bold colors, AI-generated product imagery, premium product cards — while keeping the warm editorial foundation. Pure frontend: no backend changes required.
+
+- [ ] **Phase 17: Token Foundation + Dark Mode Fixes** - Add bold CSS tokens, fix hardcoded dark mode colors across product card leaf components
+- [ ] **Phase 18: AI Image Generation** - Generate and commit all hero, mosaic, and category images as a unified visual batch
+- [ ] **Phase 19: Mosaic Hero** - Build MosaicHero component and wire into discover landing page
+- [ ] **Phase 20: Discover + Browse Page Upgrades** - Bold category heroes, upgraded carousel and trending cards, per-category accent color injection
+- [ ] **Phase 21: Chat + Results Card Polish** - Premium product card treatment across all chat and results card variants
+- [ ] **Phase 22: Visual QA + Consistency Pass** - Full site screenshot walk-through, token test coverage, hardcoded color audit
+
+## Phase Details
+
+### Phase 17: Token Foundation + Dark Mode Fixes
+**Goal**: The CSS token system is extended with bold editorial values, every new token has a dark mode counterpart, and all hardcoded color regressions in product card leaf components are converted to semantic tokens — so subsequent phases build on a correct, tested foundation.
+**Depends on**: Nothing (first phase of v3.0; establishes rules all subsequent phases follow)
+**Requirements**: TOK-01, TOK-02, TOK-03
+**Success Criteria** (what must be TRUE):
+  1. New bold accent color tokens are visible in browser DevTools on `<html>` — vibrant blues, terracotta, and energetic greens appear on `:root` and are overridden in `[data-theme="dark"]`
+  2. Toggling dark mode in the browser does not produce any white/light color flashes on ProductReview, TopPickBlock, or ProductCards components (hardcoded `text-green-700` / `text-red-700` / `text-emerald-600` eliminated)
+  3. Running `npm run test:run` passes with zero failures after all globals.css edits — the designTokens.test.ts contract is intact
+  4. Larger, bolder heading sizes are visible in the browser: category hero h1 renders at `clamp(2.5rem, 5vw, 4.5rem)` measured in DevTools
+**Plans**: TBD
+
+### Phase 18: AI Image Generation
+**Goal**: A complete, visually consistent batch of AI-generated product and category images is committed to the repository — all sharing a single canonical style, pre-optimized as WebP under 200KB — so every subsequent component that references images can finalize its implementation without waiting.
+**Depends on**: Phase 17 (the target aesthetic established by Phase 17 tokens informs the canonical image style prompt)
+**Requirements**: IMG-01, IMG-02, IMG-03
+**Success Criteria** (what must be TRUE):
+  1. At least 15 bold product category hero images (headphones, laptops, kitchen, travel, fitness, etc.) exist in `/public/images/` as WebP files, each under 200KB
+  2. At least 8 mosaic tile images exist in `/public/images/` as WebP files — diverse products at varied angles — all sharing consistent lighting, color temperature, and stylization
+  3. Viewing all generated images side-by-side in a browser reveals a coherent visual language: no mismatched lighting or wildly different color palettes between images
+  4. Every generated image file is under 200KB — verified by checking file sizes in the filesystem
+**Plans**: TBD
+
+### Phase 19: Mosaic Hero
+**Goal**: Users landing on the discover page see a Shopify-style mosaic collage of bold product images as the hero background — creating an immediate first impression of visual richness — with the search bar and headline floating over it with readable contrast, and no LCP or CLS regressions.
+**Depends on**: Phase 17 (bold tokens for overlay gradient colors), Phase 18 (mosaic tile images must exist before component can be finalized)
+**Requirements**: HERO-01, HERO-02, HERO-03, HERO-04
+**Success Criteria** (what must be TRUE):
+  1. On the landing page (`/`), user sees a grid of overlapping, slightly-rotated product image tiles filling the hero area — replacing the previous plain background
+  2. The search bar and headline text remain legible over the mosaic — no product image bleeds through at full opacity behind text
+  3. The mosaic layout is built with CSS Grid and `transform: rotate()` — no additional JavaScript library is imported to implement it
+  4. Lighthouse mobile audit shows LCP under 2.5s and CLS under 0.1 after the mosaic hero is live (the first visible mosaic image uses `loading="eager"`)
+**Plans**: TBD
+
+### Phase 20: Discover + Browse Page Upgrades
+**Goal**: The discover page carousel and trending cards have bold visual presence with real product images, and browse category hero sections use AI-generated background images with gradient overlays — transforming category pages into a magazine-cover experience.
+**Depends on**: Phase 17 (typography tokens for bold category hero h1), Phase 18 (category hero background images must exist)
+**Requirements**: DISC-06, DISC-07, BRW-01, BRW-02
+**Success Criteria** (what must be TRUE):
+  1. Browse category hero sections display full-bleed AI-generated background images with a gradient overlay — text on the hero passes WCAG AA contrast when measured with a contrast checker
+  2. Editor's Picks cards on browse pages are visually prominent with bolder typography and colors consistent with the v3.0 bold editorial language
+  3. The discover page product carousel renders real product images with `loading="eager"` on the first slide — no icon placeholders remain
+  4. Category chips and trending cards on the discover page have stronger visual presence — larger images, bolder color treatment — compared to the pre-v3.0 state
+**Plans**: TBD
+
+### Phase 21: Chat + Results Card Polish
+**Goal**: Every product card variant across the chat and results screens has premium spacing, bolder typography, spring-physics hover animations, a clean 3-column "Where to Buy" section with merchant labels, and no Framer Motion regressions during active streaming.
+**Depends on**: Phase 17 (semantic color tokens required before hardcoded colors can be safely removed from cards)
+**Requirements**: CHT-01, CHT-02, CARD-01, CARD-02, CARD-03, CARD-04, RES-07, RES-08
+**Success Criteria** (what must be TRUE):
+  1. AI response text in chat uses bolder heading sizes and better paragraph spacing — a side-by-side screenshot comparison with the pre-v3.0 state shows clear typographic improvement
+  2. Inline product cards in chat have a visible hover animation (smooth lift with shadow) when hovered — price displays in a larger, bolder weight
+  3. ProductReview cards display a maximum of 3 "Where to Buy" offers with clean merchant names derived from the offer URL (e.g. "Best Buy" not "bestbuy.com/product/123...")
+  4. TopPickBlock renders with a stronger gradient CTA and a larger product image than the pre-v3.0 version
+  5. Card hover effects use Framer Motion spring physics (`stiffness: 400, damping: 28`) — verified by watching the card lift smoothly rather than linearly
+  6. During active AI response streaming, the Chrome DevTools Performance panel shows no frame drops below 55fps caused by card animations
+  7. Product grid cards on the results page match the bold v3.0 visual language; the sources section uses bolder, larger colored dots
+**Plans**: TBD
+
+### Phase 22: Visual QA + Consistency Pass
+**Goal**: A human has walked through every page of the site on both mobile and desktop, confirmed visual consistency, verified no hardcoded colors remain in refreshed components, and the design token test suite covers all new tokens added in this milestone — making the v3.0 release a confident, documented sign-off.
+**Depends on**: Phases 17-21 (all visual work must be complete before QA gate)
+**Requirements**: QA-01, QA-02, QA-03
+**Success Criteria** (what must be TRUE):
+  1. A complete screenshot walk-through (homepage, a browse category page, a chat session with product results, the results page) on both mobile (375px) and desktop (1440px) shows consistent bold editorial visual language across all four surfaces
+  2. `npm run test:run` passes with new assertions in designTokens.test.ts that cover every CSS variable added in Phase 17 — no new token is untested
+  3. A grep for hardcoded color values (`text-green-700`, `text-red-700`, `text-emerald-600`, `bg-blue-`, `text-blue-`, and similar Tailwind palette utilities) in all components modified during v3.0 returns zero results
+**Plans**: TBD
+
+---
 
 ## Progress
 
 **Execution Order:**
-v2.0 phases execute sequentially: 12 -> 13 -> 14 -> 15 -> 16. Phase 12 is a hard prerequisite for all others. Phases 13, 14, 15 chain in order due to component dependencies (NavLayout -> Discover -> ChatHeader -> ResultsPage). Phase 16 runs last as build QA gate.
+v3.0 phases execute in order: 17 -> 18 -> 19 -> 20 -> 21 -> 22. Phases 17 and 18 are the foundation; Phase 17 must complete before any component work (tokens), Phase 18 must complete before Phase 19 (images). Phases 20 and 21 depend on Phase 17 but are independent of each other and can proceed in parallel if resources allow. Phase 22 is the hard gate — no release without it.
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 1. Response Experience Overhaul | 6/6 | Complete   | 2026-03-17 | - |
-| 2. Fix Review Source Links | 1/1 | Complete   | 2026-03-25 | - |
-| 3. Serper Shopping Provider | v1.0 | 0/1 | Not started | - |
-| 4. Browse Page Fixes | v1.0 | 0/1 | Not started | - |
-| 5. Amazon Creators API Migration | v1.0 | 0/2 | Not started | - |
+| 1. Response Experience Overhaul | v1.0 | 6/6 | Complete | 2026-03-17 |
+| 2. Fix Review Source Links | v1.0 | 1/1 | Complete | 2026-03-25 |
+| 3. Serper Shopping Provider | v1.0 | 1/1 | Complete | - |
+| 4. Browse Page Fixes | v1.0 | 1/1 | Complete | - |
+| 5. Amazon Creators API Migration | v1.0 | 2/2 | Complete | - |
 | 6. Skimlinks Link Wrapper | v1.0 | 3/3 | Complete | 2026-03-25 |
 | 7. Skimlinks Middleware + Editor's Picks | v1.0 | 3/3 | Complete | 2026-03-26 |
-| 8. Clarifier Suggestion Chips | v1.0 | 0/3 | Not started | - |
+| 8. Clarifier Suggestion Chips | v1.0 | 3/3 | Complete | - |
 | 9. Top Pick Block + Help Me Decide | v1.0 | 3/3 | Complete | 2026-03-25 |
 | 10. Impact.com Provider | v1.0 | 2/2 | Complete | 2026-03-25 |
 | 11. Viator + CJ Expansion | v1.0 | 4/4 | Complete | 2026-03-26 |
 | 12. Navigation Shell | v2.0 | 3/3 | Complete | 2026-03-17 |
 | 13. Discover Screen | v2.0 | 3/3 | Complete | 2026-03-17 |
-| 14. Chat Screen | 4/4 | Complete    | 2026-03-17 | - |
-| 15. Results Screen | 3/3 | Complete    | 2026-03-17 | - |
-| 16. Placeholder Routes and Build QA | 1/1 | Complete    | 2026-03-17 | - |
+| 14. Chat Screen | v2.0 | 4/4 | Complete | 2026-03-17 |
+| 15. Results Screen | v2.0 | 3/3 | Complete | 2026-03-17 |
+| 16. Placeholder Routes and Build QA | v2.0 | 1/1 | Complete | 2026-03-17 |
+| 17. Token Foundation + Dark Mode Fixes | v3.0 | 0/TBD | Not started | - |
+| 18. AI Image Generation | v3.0 | 0/TBD | Not started | - |
+| 19. Mosaic Hero | v3.0 | 0/TBD | Not started | - |
+| 20. Discover + Browse Page Upgrades | v3.0 | 0/TBD | Not started | - |
+| 21. Chat + Results Card Polish | v3.0 | 0/TBD | Not started | - |
+| 22. Visual QA + Consistency Pass | v3.0 | 0/TBD | Not started | - |
