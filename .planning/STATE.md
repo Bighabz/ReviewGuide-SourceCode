@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Visual Overhaul — Bold Editorial
 status: planning
-stopped_at: Completed 17-token-foundation-dark-mode-fixes 17-01-PLAN.md
-last_updated: "2026-04-01T08:29:27.653Z"
+stopped_at: Completed 17-token-foundation-dark-mode-fixes 17-02-PLAN.md
+last_updated: "2026-04-01T08:33:12.746Z"
 last_activity: 2026-04-01 — Roadmap created, 25 requirements mapped to 6 phases (17-22)
 progress:
   total_phases: 22
-  completed_phases: 14
+  completed_phases: 15
   total_plans: 46
-  completed_plans: 42
+  completed_plans: 43
   percent: 0
 ---
 
@@ -47,6 +47,7 @@ Progress: [░░░░░░░░░░] 0%
 
 *Updated after each plan completion*
 | Phase 17-token-foundation-dark-mode-fixes P01 | 2 | 2 tasks | 1 files |
+| Phase 17-token-foundation-dark-mode-fixes P02 | 110s | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -62,6 +63,7 @@ Progress: [░░░░░░░░░░] 0%
 - [Phase 17-token-foundation-dark-mode-fixes]: Typography tokens declared identically in dark block for completeness even though values are theme-neutral
 - [Phase 17-token-foundation-dark-mode-fixes]: Bold accent dark values use Tailwind 400-range pastels for accessible contrast on dark backgrounds
 - [Phase 17-token-foundation-dark-mode-fixes]: Global h1/h2/h3 rules unchanged — typography tokens are opt-in utilities for Phase 20+ components
+- [Phase 17-token-foundation-dark-mode-fixes]: Removed dark:text-emerald-400 from TopPickBlock.tsx — the data-theme strategy renders all Tailwind dark: prefixes silently inert
 
 ### Pending Todos
 
@@ -75,6 +77,6 @@ Progress: [░░░░░░░░░░] 0%
 
 ## Session Continuity
 
-Last session: 2026-04-01T08:29:27.649Z
-Stopped at: Completed 17-token-foundation-dark-mode-fixes 17-01-PLAN.md
+Last session: 2026-04-01T08:33:12.743Z
+Stopped at: Completed 17-token-foundation-dark-mode-fixes 17-02-PLAN.md
 Resume file: None

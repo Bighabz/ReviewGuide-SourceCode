@@ -294,7 +294,7 @@ Plans:
 
 **Milestone Goal:** Full site visual refresh with Shopify-level polish — bold colors, AI-generated product imagery, premium product cards — while keeping the warm editorial foundation. Pure frontend: no backend changes required.
 
-- [ ] **Phase 17: Token Foundation + Dark Mode Fixes** - Add bold CSS tokens, fix hardcoded dark mode colors across product card leaf components
+- [x] **Phase 17: Token Foundation + Dark Mode Fixes** - Add bold CSS tokens, fix hardcoded dark mode colors across product card leaf components (completed 2026-04-01)
 - [ ] **Phase 18: AI Image Generation** - Generate and commit all hero, mosaic, and category images as a unified visual batch
 - [ ] **Phase 19: Mosaic Hero** - Build MosaicHero component and wire into discover landing page
 - [ ] **Phase 20: Discover + Browse Page Upgrades** - Bold category heroes, upgraded carousel and trending cards, per-category accent color injection
@@ -399,7 +399,7 @@ v3.0 phases execute in order: 17 -> 18 -> 19 -> 20 -> 21 -> 22. Phases 17 and 18
 | 14. Chat Screen | v2.0 | 4/4 | Complete | 2026-03-17 |
 | 15. Results Screen | v2.0 | 3/3 | Complete | 2026-03-17 |
 | 16. Placeholder Routes and Build QA | v2.0 | 1/1 | Complete | 2026-03-17 |
-| 17. Token Foundation + Dark Mode Fixes | 1/2 | In Progress|  | - |
+| 17. Token Foundation + Dark Mode Fixes | 2/2 | Complete   | 2026-04-01 | - |
 | 18. AI Image Generation | v3.0 | 0/TBD | Not started | - |
 | 19. Mosaic Hero | v3.0 | 0/TBD | Not started | - |
 | 20. Discover + Browse Page Upgrades | v3.0 | 0/TBD | Not started | - |
