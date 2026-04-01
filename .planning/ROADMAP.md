@@ -341,7 +341,10 @@ Plans:
   2. The search bar and headline text remain legible over the mosaic — no product image bleeds through at full opacity behind text
   3. The mosaic layout is built with CSS Grid and `transform: rotate()` — no additional JavaScript library is imported to implement it
   4. Lighthouse mobile audit shows LCP under 2.5s and CLS under 0.1 after the mosaic hero is live (the first visible mosaic image uses `loading="eager"`)
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 19-01-PLAN.md — MosaicHero component, test scaffold, --mosaic-scrim CSS token (HERO-01, HERO-03, HERO-04)
+- [ ] 19-02-PLAN.md — Wire MosaicHero into page.tsx with gradient scrim overlay + visual checkpoint (HERO-02)
 
 ### Phase 20: Discover + Browse Page Upgrades
 **Goal**: The discover page carousel and trending cards have bold visual presence with real product images, and browse category hero sections use AI-generated background images with gradient overlays — transforming category pages into a magazine-cover experience.
