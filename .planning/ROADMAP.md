@@ -326,7 +326,11 @@ Plans:
   2. At least 8 mosaic tile images exist in `/public/images/` as WebP files — diverse products at varied angles — all sharing consistent lighting, color temperature, and stylization
   3. Viewing all generated images side-by-side in a browser reveals a coherent visual language: no mismatched lighting or wildly different color palettes between images
   4. Every generated image file is under 200KB — verified by checking file sizes in the filesystem
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 18-01-PLAN.md — Test scaffold, WebP optimization script, directory setup (IMG-01, IMG-02, IMG-03)
+- [ ] 18-02-PLAN.md — Generate 15 category hero images via Gemini Imagen 3 MCP (IMG-01)
+- [ ] 18-03-PLAN.md — Generate 8 mosaic tiles, batch WebP optimization, final verification (IMG-02, IMG-03)
 
 ### Phase 19: Mosaic Hero
 **Goal**: Users landing on the discover page see a Shopify-style mosaic collage of bold product images as the hero background — creating an immediate first impression of visual richness — with the search bar and headline floating over it with readable contrast, and no LCP or CLS regressions.
