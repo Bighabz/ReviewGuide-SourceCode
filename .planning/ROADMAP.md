@@ -381,6 +381,37 @@ Plans:
   3. A grep for hardcoded color values (`text-green-700`, `text-red-700`, `text-emerald-600`, `bg-blue-`, `text-blue-`, and similar Tailwind palette utilities) in all components modified during v3.0 returns zero results
 **Plans**: TBD
 
+### Phase 23: QA Remediation — Unified Bug Fixes
+
+**Goal:** All 47 bugs found across 25 automated QA test prompts are fixed — backend pipeline bugs (fallback loop, multi-provider gating, accessory suppression, budget enforcement, travel timeout, citations) and frontend CSS/UX bugs (chat bubble width, nav overlap, overflow-x, dark mode, 404 page, WCAG contrast, iOS scroll, landscape nav, chat history) — with a regression gate preventing future regressions.
+**Requirements**: QAR-01, QAR-02, QAR-03, QAR-04, QAR-05, QAR-06, QAR-07, QAR-08, QAR-09, QAR-10, QAR-11, QAR-12, QAR-13, QAR-14, QAR-15, QAR-16
+**Depends on:** Phase 22
+**Success Criteria** (what must be TRUE):
+  1. Fallback loop emits cards for all unseen blog products (not just up to the first duplicate)
+  2. Single-provider products with valid URLs emit product cards instead of being silently dropped
+  3. Amazon-labeled CTA links resolve to amazon.com domains
+  4. Accessory products (chargers, cases, replacement parts) are excluded from product results
+  5. Budget constraints ("under $500") are enforced before final compose
+  6. Travel queries with all tools timing out return a partial response with recovery prompt
+  7. Citation block contains real http URLs from review sources
+  8. Chat bubbles render at full readable width on mobile viewports
+  9. Body and chat ancestor containers use overflow-x: clip (not hidden)
+  10. Custom editorial 404 page renders for invalid URLs
+  11. Stop generating button renders correctly in dark mode
+  12. WCAG AA contrast requirements met on all chat UI elements
+  13. iOS scroll works during streaming via sentinel pattern
+  14. Landscape orientation at 844px width shows bottom nav
+  15. Chat history sidebar shows prior conversations
+  16. Regression gate test suite covers all fixes and gates deploys
+**Plans**: 6 plans
+
+Plans:
+- [ ] 23-01-PLAN.md — Backend product_compose core fixes: fallback loop, multi-provider gate, label parity, citations (QAR-01, QAR-02, QAR-03, QAR-07)
+- [ ] 23-02-PLAN.md — Frontend P0/P1 CSS/UX: mobile bubble, nav overlap, overflow-x, stop button dark mode, 404 page (QAR-08, QAR-09, QAR-10, QAR-11)
+- [ ] 23-03-PLAN.md — Backend travel reliability: per-tool timing, partial response recovery (QAR-06)
+- [ ] 23-04-PLAN.md — Backend search filters: accessory suppression, budget enforcement (QAR-04, QAR-05)
+- [ ] 23-05-PLAN.md — Frontend P2: WCAG contrast, iOS scroll sentinel, landscape nav, chat history (QAR-13, QAR-14, QAR-15, QAR-16)
+- [ ] 23-06-PLAN.md — Regression gate test suite (QAR-12)
 ---
 
 ## Progress
@@ -412,3 +443,4 @@ v3.0 phases execute in order: 17 -> 18 -> 19 -> 20 -> 21 -> 22. Phases 17 and 18
 | 20. Discover + Browse Page Upgrades | v3.0 | 0/TBD | Not started | - |
 | 21. Chat + Results Card Polish | v3.0 | 0/TBD | Not started | - |
 | 22. Visual QA + Consistency Pass | v3.0 | 0/TBD | Not started | - |
+| 23. QA Remediation | v3.0 | 0/6 | Not started | - |
