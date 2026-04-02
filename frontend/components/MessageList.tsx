@@ -13,6 +13,7 @@ interface MessageListProps {
 export default function MessageList({ messages, isStreaming }: MessageListProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const userScrolledUpRef = useRef(false)
+  const isTouchingRef = useRef(false)
   const prevMessageCountRef = useRef(messages.length)
   const lastAiMessageIdRef = useRef<string | null>(null)
   const [showJumpButton, setShowJumpButton] = useState(false)
@@ -47,13 +48,28 @@ export default function MessageList({ messages, isStreaming }: MessageListProps)
       }
     }
 
+    const handleTouchStart = () => { isTouchingRef.current = true }
+    const handleTouchEnd = () => {
+      isTouchingRef.current = false
+      // After touch ends, check if user scrolled away from bottom
+      const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 100
+      if (!isNearBottom) {
+        userScrolledUpRef.current = true
+        if (isStreaming) setShowJumpButton(true)
+      }
+    }
+
     container.addEventListener('wheel', handleUserScroll, { passive: true })
     container.addEventListener('touchmove', handleUserScroll, { passive: true })
+    container.addEventListener('touchstart', handleTouchStart, { passive: true })
+    container.addEventListener('touchend', handleTouchEnd, { passive: true })
     container.addEventListener('scrollend', checkScrollPosition)
 
     return () => {
       container.removeEventListener('wheel', handleUserScroll)
       container.removeEventListener('touchmove', handleUserScroll)
+      container.removeEventListener('touchstart', handleTouchStart)
+      container.removeEventListener('touchend', handleTouchEnd)
       container.removeEventListener('scrollend', checkScrollPosition)
     }
   }, [isStreaming])
@@ -101,8 +117,9 @@ export default function MessageList({ messages, isStreaming }: MessageListProps)
   }, [lastAiId])
 
   // Auto-scroll to bottom during streaming, but ONLY if user hasn't scrolled up
+  // and isn't actively touching the screen (prevents fight with touch scroll on mobile)
   useEffect(() => {
-    if (!isStreaming || userScrolledUpRef.current) return
+    if (!isStreaming || userScrolledUpRef.current || isTouchingRef.current) return
     const container = containerRef.current
     if (!container) return
 
