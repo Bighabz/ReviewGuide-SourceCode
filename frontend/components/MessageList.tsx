@@ -116,18 +116,21 @@ export default function MessageList({ messages, isStreaming }: MessageListProps)
     }
   }, [lastAiId])
 
-  // Auto-scroll to bottom during streaming, but ONLY if user hasn't scrolled up
-  // and isn't actively touching the screen (prevents fight with touch scroll on mobile)
+  // Auto-scroll to bottom during streaming on a throttled interval.
+  // Using an interval (not per-render rAF) gives touch events time to
+  // register and set userScrolledUpRef before the next scroll tick.
   useEffect(() => {
-    if (!isStreaming || userScrolledUpRef.current || isTouchingRef.current) return
-    const container = containerRef.current
-    if (!container) return
+    if (!isStreaming) return
 
-    const raf = requestAnimationFrame(() => {
+    const interval = setInterval(() => {
+      if (userScrolledUpRef.current || isTouchingRef.current) return
+      const container = containerRef.current
+      if (!container) return
       container.scrollTop = container.scrollHeight
-    })
-    return () => cancelAnimationFrame(raf)
-  })
+    }, 400)
+
+    return () => clearInterval(interval)
+  }, [isStreaming])
 
   return (
     <div ref={containerRef} className="flex-1 overflow-y-auto p-3 sm:p-6 relative" style={{ overflowAnchor: 'none' }}>
