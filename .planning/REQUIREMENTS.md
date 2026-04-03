@@ -57,6 +57,15 @@
 - [x] **QA-02**: designTokens.test.ts updated to cover new tokens
 - [x] **QA-03**: No hardcoded colors remain in refreshed components (all use CSS variables)
 
+### Travel Response UI
+
+- [ ] **TRV-01**: Must-See Attractions renders as visual resort cards with hero images (not flat bullet list with pin icons)
+- [ ] **TRV-02**: Hotel PLPLinkCard displays destination hero image at top with updated "Search on Expedia" CTA
+- [ ] **TRV-03**: Flight PLPLinkCard displays destination hero image at top, Caribbean text wrapping fixed, updated "Search on Expedia" CTA
+- [ ] **TRV-04**: All travel section headers use sans-serif font (font-serif removed from HotelCards, FlightCards, DestinationInfo, ItineraryView, ListBlock)
+- [ ] **TRV-05**: Conclusion "Want better results?" block styled as distinct secondary CTA with tinted background
+- [ ] **TRV-06**: 7+ AI-generated travel destination hero images (WebP, <200KB each) in public/images/travel/
+
 ## v4.0 Requirements (Deferred)
 
 ### Affiliate Overhaul
@@ -76,7 +85,10 @@
 | Glassmorphism effects | Fragile across browsers, not editorial |
 | Custom cursors | Gimmicky, accessibility concern |
 | Message.tsx structural changes | Protected SSE streaming pipeline |
-| BlockRegistry.tsx changes | Protected block dispatch architecture |
+| BlockRegistry.tsx structural changes | Protected block dispatch architecture (renderer swaps OK) |
+| Google Places API for resort photos | Deferred — requires API key + billing |
+| Runtime AI image generation per resort | Deferred — expensive, slow |
+| Horizontal swipe carousel for resort cards | Deferred — test vertical scroll first |
 
 ## Traceability
 
@@ -107,12 +119,18 @@
 | QA-01 | Phase 22 | Pending |
 | QA-02 | Phase 22 | Complete |
 | QA-03 | Phase 22 | Complete |
+| TRV-01 | Phase 24 | Pending |
+| TRV-02 | Phase 24 | Pending |
+| TRV-03 | Phase 24 | Pending |
+| TRV-04 | Phase 24 | Pending |
+| TRV-05 | Phase 24 | Pending |
+| TRV-06 | Phase 24 | Pending |
 
 **Coverage:**
-- v3.0 requirements: 25 total
-- Mapped to phases: 25
+- v3.0 requirements: 31 total
+- Mapped to phases: 31
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-01*
-*Traceability mapped: 2026-04-01*
+*Traceability mapped: 2026-04-03*

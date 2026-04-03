@@ -430,13 +430,23 @@ Plans:
 - [ ] 23-06-PLAN.md â Regression gate test suite (QAR-12)
 ### Phase 24: Travel Response UI Overhaul
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** Transform travel chat responses from text-heavy walls with pin icons into a visual, card-based experience -- resort cards with hero images replacing flat bullet lists, hotel/flight widgets with destination imagery, typography and spacing cleanup for a cohesive editorial response.
+**Requirements**: TRV-01, TRV-02, TRV-03, TRV-04, TRV-05, TRV-06
 **Depends on:** Phase 23
-**Plans:** 0 plans
+**Success Criteria** (what must be TRUE):
+  1. Must-See Attractions renders as visual cards with hero images (not bullet list)
+  2. Hotel and flight widgets display destination hero images at top of card
+  3. CTA buttons read "Search on Expedia" (not "Search Properties"/"Search Flights")
+  4. Caribbean destination text does not wrap mid-word on mobile
+  5. All travel section headers use sans-serif font (no decorative serif)
+  6. Conclusion "Want better results?" block has visually distinct tinted background
+  7. 7+ AI-generated travel hero images exist in WebP under 200KB
+**Plans:** 3 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 24 to break down)
+- [ ] 24-01-PLAN.md — ResortCards component + BlockRegistry swap + test scaffold (TRV-01)
+- [ ] 24-02-PLAN.md — Hotel/flight widget overhaul + typography/spacing polish (TRV-02, TRV-03, TRV-04, TRV-05)
+- [ ] 24-03-PLAN.md — AI travel image generation + visual verification checkpoint (TRV-06, TRV-02, TRV-03)
 
 ---
 
