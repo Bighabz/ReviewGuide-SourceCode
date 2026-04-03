@@ -87,6 +87,9 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
   const [isReconnecting, setIsReconnecting] = useState(false)
   const [reconnectAttempt, setReconnectAttempt] = useState(0)
 
+  // QAR-18: queue a message sent during active streaming instead of silently dropping it
+  const [queuedMessage, setQueuedMessage] = useState<string | null>(null)
+
   // RFC §2.2: skeleton block type shown while a tool is running but before the artifact arrives
   const [pendingSkeleton, setPendingSkeleton] = useState<SkeletonBlockType | null>(null)
 
@@ -126,6 +129,17 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
   useEffect(() => {
     setCtxStreaming(isStreaming)
   }, [isStreaming, setCtxStreaming])
+
+  // QAR-18: auto-send queued message when streaming completes
+  useEffect(() => {
+    if (!isStreaming && queuedMessage) {
+      const msg = queuedMessage
+      setQueuedMessage(null)
+      // Use setTimeout to allow state flush before triggering another stream
+      setTimeout(() => handleSendMessage(msg), 50)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isStreaming])
 
   // Sync active statusText to ChatStatusContext (for MobileHeader)
   useEffect(() => {
@@ -640,7 +654,11 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
 
   // Handle suggestion click from next_suggestions buttons
   const handleSuggestionClick = async (question: string) => {
-    if (isStreaming) return
+    // QAR-18: queue suggestion instead of silently ignoring it during streaming
+    if (isStreaming) {
+      setQueuedMessage(`${SUGGESTION_CLICK_PREFIX} ${question}`)
+      return
+    }
 
     // Prefix so backend knows this is a user accepting a bot suggestion
     const messageToSend = `${SUGGESTION_CLICK_PREFIX} ${question}`
@@ -679,7 +697,13 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
 
   const handleSendMessage = async (overrideText?: string) => {
     const messageToSend = overrideText ?? input
-    if (!messageToSend.trim() || isStreaming) return
+    if (!messageToSend.trim()) return
+    // QAR-18: queue instead of silently dropping messages sent during streaming
+    if (isStreaming) {
+      setQueuedMessage(messageToSend)
+      setInput('')
+      return
+    }
 
     // Clear error banner when sending new message
     setShowErrorBanner(false)
@@ -885,7 +909,7 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
           >
             <div id="chat-input-container" className="mx-auto px-2 sm:px-0 max-w-full" style={{ maxWidth: '780px' }}>
               {isStreaming && (
-                <div className="flex justify-center mb-2">
+                <div className="flex flex-col items-center gap-1.5 mb-2">
                   <button
                     onClick={() => {
                       dispatchStream({ type: 'STREAM_INTERRUPTED' })
@@ -894,6 +918,12 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
                   >
                     Stop generating
                   </button>
+                  {/* QAR-18: show notice when a message is queued during streaming */}
+                  {queuedMessage && (
+                    <p className="text-[11px] text-[var(--text-muted)] text-center">
+                      Message queued — will send after response completes
+                    </p>
+                  )}
                 </div>
               )}
               <ChatInput

@@ -33,9 +33,12 @@
   --surface-float: rgba(255, 255, 255, 0.95);
 
   /* Text: Deep Ink Scale */
+  /* WCAG AA (4.5:1) on --background #FAFAF7: */
+  /*   #57534E = ~7.4:1 — passes (unchanged) */
+  /*   #A8A29E = ~2.8:1 — FAILS → raised to #737373 = ~4.6:1 */
   --text: #1C1917;
   --text-secondary: #57534E;
-  --text-muted: #A8A29E;
+  --text-muted: #737373;
 
   /* Borders: Warm Stone */
   --border: #E7E5E0;
@@ -151,9 +154,13 @@
   --surface-float: rgba(10, 12, 18, 0.96);
 
   /* Text: Cool White */
+  /* WCAG AA (4.5:1) on --surface #12151E: */
+  /*   #E8EAED = ~14:1 — passes (unchanged) */
+  /*   #8892A4 = ~4.5:1 — borderline; raised to #9AA3B5 = ~5.3:1 */
+  /*   #5A6478 = ~2.3:1 — FAILS → raised to #8892A4 = ~4.5:1 */
   --text: #E8EAED;
-  --text-secondary: #8892A4;
-  --text-muted: #5A6478;
+  --text-secondary: #9AA3B5;
+  --text-muted: #8892A4;
 
   /* Card accent tints — dark mode */
   --card-accent-1: #1A1520;
@@ -522,6 +529,26 @@ a, button, input, textarea, select {
   font-size: var(--citation-size);
   font-weight: var(--citation-weight);
   color: var(--citation-color);
+}
+
+/* ═══════════════════════════════════════════
+   QAR-15 — Landscape orientation: keep bottom nav visible
+   At 844px width in landscape the viewport height can be ~390px.
+   The keyboard-detection threshold (75% of innerHeight) fires false-
+   positives when the device is simply rotated. Add an explicit override
+   so the tab bar remains visible regardless of viewport height while
+   in landscape orientation.
+   ═══════════════════════════════════════════ */
+
+@media (orientation: landscape) and (max-height: 500px) {
+  /* Ensure MobileTabBar stays visible — override any translate-y animation */
+  [data-keyboard-open="false"] {
+    transform: translateY(0) !important;
+  }
+  /* Keep bottom padding so content isn't obscured by the nav */
+  main.flex-1 {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom));
+  }
 }
 
 /* ═══════════════════════════════════════════
