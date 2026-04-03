@@ -5,6 +5,10 @@ import { Message as MessageType } from './ChatContainer'
 import Message from './Message'
 import { ChevronDown } from 'lucide-react'
 
+// QAR-14: sentinel-based auto-scroll (replaces interval+rAF polling)
+// scrollIntoView works reliably on iOS Safari; interval polling can fight
+// with touch events and cause erratic scroll behaviour during streaming.
+
 interface MessageListProps {
   messages: MessageType[]
   isStreaming?: boolean
@@ -12,6 +16,8 @@ interface MessageListProps {
 
 export default function MessageList({ messages, isStreaming }: MessageListProps) {
   const containerRef = useRef<HTMLDivElement>(null)
+  // QAR-14: sentinel div ref — scrolled into view instead of imperative scrollTop manipulation
+  const bottomRef = useRef<HTMLDivElement>(null)
   const userScrolledUpRef = useRef(false)
   const isTouchingRef = useRef(false)
   const prevMessageCountRef = useRef(messages.length)
@@ -116,24 +122,27 @@ export default function MessageList({ messages, isStreaming }: MessageListProps)
     }
   }, [lastAiId])
 
-  // Auto-scroll to bottom during streaming on a throttled interval.
-  // Using an interval (not per-render rAF) gives touch events time to
-  // register and set userScrolledUpRef before the next scroll tick.
+  // QAR-14: sentinel scroll — scroll bottomRef into view on every streaming update.
+  // scrollIntoView is reliable on iOS Safari where imperative scrollTop manipulation
+  // can fight with native momentum scrolling. The touch-state guard prevents
+  // the sentinel from fighting with active user scrolls.
   useEffect(() => {
     if (!isStreaming) return
-
-    const interval = setInterval(() => {
-      if (userScrolledUpRef.current || isTouchingRef.current) return
-      const container = containerRef.current
-      if (!container) return
-      container.scrollTop = container.scrollHeight
-    }, 400)
-
-    return () => clearInterval(interval)
-  }, [isStreaming])
+    if (userScrolledUpRef.current || isTouchingRef.current) return
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  }, [messages, isStreaming])
 
   return (
-    <div ref={containerRef} className="flex-1 overflow-y-auto p-3 sm:p-6 relative" style={{ overflowAnchor: 'none' }}>
+    <div
+      ref={containerRef}
+      className="flex-1 overflow-y-auto p-3 sm:p-6 relative"
+      style={{
+        overflowAnchor: 'none',
+        // QAR-14: iOS Safari momentum scroll + overscroll containment
+        WebkitOverflowScrolling: 'touch',
+        overscrollBehaviorY: 'contain',
+      }}
+    >
       <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
         {messages.map((message, idx) => (
           <Message
@@ -143,6 +152,9 @@ export default function MessageList({ messages, isStreaming }: MessageListProps)
           />
         ))}
       </div>
+
+      {/* QAR-14: sentinel div — scrolled into view during streaming instead of polling scrollTop */}
+      <div ref={bottomRef} aria-hidden="true" />
 
       {/* Floating "Jump to latest" button */}
       {showJumpButton && (

@@ -415,3 +415,42 @@ describe('QAR-11 — Stop button dark mode styling', () => {
     expect(stopBtnCode).toContain('var(--')
   })
 })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// QAR-14 — MessageList sentinel div: bottomRef replaces setInterval+rAF polling
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('QAR-14 — MessageList sentinel-based auto-scroll', () => {
+  it('MessageList source contains bottomRef sentinel div with aria-hidden', () => {
+    const fs = require('fs')
+    const path = require('path')
+    const src = fs.readFileSync(
+      path.resolve(__dirname, '../components/MessageList.tsx'),
+      'utf-8'
+    )
+
+    // Must have a bottomRef useRef declaration
+    expect(src).toContain('bottomRef')
+
+    // Must have the sentinel div with aria-hidden
+    expect(src).toMatch(/div[^>]*ref=\{bottomRef\}[^>]*aria-hidden/)
+
+    // Must use scrollIntoView instead of setInterval-based polling
+    expect(src).toContain('scrollIntoView')
+
+    // Must NOT use the old setInterval polling pattern
+    expect(src).not.toContain('setInterval')
+  })
+
+  it('MessageList source includes -webkit-overflow-scrolling touch for iOS', () => {
+    const fs = require('fs')
+    const path = require('path')
+    const src = fs.readFileSync(
+      path.resolve(__dirname, '../components/MessageList.tsx'),
+      'utf-8'
+    )
+
+    // Must include the iOS momentum scroll property
+    expect(src).toMatch(/WebkitOverflowScrolling|webkit-overflow-scrolling/)
+  })
+})

@@ -8,6 +8,19 @@ import ConversationSidebar from '@/components/ConversationSidebar'
 import ErrorBoundary from '@/components/ErrorBoundary'
 import { CHAT_CONFIG } from '@/lib/constants'
 
+/** QAR-16: persist session ID to chat_all_session_ids so ConversationSidebar can list history */
+function trackSessionId(sessionId: string) {
+  try {
+    const allIds: string[] = JSON.parse(localStorage.getItem('chat_all_session_ids') || '[]')
+    if (!allIds.includes(sessionId)) {
+      allIds.push(sessionId)
+      localStorage.setItem('chat_all_session_ids', JSON.stringify(allIds))
+    }
+  } catch {
+    // localStorage unavailable (SSR guard) — silently skip
+  }
+}
+
 function ChatPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -44,14 +57,17 @@ function ChatPageContent() {
       // Clear old session data
       localStorage.removeItem(CHAT_CONFIG.MESSAGES_STORAGE_KEY)
       localStorage.setItem(CHAT_CONFIG.SESSION_STORAGE_KEY, newSessionId)
+      // QAR-16: persist so ConversationSidebar can list this session
+      trackSessionId(newSessionId)
 
       setSwitchToSessionId(newSessionId)
       setCurrentSessionId(newSessionId)
       setInitialQuery(query)
 
-      // Clean up URL params after processing (with slight delay to ensure state is set)
+      // QAR-16: put session ID in URL so back/forward navigation restores correct session.
+      // Remove q/new params while keeping session param for history continuity.
       setTimeout(() => {
-        router.replace('/chat', { scroll: false })
+        router.replace(`/chat?session=${newSessionId}`, { scroll: false })
       }, 100)
     } else if (isNewSession && !query) {
       // New session without query - just start fresh
@@ -65,19 +81,28 @@ function ChatPageContent() {
 
       localStorage.removeItem(CHAT_CONFIG.MESSAGES_STORAGE_KEY)
       localStorage.setItem(CHAT_CONFIG.SESSION_STORAGE_KEY, newSessionId)
+      // QAR-16: persist so ConversationSidebar can list this session
+      trackSessionId(newSessionId)
 
       setSwitchToSessionId(newSessionId)
       setCurrentSessionId(newSessionId)
       setInitialQuery(undefined)
 
+      // QAR-16: session ID in URL for history continuity
       setTimeout(() => {
-        router.replace('/chat', { scroll: false })
+        router.replace(`/chat?session=${newSessionId}`, { scroll: false })
       }, 100)
     } else if (!isNewSession && !query) {
-      // Normal page load - load current session ID
-      const storedSessionId = localStorage.getItem(CHAT_CONFIG.SESSION_STORAGE_KEY)
+      // Normal page load — check for session param or fall back to stored session
+      const sessionParam = searchParams.get('session')
+      const storedSessionId = sessionParam || localStorage.getItem(CHAT_CONFIG.SESSION_STORAGE_KEY)
       if (storedSessionId) {
         setCurrentSessionId(storedSessionId)
+        // If session came from URL param, make sure it's stored locally
+        if (sessionParam) {
+          localStorage.setItem(CHAT_CONFIG.SESSION_STORAGE_KEY, sessionParam)
+          trackSessionId(sessionParam)
+        }
       }
     }
   }, [searchParams, router])
@@ -90,7 +115,9 @@ function ChatPageContent() {
     setSwitchToSessionId(sessionId)
     setCurrentSessionId(sessionId)
     setInitialQuery(undefined) // Clear initial query when switching conversations
-  }, [])
+    // QAR-16: update URL so browser history entry reflects the selected session
+    router.replace(`/chat?session=${sessionId}`, { scroll: false })
+  }, [router])
 
   const handleNewConversation = useCallback(() => {
     // Generate new session ID
@@ -99,13 +126,18 @@ function ChatPageContent() {
       const v = c === 'x' ? r : (r & 0x3 | 0x8)
       return v.toString(16)
     })
+    localStorage.setItem(CHAT_CONFIG.SESSION_STORAGE_KEY, newSessionId)
+    // QAR-16: persist so ConversationSidebar can list this session
+    trackSessionId(newSessionId)
     setSwitchToSessionId(newSessionId)
     setCurrentSessionId(newSessionId)
     setInitialQuery(undefined)
     processedQueryRef.current = null // Reset for next potential URL param processing
     // Clear local messages
     localStorage.removeItem(CHAT_CONFIG.MESSAGES_STORAGE_KEY)
-  }, [])
+    // QAR-16: update URL so browser history entry reflects the new session
+    router.replace(`/chat?session=${newSessionId}`, { scroll: false })
+  }, [router])
 
   const handleClearHistory = () => {
     setShowClearDialog(true)
