@@ -26,8 +26,8 @@
 
 ### Discover Page Polish
 
-- [ ] **DISC-06**: Category chips and trending cards use bolder colors and stronger visual presence
-- [ ] **DISC-07**: Product carousel uses real product images with loading="eager" on first slide
+- [x] **DISC-06**: Category chips and trending cards use bolder colors and stronger visual presence
+- [x] **DISC-07**: Product carousel uses real product images with loading="eager" on first slide
 
 ### Browse Pages Polish
 
@@ -92,8 +92,8 @@
 | HERO-02 | Phase 19 | Complete |
 | HERO-03 | Phase 19 | Complete |
 | HERO-04 | Phase 19 | Complete |
-| DISC-06 | Phase 20 | Pending |
-| DISC-07 | Phase 20 | Pending |
+| DISC-06 | Phase 20 | Complete |
+| DISC-07 | Phase 20 | Complete |
 | BRW-01 | Phase 20 | Pending |
 | BRW-02 | Phase 20 | Pending |
 | CHT-01 | Phase 21 | Pending |
