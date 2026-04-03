@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Visual Overhaul — Bold Editorial
 status: executing
-stopped_at: "Checkpoint 19-02 Task 2: awaiting visual verification"
-last_updated: "2026-04-01T09:57:32.361Z"
+stopped_at: Completed 23-00-PLAN.md — pre-fix baseline created
+last_updated: "2026-04-03T05:51:24.389Z"
 last_activity: 2026-04-01 — 18-02 complete (15 category hero images approved)
 progress:
-  total_phases: 22
+  total_phases: 23
   completed_phases: 17
-  total_plans: 51
-  completed_plans: 48
+  total_plans: 58
+  completed_plans: 49
   percent: 92
 ---
 
@@ -54,6 +54,7 @@ Progress: [█████████░] 92%
 | Phase 18-ai-image-generation P03 | 35 | 3 tasks | 54 files |
 | Phase 19-mosaic-hero P01 | 12 | 1 tasks | 3 files |
 | Phase 19-mosaic-hero P02 | 6 | 1 tasks | 1 files |
+| Phase 23-qa-remediation-unified-bug-fixes P00 | 8 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -83,11 +84,17 @@ Progress: [█████████░] 92%
 - [Phase 19-mosaic-hero]: overflow: visible on MosaicHero container — rotated tile edges should not clip; outer wrapper clips in Plan 02
 - [Phase 19-mosaic-hero]: outer hero wrapper gains relative + overflow-hidden + rounded-2xl to clip rotated tile bleed at container boundary
 - [Phase 19-mosaic-hero]: scrim uses var(--mosaic-scrim) CSS variable — dark mode gradient works without JS
+- [Phase 23-qa-remediation-unified-bug-fixes]: Baseline captures .env affiliate tag (mikejahshan-20) AND code hardcoded fallback (revguide-20) separately — discrepancy is a QAR-07 bug to fix
+- [Phase 23-qa-remediation-unified-bug-fixes]: 8 canonical prompts map directly to QAR bug IDs (QAR-01 through QAR-07) rather than generic smoke tests
 
 ### Pending Todos
 
 - v4.0 planned: Full affiliate overhaul (eBay real campaign ID, CJ activation, Expedia integration, Amazon PA-API application)
 - Amazon PA-API v5 retires May 15, 2026 — Phase 5 migration needed before deadline
+
+### Roadmap Evolution
+
+- Phase 23 added: QA Remediation — Unified Bug Fixes
 
 ### Blockers/Concerns
 
@@ -96,6 +103,6 @@ Progress: [█████████░] 92%
 
 ## Session Continuity
 
-Last session: 2026-04-01T09:57:17.130Z
-Stopped at: Checkpoint 19-02 Task 2: awaiting visual verification
+Last session: 2026-04-03T05:51:24.382Z
+Stopped at: Completed 23-00-PLAN.md — pre-fix baseline created
 Resume file: None
