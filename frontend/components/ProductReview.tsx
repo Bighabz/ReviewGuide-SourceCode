@@ -15,6 +15,52 @@ interface AffiliateLink {
   review_count?: number
 }
 
+function deriveMerchant(link: AffiliateLink): string {
+  // 1. Try cleaning the merchant field
+  const cleaned = link.merchant
+    .replace(/\s*\(.*?\)\s*/g, '')
+    .trim()
+  if (cleaned && cleaned.toLowerCase() !== 'retailer') {
+    if (/^ebay/i.test(cleaned)) return 'eBay'
+    return cleaned
+  }
+  // 2. Fall back to URL parsing
+  if (!link.affiliate_link) return 'Retailer'
+  try {
+    const host = new URL(link.affiliate_link).hostname.replace(/^www\./, '')
+    const domainMap: Record<string, string> = {
+      'amazon.com': 'Amazon', 'amzn.to': 'Amazon',
+      'ebay.com': 'eBay',
+      'walmart.com': 'Walmart',
+      'bestbuy.com': 'Best Buy',
+      'target.com': 'Target',
+      'newegg.com': 'Newegg',
+      'bhphotovideo.com': 'B&H Photo',
+      'costco.com': 'Costco',
+    }
+    for (const [domain, label] of Object.entries(domainMap)) {
+      if (host.includes(domain)) return label
+    }
+    return host.split('.')[0].replace(/(^|\-)(\w)/g, (_, sep, c) => (sep ? ' ' : '') + c.toUpperCase()).trim()
+  } catch {
+    return 'Retailer'
+  }
+}
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 12 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.3, ease: 'easeOut' },
+  },
+  hover: {
+    y: -4,
+    boxShadow: '0 12px 32px rgba(28,25,23,0.10)',
+    transition: { type: 'spring', stiffness: 400, damping: 28 },
+  },
+}
+
 interface ProductReviewProps {
   product: {
     product_name: string
@@ -57,11 +103,11 @@ export default function ProductReview({ product }: ProductReviewProps) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: 'easeOut' }}
-      whileHover={{ y: -2, boxShadow: '0 8px 30px rgba(0,0,0,0.08)' }}
-      className="border border-[var(--border)] rounded-xl p-3 sm:p-6 bg-[var(--surface-elevated)] shadow-card transition-colors">
+      variants={cardVariants}
+      initial="hidden"
+      animate="visible"
+      whileHover="hover"
+      className="border border-[var(--border)] rounded-xl p-3 sm:p-6 bg-[var(--surface-elevated)] shadow-card">
       {/* Product Header with Image */}
       <div className="mb-3 sm:mb-4">
         <div className="flex gap-3 sm:gap-4">
@@ -104,13 +150,9 @@ export default function ProductReview({ product }: ProductReviewProps) {
       {/* Affiliate Links */}
       {affiliate_links && affiliate_links.length > 0 && (
         <div className="mt-3 pt-3 border-t border-[var(--border)]">
-          <div className={`grid gap-2 sm:gap-3 ${affiliate_links.length >= 3 ? 'grid-cols-1 md:grid-cols-3' : affiliate_links.length === 2 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 max-w-sm'}`}>
-            {affiliate_links.map((link, idx) => {
-              // Clean merchant name: "eBay (lawrenow-0)" → "eBay"
-              const cleanMerchant = link.merchant
-                .replace(/\s*\(.*?\)\s*/g, '')
-                .replace(/^ebay.*/i, 'eBay')
-                .trim() || 'Retailer'
+          <div className={`grid gap-2 sm:gap-3 ${affiliate_links.slice(0, 3).length >= 3 ? 'grid-cols-1 md:grid-cols-3' : affiliate_links.slice(0, 3).length === 2 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 max-w-sm'}`}>
+            {affiliate_links.slice(0, 3).map((link, idx) => {
+              const cleanMerchant = deriveMerchant(link)
               const priceStr = link.price > 0
                 ? (link.currency === 'USD' ? `$${link.price.toFixed(2)}` : `${link.currency} ${link.price.toFixed(2)}`)
                 : null
