@@ -36,22 +36,24 @@ export default function TrendingCards() {
               }
               style={{
                 gap: '12px',
-                padding: '12px',
+                padding: '14px',
                 borderRadius: '10px',
                 background: 'var(--surface)',
                 boxShadow: 'var(--shadow-sm)',
                 cursor: 'pointer',
               }}
             >
-              {/* Thumbnail — 48x48, rounded 12px */}
+              {/* Thumbnail — 80x80, rounded 14px with accent border ring */}
               <div
                 aria-hidden="true"
                 className="overflow-hidden"
                 style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '12px',
+                  width: '80px',
+                  height: '80px',
+                  borderRadius: '14px',
                   flexShrink: 0,
+                  background: topic.iconBg,
+                  border: `2px solid color-mix(in srgb, ${topic.iconColor} 25%, transparent)`,
                 }}
               >
                 <img
@@ -66,7 +68,7 @@ export default function TrendingCards() {
               <div className="flex-1 min-w-0">
                 <p
                   style={{
-                    fontSize: '15px',
+                    fontSize: '16px',
                     fontWeight: 600,
                     color: 'var(--text)',
                     lineHeight: '1.3',

@@ -5,15 +5,16 @@ import { useRouter } from 'next/navigation'
 interface ChipConfig {
   label: string
   query?: string // if absent, navigates to /chat?new=1
+  accentColor: string  // CSS variable reference for accent tinting
 }
 
 const CHIPS: ChipConfig[] = [
-  { label: 'For You' },
-  { label: 'Tech', query: 'Best noise-cancelling headphones' },
-  { label: 'Travel', query: 'Top all-inclusive resorts in the Caribbean' },
-  { label: 'Kitchen', query: 'Best kitchen appliances and gadgets' },
-  { label: 'Fitness', query: 'Best hiking boots for beginners' },
-  { label: 'Audio', query: 'Best wireless earbuds and headphones' },
+  { label: 'For You', accentColor: 'var(--primary)' },
+  { label: 'Tech', query: 'Best noise-cancelling headphones', accentColor: 'var(--bold-blue)' },
+  { label: 'Travel', query: 'Top all-inclusive resorts in the Caribbean', accentColor: 'var(--bold-amber)' },
+  { label: 'Kitchen', query: 'Best kitchen appliances and gadgets', accentColor: 'var(--bold-green)' },
+  { label: 'Fitness', query: 'Best hiking boots for beginners', accentColor: 'var(--accent)' },
+  { label: 'Audio', query: 'Best wireless earbuds and headphones', accentColor: 'var(--bold-blue)' },
 ]
 
 export default function CategoryChipRow() {
@@ -40,12 +41,16 @@ export default function CategoryChipRow() {
             onClick={() => handleChipClick(chip)}
             className="flex-shrink-0 focus-ring"
             style={{
-              height: '38px',
-              padding: '0 18px',
-              borderRadius: '20px',
-              background: isActive ? 'var(--primary)' : 'var(--surface)',
-              border: isActive ? '1px solid var(--primary)' : '1.5px solid var(--border)',
-              color: isActive ? '#fff' : 'var(--text)',
+              height: '44px',
+              padding: '0 20px',
+              borderRadius: '22px',
+              background: isActive
+                ? 'var(--primary)'
+                : `color-mix(in srgb, ${chip.accentColor} 12%, var(--surface))`,
+              border: isActive
+                ? '1.5px solid var(--primary)'
+                : `1.5px solid color-mix(in srgb, ${chip.accentColor} 35%, transparent)`,
+              color: isActive ? '#fff' : chip.accentColor,
               fontSize: '13px',
               fontWeight: 600,
               cursor: 'pointer',
