@@ -17,6 +17,26 @@ import { describe, it, expect } from 'vitest'
 import fs from 'fs'
 import path from 'path'
 
+// ─────────────────────────────────────────────────────────────────────────────
+// QAR-09 — globals.css body uses overflow-x: clip (not hidden)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('QAR-09 — globals.css overflow-x: clip on body', () => {
+  const cssPath = path.resolve(__dirname, '../app/globals.css')
+  const cssSource = fs.readFileSync(cssPath, 'utf-8')
+
+  it('body rule uses overflow-x: clip (not overflow-x: hidden)', () => {
+    // Extract the body {} rule content
+    const bodyRuleMatch = cssSource.match(/\bbody\s*\{([^}]+)\}/)
+    expect(bodyRuleMatch).toBeTruthy()
+    const bodyRule = bodyRuleMatch![1]
+    // Must have clip
+    expect(bodyRule).toContain('overflow-x: clip')
+    // Must NOT have overflow-x: hidden
+    expect(bodyRule).not.toContain('overflow-x: hidden')
+  })
+})
+
 describe('layout.tsx — viewport export (NAV-05)', () => {
   const layoutPath = path.resolve(__dirname, '../app/layout.tsx')
   const layoutSource = fs.readFileSync(layoutPath, 'utf-8')

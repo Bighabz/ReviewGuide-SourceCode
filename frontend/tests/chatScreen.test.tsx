@@ -381,3 +381,36 @@ describe('CHAT-06 — Chip restyle', () => {
     }
   })
 })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// QAR-11 — Stop button dark mode: uses only CSS vars, no hardcoded hex/palette
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('QAR-11 — Stop button dark mode styling', () => {
+  it('stop button className uses only CSS variable color references (no hardcoded hex or Tailwind palette)', () => {
+    // We verify ChatContainer renders the stop button with CSS-var-only classes.
+    // Since ChatContainer is complex to render in jsdom, we do a static check
+    // on the source file — same pattern as layout.test.tsx.
+    const fs = require('fs')
+    const path = require('path')
+    const src = fs.readFileSync(
+      path.resolve(__dirname, '../components/ChatContainer.tsx'),
+      'utf-8'
+    )
+
+    // Find the stop button: it contains "Stop generating"
+    const stopBtnMatch = src.match(/Stop generating[\s\S]{0,400}?<\/button>/)
+    expect(stopBtnMatch).toBeTruthy()
+
+    const stopBtnCode = stopBtnMatch![0]
+
+    // Must NOT contain hardcoded hex colors like #ffffff, #1a1a1a, etc.
+    expect(stopBtnCode).not.toMatch(/#[0-9a-fA-F]{3,6}\b/)
+
+    // Must NOT use Tailwind palette classes like text-red-500, bg-gray-800, etc.
+    expect(stopBtnCode).not.toMatch(/\b(text|bg|border)-(red|blue|green|gray|slate|zinc|stone|neutral|yellow|orange|amber|teal|cyan|indigo|violet|purple|pink|rose|white|black)-\d{2,3}\b/)
+
+    // Must use CSS variable references
+    expect(stopBtnCode).toContain('var(--')
+  })
+})
