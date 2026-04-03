@@ -159,7 +159,7 @@ function ChatPageContent() {
   }
 
   return (
-    <div className="h-dvh flex flex-col overflow-clip bg-[var(--background)] text-[var(--text)]">
+    <div className="h-full flex flex-col overflow-clip bg-[var(--background)] text-[var(--text)]">
 
       {/* Content area below topbar */}
       <div className="flex-1 flex overflow-clip relative">

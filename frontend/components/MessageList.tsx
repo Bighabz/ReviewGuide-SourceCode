@@ -87,7 +87,7 @@ export default function MessageList({ messages, isStreaming }: MessageListProps)
     }
   }, [isStreaming])
 
-  // Scroll to top of the latest AI message when a new message arrives
+  // Track new message arrivals — reset scroll lock so auto-scroll resumes
   useEffect(() => {
     const newCount = messages.length
     const isNewMessage = newCount > prevMessageCountRef.current
@@ -101,14 +101,6 @@ export default function MessageList({ messages, isStreaming }: MessageListProps)
       if (newestAi && newestAi.id !== lastAiMessageIdRef.current) {
         lastAiMessageIdRef.current = newestAi.id
       }
-
-      // Scroll to bottom so the user can see their sent message + AI loading
-      requestAnimationFrame(() => {
-        const container = containerRef.current
-        if (container) {
-          container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' })
-        }
-      })
     }
   }, [messages.length])
 
@@ -122,13 +114,15 @@ export default function MessageList({ messages, isStreaming }: MessageListProps)
     }
   }, [lastAiId])
 
-  // QAR-14: sentinel scroll — scroll bottomRef into view on every streaming update.
-  // scrollIntoView is reliable on iOS Safari where imperative scrollTop manipulation
-  // can fight with native momentum scrolling. The touch-state guard prevents
-  // the sentinel from fighting with active user scrolls.
+  // Single unified auto-scroll: uses sentinel div on every message change.
+  // Fires for both new message arrival AND streaming token updates.
+  // Throttled to max once per 400ms to prevent scroll-fighting.
+  const lastScrollTimeRef = useRef(0)
   useEffect(() => {
-    if (!isStreaming) return
     if (userScrolledUpRef.current || isTouchingRef.current) return
+    const now = Date.now()
+    if (now - lastScrollTimeRef.current < 400) return
+    lastScrollTimeRef.current = now
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [messages, isStreaming])
 
