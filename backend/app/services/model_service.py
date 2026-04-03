@@ -10,6 +10,7 @@ import uuid
 from datetime import datetime
 from typing import Optional, Dict, AsyncGenerator
 from langchain_openai import ChatOpenAI
+from langchain_anthropic import ChatAnthropic
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from app.core.config import settings
 from langchain_core.language_models.chat_models import BaseChatModel
@@ -25,6 +26,8 @@ _MODEL_DEFAULTS: dict[str, int] = {
     "gpt-4-turbo": 128000,
     "gpt-4": 8192,
     "gpt-3.5-turbo": 16385,
+    "claude-haiku-4-5-20251001": 200000,
+    "claude-sonnet-4-6-20260415": 200000,
 }
 _DEFAULT_MAX_TOKENS = 128000  # fallback for unknown models
 
@@ -89,32 +92,46 @@ class ModelService:
         max_tokens: Optional[int],
         json_mode: bool,
         stream: bool,
-    ) -> ChatOpenAI:
-        """Get or create a cached ChatOpenAI instance.
+    ) -> BaseChatModel:
+        """Get or create a cached LLM instance (OpenAI or Anthropic).
 
-        Instances are cached by a canonical key (model, temperature, max_tokens,
-        json_mode, stream, api_key_fingerprint) so HTTP connections are reused
-        via the underlying httpx.AsyncClient.
+        Routes to ChatAnthropic for claude-* models, ChatOpenAI for everything else.
+        Instances are cached by a canonical key so connections are reused.
         """
         fingerprint = self._api_key_fingerprint
         cache_key = self._canonical_key(model, temperature, max_tokens, json_mode, stream, fingerprint)
         if cache_key not in self._llm_cache:
-            kwargs: dict = {
-                "model": model,
-                "openai_api_key": settings.OPENAI_API_KEY,
-                "streaming": stream,
-                "request_timeout": 12,    # Hard cap: no single LLM call waits > 12s
-                "max_retries": 1,         # One retry on transient failure (12s × 2 = 24s worst case, fits 15s tool timeout on first attempt)
-            }
-            # o3 models don't support temperature parameter
-            if not model.startswith("o3"):
-                kwargs["temperature"] = temperature
-            if max_tokens:
-                kwargs["max_tokens"] = max_tokens
-            if json_mode:
-                kwargs["model_kwargs"] = {"response_format": {"type": "json_object"}}
-            self._llm_cache[cache_key] = ChatOpenAI(**kwargs)
-            logger.info(f"[model_service] Created new ChatOpenAI instance (cache size: {len(self._llm_cache)})")
+            if model.startswith("claude"):
+                kwargs: dict = {
+                    "model": model,
+                    "anthropic_api_key": settings.ANTHROPIC_API_KEY,
+                    "temperature": temperature,
+                    "streaming": stream,
+                    "default_request_timeout": 30,
+                    "max_retries": 1,
+                }
+                if max_tokens:
+                    kwargs["max_tokens"] = max_tokens
+                else:
+                    kwargs["max_tokens"] = 4096
+                self._llm_cache[cache_key] = ChatAnthropic(**kwargs)
+                logger.info(f"[model_service] Created new ChatAnthropic instance for {model} (cache size: {len(self._llm_cache)})")
+            else:
+                kwargs = {
+                    "model": model,
+                    "openai_api_key": settings.OPENAI_API_KEY,
+                    "streaming": stream,
+                    "request_timeout": 12,
+                    "max_retries": 1,
+                }
+                if not model.startswith("o3"):
+                    kwargs["temperature"] = temperature
+                if max_tokens:
+                    kwargs["max_tokens"] = max_tokens
+                if json_mode:
+                    kwargs["model_kwargs"] = {"response_format": {"type": "json_object"}}
+                self._llm_cache[cache_key] = ChatOpenAI(**kwargs)
+                logger.info(f"[model_service] Created new ChatOpenAI instance for {model} (cache size: {len(self._llm_cache)})")
         return self._llm_cache[cache_key]
 
     def get_compose_model(self) -> BaseChatModel:

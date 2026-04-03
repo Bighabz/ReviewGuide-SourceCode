@@ -177,7 +177,7 @@ def build_startup_manifest() -> StartupManifest:
     """
     try:
         search_provider = _get_str("SEARCH_PROVIDER") or "perplexity"
-        llm_model = _get_str("DEFAULT_MODEL") or "gpt-4o-mini"
+        llm_model = _get_str("DEFAULT_MODEL") or "claude-haiku-4-5-20251001"
         rate_limiting_enabled = _get_bool("RATE_LIMIT_ENABLED")
 
         providers: list[ProviderCapabilityReport] = []

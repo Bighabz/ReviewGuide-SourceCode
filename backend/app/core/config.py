@@ -195,15 +195,15 @@ class Settings(BaseSettings):
 
     # LLM Providers
     OPENAI_API_KEY: str = Field(..., description="OpenAI API key")
-    DEFAULT_MODEL: str = Field(default="gpt-4o-mini", description="Default LLM model to use")
+    DEFAULT_MODEL: str = Field(default="claude-haiku-4-5-20251001", description="Default LLM model to use")
     LITELLM_LOG_LEVEL: str = Field(default="INFO", description="LiteLLM logging level")
 
     # Agent-specific Models (override DEFAULT_MODEL for specific agents)
-    PLANNER_MODEL: str = Field(default="gpt-4o-mini", description="Model for planner agent")
-    INTENT_MODEL: str = Field(default="gpt-4o-mini", description="Model for intent classification agent")
-    CLARIFIER_MODEL: str = Field(default="gpt-4o-mini", description="Model for clarifier agent")
-    COMPOSER_MODEL: str = Field(default="gpt-4o-mini", description="Model for composer agents")
-    PRODUCT_SEARCH_MODEL: str = Field(default="gpt-4o-mini", description="Model for product search")
+    PLANNER_MODEL: str = Field(default="claude-haiku-4-5-20251001", description="Model for planner agent")
+    INTENT_MODEL: str = Field(default="claude-haiku-4-5-20251001", description="Model for intent classification agent")
+    CLARIFIER_MODEL: str = Field(default="claude-haiku-4-5-20251001", description="Model for clarifier agent")
+    COMPOSER_MODEL: str = Field(default="claude-haiku-4-5-20251001", description="Model for composer agents")
+    PRODUCT_SEARCH_MODEL: str = Field(default="claude-haiku-4-5-20251001", description="Model for product search")
 
     # Agent-specific Max Tokens
     PLANNER_MAX_TOKENS: int = Field(default=2000, description="Max tokens for planner agent")
