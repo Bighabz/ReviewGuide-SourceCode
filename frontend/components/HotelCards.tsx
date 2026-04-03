@@ -1,6 +1,6 @@
 'use client'
 
-import { MapPin, Star, ExternalLink, Search, Hotel as HotelIcon } from 'lucide-react'
+import { MapPin, Star, ExternalLink, Hotel as HotelIcon } from 'lucide-react'
 import { trackAffiliateClick } from '@/lib/trackAffiliate'
 
 // Traditional hotel card with full details
@@ -61,7 +61,7 @@ function PLPLinkCard({ hotel, fullHeight = false }: { hotel: HotelPLPLink; fullH
       href={hotel.search_url}
       target="_blank"
       rel="noopener noreferrer"
-      className={`block border border-[var(--border)] rounded-xl p-8 transition-all bg-[var(--surface)] hover:shadow-card-hover product-card-hover ${fullHeight ? 'h-full flex flex-col' : ''}`}
+      className={`block border border-[var(--border)] rounded-xl p-0 overflow-clip transition-all bg-[var(--surface)] hover:shadow-card-hover product-card-hover ${fullHeight ? 'h-full flex flex-col' : ''}`}
       onClick={(e) => {
         e.preventDefault()
         trackAffiliateClick({
@@ -72,14 +72,16 @@ function PLPLinkCard({ hotel, fullHeight = false }: { hotel: HotelPLPLink; fullH
         })
       }}
     >
-      <div className={`flex flex-col items-center text-center ${fullHeight ? 'h-full justify-between' : ''}`}>
-        {/* Search icon */}
-        <div className="w-16 h-16 rounded-full flex items-center justify-center mb-5 bg-[var(--primary-light)]">
-          <Search size={28} strokeWidth={1.5} className="text-[var(--primary)]" />
-        </div>
+      {/* Hero image */}
+      <div className="relative h-[120px] sm:h-[140px] overflow-clip">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/images/products/fallback-hotel.webp" alt="" aria-hidden="true" className="w-full h-full object-cover" loading="lazy" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+      </div>
 
+      <div className={`flex flex-col p-5 ${fullHeight ? 'flex-1 justify-between' : ''}`}>
         {/* Title */}
-        <h4 className="font-serif font-semibold text-xl mb-3 text-[var(--text)]">
+        <h4 className="font-sans font-bold text-lg sm:text-xl mb-3 text-[var(--text)]">
           {hotel.title}
         </h4>
 
@@ -98,7 +100,7 @@ function PLPLinkCard({ hotel, fullHeight = false }: { hotel: HotelPLPLink; fullH
         )}
 
         {/* Provider badge */}
-        <div className="text-xs px-3 py-1.5 rounded-full mb-6 bg-[var(--surface)] text-[var(--text-muted)] border border-[var(--border)]">
+        <div className="text-[10px] px-2 py-1 rounded-full mb-4 opacity-60 bg-[var(--surface)] text-[var(--text-muted)] border border-[var(--border)]">
           Powered by {hotel.provider.charAt(0).toUpperCase() + hotel.provider.slice(1)}
         </div>
 
@@ -106,7 +108,7 @@ function PLPLinkCard({ hotel, fullHeight = false }: { hotel: HotelPLPLink; fullH
         <button
           className="w-full px-5 py-3 rounded-lg transition-all flex items-center justify-center gap-2 text-base font-medium bg-[var(--primary)] text-white hover:shadow-card-hover"
         >
-          Search Properties
+          Search on Expedia
           <ExternalLink size={16} strokeWidth={1.5} />
         </button>
       </div>
@@ -159,7 +161,7 @@ function TraditionalHotelCard({ hotel }: { hotel: HotelCard }) {
           {/* Header */}
           <div className="flex justify-between items-start mb-2">
             <div className="flex-1">
-              <h4 className="font-serif font-semibold text-xl text-[var(--text)] line-clamp-2 leading-tight group-hover:text-[var(--primary)] transition-colors">
+              <h4 className="font-sans font-bold text-lg text-[var(--text)] line-clamp-2 leading-tight group-hover:text-[var(--primary)] transition-colors">
                 {hotel.name}
               </h4>
               <div className="flex items-center gap-1.5 mt-1.5 text-sm text-[var(--text-secondary)]">
@@ -219,7 +221,7 @@ export default function HotelCards({ hotels, fullHeight = false }: HotelCardsPro
     <div className={`space-y-5 ${fullHeight ? 'h-full flex flex-col' : ''}`}>
       {/* Section title with editorial rule */}
       <div className="space-y-3">
-        <h3 className="font-serif text-2xl font-semibold flex items-center gap-2.5 text-[var(--text)]">
+        <h3 className="font-sans font-bold text-xl flex items-center gap-2.5 text-[var(--text)]">
           <HotelIcon size={22} strokeWidth={1.5} className="text-[var(--primary)]" />
           Recommended Hotels
         </h3>

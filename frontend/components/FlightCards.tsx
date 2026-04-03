@@ -1,6 +1,6 @@
 'use client'
 
-import { Plane, Clock, ExternalLink, Search, ArrowRight } from 'lucide-react'
+import { Plane, Clock, ExternalLink, ArrowRight } from 'lucide-react'
 import { trackAffiliateClick } from '@/lib/trackAffiliate'
 
 // Traditional flight card with full details
@@ -67,7 +67,7 @@ function PLPLinkCard({ flight, fullHeight = false }: { flight: FlightPLPLink; fu
       href={flight.search_url}
       target="_blank"
       rel="noopener noreferrer"
-      className={`block bg-[var(--surface)] border border-[var(--border)] rounded-xl p-8 transition-all shadow-card hover:shadow-card-hover product-card-hover ${fullHeight ? 'h-full flex flex-col' : ''}`}
+      className={`block bg-[var(--surface)] border border-[var(--border)] rounded-xl p-0 overflow-clip transition-all shadow-card hover:shadow-card-hover product-card-hover ${fullHeight ? 'h-full flex flex-col' : ''}`}
       onClick={(e) => {
         e.preventDefault()
         trackAffiliateClick({
@@ -78,20 +78,22 @@ function PLPLinkCard({ flight, fullHeight = false }: { flight: FlightPLPLink; fu
         })
       }}
     >
-      <div className={`flex flex-col items-center text-center ${fullHeight ? 'h-full justify-between' : ''}`}>
-        {/* Search icon */}
-        <div className="w-16 h-16 rounded-full flex items-center justify-center mb-5 bg-[var(--primary-light)]">
-          <Search size={28} strokeWidth={1.5} className="text-[var(--primary)]" />
-        </div>
+      {/* Hero image */}
+      <div className="relative h-[120px] sm:h-[140px] overflow-clip">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/images/products/fallback-flight.webp" alt="" aria-hidden="true" className="w-full h-full object-cover" loading="lazy" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+      </div>
 
+      <div className={`flex flex-col p-5 ${fullHeight ? 'flex-1 justify-between' : ''}`}>
         {/* Title */}
-        <h4 className="font-serif text-xl mb-3 text-[var(--text)]">
+        <h4 className="font-sans font-bold text-lg sm:text-xl mb-3 text-[var(--text)]">
           {flight.title}
         </h4>
 
         {/* Route visualization */}
         <div className="flex items-center gap-3 mb-4 text-[var(--text)]">
-          <span className="text-xl font-bold tracking-wider">
+          <span className="text-base sm:text-lg font-bold whitespace-nowrap text-[var(--text)]">
             {flight.origin}
           </span>
           <div className="flex items-center gap-2 px-3">
@@ -99,7 +101,7 @@ function PLPLinkCard({ flight, fullHeight = false }: { flight: FlightPLPLink; fu
             <Plane size={18} strokeWidth={1.5} className="text-[var(--text-muted)] transform rotate-90 sm:rotate-0" />
             <div className="w-8 h-[2px] bg-[var(--border-strong)]"></div>
           </div>
-          <span className="text-xl font-bold tracking-wider">
+          <span className="text-base sm:text-lg font-bold whitespace-nowrap text-[var(--text)]">
             {flight.destination}
           </span>
         </div>
@@ -120,7 +122,7 @@ function PLPLinkCard({ flight, fullHeight = false }: { flight: FlightPLPLink; fu
         )}
 
         {/* Provider badge */}
-        <div className="text-xs font-medium px-3 py-1.5 rounded-full mb-6 bg-[var(--surface-strong)] text-[var(--text-muted)] border border-[var(--border)]">
+        <div className="text-[10px] px-2 py-1 rounded-full mb-4 opacity-60 bg-[var(--surface-strong)] text-[var(--text-muted)] border border-[var(--border)]">
           Powered by {flight.provider.charAt(0).toUpperCase() + flight.provider.slice(1)}
         </div>
 
@@ -128,7 +130,7 @@ function PLPLinkCard({ flight, fullHeight = false }: { flight: FlightPLPLink; fu
         <button
           className="w-full px-6 py-3 bg-[var(--primary)] text-white rounded-lg transition-all flex items-center justify-center gap-2 text-base font-medium hover:opacity-90"
         >
-          Search Flights
+          Search on Expedia
           <ExternalLink size={16} strokeWidth={1.5} />
         </button>
       </div>
@@ -235,7 +237,7 @@ export default function FlightCards({ flights, fullHeight = false }: FlightCards
     <div className={`space-y-6 ${fullHeight ? 'h-full flex flex-col' : ''}`}>
       <div className="flex items-center justify-between">
         <div className="flex-1">
-          <h3 className="font-serif text-2xl text-[var(--text)] flex items-center gap-3">
+          <h3 className="font-sans font-bold text-xl text-[var(--text)] flex items-center gap-3">
             <Plane size={24} strokeWidth={1.5} className="text-[var(--primary)]" />
             Recommended Flights
           </h3>
