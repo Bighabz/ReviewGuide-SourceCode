@@ -60,10 +60,10 @@
 ### Travel Response UI
 
 - [x] **TRV-01**: Must-See Attractions renders as visual resort cards with hero images (not flat bullet list with pin icons)
-- [ ] **TRV-02**: Hotel PLPLinkCard displays destination hero image at top with updated "Search on Expedia" CTA
-- [ ] **TRV-03**: Flight PLPLinkCard displays destination hero image at top, Caribbean text wrapping fixed, updated "Search on Expedia" CTA
-- [ ] **TRV-04**: All travel section headers use sans-serif font (font-serif removed from HotelCards, FlightCards, DestinationInfo, ItineraryView, ListBlock)
-- [ ] **TRV-05**: Conclusion "Want better results?" block styled as distinct secondary CTA with tinted background
+- [x] **TRV-02**: Hotel PLPLinkCard displays destination hero image at top with updated "Search on Expedia" CTA
+- [x] **TRV-03**: Flight PLPLinkCard displays destination hero image at top, Caribbean text wrapping fixed, updated "Search on Expedia" CTA
+- [x] **TRV-04**: All travel section headers use sans-serif font (font-serif removed from HotelCards, FlightCards, DestinationInfo, ItineraryView, ListBlock)
+- [x] **TRV-05**: Conclusion "Want better results?" block styled as distinct secondary CTA with tinted background
 - [ ] **TRV-06**: 7+ AI-generated travel destination hero images (WebP, <200KB each) in public/images/travel/
 
 ## v4.0 Requirements (Deferred)
@@ -120,10 +120,10 @@
 | QA-02 | Phase 22 | Complete |
 | QA-03 | Phase 22 | Complete |
 | TRV-01 | Phase 24 | Complete |
-| TRV-02 | Phase 24 | Pending |
-| TRV-03 | Phase 24 | Pending |
-| TRV-04 | Phase 24 | Pending |
-| TRV-05 | Phase 24 | Pending |
+| TRV-02 | Phase 24 | Complete |
+| TRV-03 | Phase 24 | Complete |
+| TRV-04 | Phase 24 | Complete |
+| TRV-05 | Phase 24 | Complete |
 | TRV-06 | Phase 24 | Pending |
 
 **Coverage:**

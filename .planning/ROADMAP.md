@@ -441,7 +441,7 @@ Plans:
   5. All travel section headers use sans-serif font (no decorative serif)
   6. Conclusion "Want better results?" block has visually distinct tinted background
   7. 7+ AI-generated travel hero images exist in WebP under 200KB
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 - [ ] 24-01-PLAN.md — ResortCards component + BlockRegistry swap + test scaffold (TRV-01)
