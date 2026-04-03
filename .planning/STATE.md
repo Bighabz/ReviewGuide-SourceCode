@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Visual Overhaul — Bold Editorial
 status: executing
-stopped_at: Completed 23-03-PLAN.md
-last_updated: "2026-04-03T05:56:45.963Z"
+stopped_at: Completed 23-02-PLAN.md
+last_updated: "2026-04-03T06:00:16.189Z"
 last_activity: 2026-04-01 — 18-02 complete (15 category hero images approved)
 progress:
   total_phases: 23
   completed_phases: 17
   total_plans: 58
-  completed_plans: 50
+  completed_plans: 52
   percent: 92
 ---
 
@@ -56,6 +56,7 @@ Progress: [█████████░] 92%
 | Phase 19-mosaic-hero P02 | 6 | 1 tasks | 1 files |
 | Phase 23-qa-remediation-unified-bug-fixes P00 | 8 | 1 tasks | 1 files |
 | Phase 23-qa-remediation-unified-bug-fixes P03 | 382 | 2 tasks | 9 files |
+| Phase 23-qa-remediation-unified-bug-fixes P02 | 581 | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -89,6 +90,9 @@ Progress: [█████████░] 92%
 - [Phase 23-qa-remediation-unified-bug-fixes]: 8 canonical prompts map directly to QAR bug IDs (QAR-01 through QAR-07) rather than generic smoke tests
 - [Phase 23-qa-remediation-unified-bug-fixes]: tool_timing uses Dict[str, float] merged via spread pattern — tools do state.get('tool_timing', {}) merge rather than operator.add accumulation
 - [Phase 23-qa-remediation-unified-bug-fixes]: Partial data note in travel_compose only shown when fewer than 3 keys are missing — avoids verbose listing when everything failed (recovery path handles that case)
+- [Phase 23-qa-remediation-unified-bug-fixes]: Use overflow-clip instead of overflow-hidden everywhere — clip prevents scroll containment issues while hidden creates BFC that crushes flex children
+- [Phase 23-qa-remediation-unified-bug-fixes]: Chat input z-index raised to z-[300] (above MobileTabBar z-[200]) so chat bar is always visible on mobile
+- [Phase 23-qa-remediation-unified-bug-fixes]: Removed minWidth: fit-content from user bubble — causes 167px collapse in constrained parents on mobile
 
 ### Pending Todos
 
@@ -106,6 +110,6 @@ Progress: [█████████░] 92%
 
 ## Session Continuity
 
-Last session: 2026-04-03T05:56:45.952Z
-Stopped at: Completed 23-03-PLAN.md
+Last session: 2026-04-03T06:00:16.175Z
+Stopped at: Completed 23-02-PLAN.md
 Resume file: None
