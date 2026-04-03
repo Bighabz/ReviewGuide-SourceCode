@@ -35,8 +35,10 @@ describe('TopPickBlock', () => {
 
     it('renders affiliate link when provided', () => {
         render(<TopPickBlock {...defaultProps} affiliateUrl="https://amazon.com/sony" />)
-        const link = screen.getByRole('link')
-        expect(link).toHaveAttribute('href', 'https://amazon.com/sony')
+        const links = screen.getAllByRole('link')
+        const ctaLink = links.find((l) => l.getAttribute('href') === 'https://amazon.com/sony')
+        expect(ctaLink).toBeDefined()
+        expect(ctaLink).toHaveAttribute('href', 'https://amazon.com/sony')
     })
 
     it('renders without affiliate link when not provided', () => {

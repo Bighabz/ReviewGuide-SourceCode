@@ -1,8 +1,18 @@
 'use client'
 
 import { useState } from 'react'
+import { motion } from 'framer-motion'
 import { Award, ExternalLink, Star, ChevronDown, ChevronUp } from 'lucide-react'
 import { stripMarkdown } from '@/lib/stripMarkdown'
+
+const topPickVariants = {
+  rest: { y: 0 },
+  hover: {
+    y: -4,
+    boxShadow: '0 12px 32px rgba(28,25,23,0.10)',
+    transition: { type: 'spring', stiffness: 400, damping: 28 },
+  },
+}
 
 interface TopPickBlockProps {
   productName: string
@@ -50,7 +60,11 @@ export default function TopPickBlock({
   if (!productName) return null
 
   return (
-    <div className="rounded-xl border-2 border-[var(--primary)] bg-[var(--surface-elevated)] p-3 sm:p-5 mb-4 shadow-card product-card-hover">
+    <motion.div
+      initial="rest"
+      whileHover="hover"
+      variants={topPickVariants}
+      className="rounded-xl border-2 border-[var(--primary)] bg-[var(--surface-elevated)] p-3 sm:p-5 mb-4 shadow-card">
       <div className="flex items-center gap-2 mb-3">
         <Award size={16} className="text-[var(--primary)]" />
         <span className="text-xs font-bold uppercase tracking-wider text-[var(--primary)]">
@@ -59,7 +73,7 @@ export default function TopPickBlock({
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-        <div className="flex-shrink-0 w-full sm:w-[160px] h-[120px] sm:h-[160px] rounded-xl overflow-hidden bg-[var(--surface)]">
+        <div className="flex-shrink-0 w-full sm:w-[200px] h-[140px] sm:h-[200px] rounded-xl overflow-hidden bg-[var(--surface)]">
           {imageUrl ? (
             <img
               src={imageUrl}
@@ -119,7 +133,8 @@ export default function TopPickBlock({
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2 sm:px-5 sm:py-2.5 rounded-lg text-xs sm:text-sm font-semibold text-white transition-all hover:brightness-110 active:scale-[0.97]"
               style={{
-                background: 'linear-gradient(135deg, var(--primary), var(--accent))',
+                background: 'linear-gradient(135deg, var(--bold-blue) 0%, var(--primary) 40%, var(--accent) 100%)',
+                boxShadow: '0 4px 14px rgba(27, 77, 255, 0.35)',
               }}
             >
               {price ? `Buy on ${merchant} — ${currency === 'USD' ? '$' : currency}${price.toFixed(2)}` : `Buy on ${merchant}`}
@@ -171,6 +186,6 @@ export default function TopPickBlock({
           )}
         </div>
       )}
-    </div>
+    </motion.div>
   )
 }
