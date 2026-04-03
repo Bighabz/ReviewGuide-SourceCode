@@ -14,7 +14,7 @@ export const categories: BrowseCategory[] = [
     slug: 'travel',
     name: 'Travel',
     tagline: 'Flights, hotels & destinations worth the trip',
-    image: '/images/browse/travel.jpg',
+    image: '/images/categories/cat-travel.webp',
     icon: 'Plane',
     queries: [
       'Top all-inclusive resorts in the Caribbean',
@@ -27,7 +27,7 @@ export const categories: BrowseCategory[] = [
     slug: 'electronics',
     name: 'Electronics',
     tagline: 'Researched, rated & ready to buy',
-    image: '/images/browse/electronics.jpg',
+    image: '/images/categories/cat-laptops.webp',
     icon: 'Laptop',
     queries: [
       'Best noise-cancelling headphones',
@@ -40,7 +40,7 @@ export const categories: BrowseCategory[] = [
     slug: 'home-appliances',
     name: 'Home Appliances',
     tagline: 'The machines that make your home work',
-    image: '/images/browse/home-appliances.jpg',
+    image: '/images/categories/cat-kitchen.webp',
     icon: 'Home',
     queries: [
       'Best robot vacuums for pet hair',
@@ -53,7 +53,7 @@ export const categories: BrowseCategory[] = [
     slug: 'health-wellness',
     name: 'Health & Wellness',
     tagline: 'Gear and supplements backed by research',
-    image: '/images/browse/health-wellness.jpg',
+    image: '/images/categories/cat-fitness.webp',
     icon: 'Heart',
     queries: [
       'Best standing desks for back pain',
@@ -66,7 +66,7 @@ export const categories: BrowseCategory[] = [
     slug: 'outdoor-fitness',
     name: 'Outdoor & Fitness',
     tagline: 'Built for the trail, the road & the gym',
-    image: '/images/browse/outdoor-fitness.jpg',
+    image: '/images/categories/cat-outdoor.webp',
     icon: 'Mountain',
     queries: [
       'Best hiking boots for beginners',
@@ -79,7 +79,7 @@ export const categories: BrowseCategory[] = [
     slug: 'fashion-style',
     name: 'Fashion & Style',
     tagline: 'Sneakers, watches & wardrobe essentials reviewed',
-    image: '/images/browse/fashion-style.jpg',
+    image: '/images/categories/cat-fashion.webp',
     icon: 'Shirt',
     queries: [
       'Best white sneakers for everyday wear',
@@ -92,7 +92,7 @@ export const categories: BrowseCategory[] = [
     slug: 'smart-home',
     name: 'Smart Home',
     tagline: 'Voice assistants, smart displays & connected living',
-    image: '/images/browse/smart-home.jpg',
+    image: '/images/categories/cat-smart-home.webp',
     icon: 'Speaker',
     queries: [
       'Best Alexa-compatible smart home gadgets',
@@ -105,7 +105,7 @@ export const categories: BrowseCategory[] = [
     slug: 'kids-toys',
     name: 'Kids & Toys',
     tagline: 'Top-rated picks for every age and stage',
-    image: '/images/browse/kids-toys.jpg',
+    image: '/images/categories/cat-gaming.webp',
     icon: 'Gamepad2',
     queries: [
       'Hottest toys of 2026',
@@ -118,7 +118,7 @@ export const categories: BrowseCategory[] = [
     slug: 'baby',
     name: 'Baby',
     tagline: 'Essentials and gear for new parents',
-    image: '/images/browse/baby.jpg',
+    image: '/images/categories/cat-home-decor.webp',
     icon: 'Baby',
     queries: [
       'Baby essentials every new parent needs',
@@ -131,7 +131,7 @@ export const categories: BrowseCategory[] = [
     slug: 'big-tall',
     name: 'Big & Tall',
     tagline: 'Clothing and gear that actually fits',
-    image: '/images/browse/big-tall.jpg',
+    image: '/images/categories/cat-fashion.webp',
     icon: 'PersonStanding',
     queries: [
       'Best big & tall clothing for men',
