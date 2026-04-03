@@ -219,21 +219,21 @@ describe('CHAT-02 — Image fallback', () => {
       },
     ]
     const { container } = render(<InlineProductCard products={noImageProduct} />)
-    // Should render a placeholder div, not a broken img tag
-    // The placeholder should fill the same w-16 h-16 space
-    const imgTags = container.querySelectorAll('img')
-    const placeholderDiv = container.querySelector('[data-testid="product-image-placeholder"]') ||
-      container.querySelector('[class*="bg-"][class*="w-16"]') ||
-      container.querySelector('[class*="placeholder"]')
+    // ProductImage renders data-testid="product-image-placeholder" when isPlaceholderImage returns true.
+    // The placeholder div may contain an inner <img> with empty alt (decorative icon).
+    const placeholderDiv = container.querySelector('[data-testid="product-image-placeholder"]')
 
-    // Either no img (showing placeholder div) OR img with proper fallback
-    if (imgTags.length > 0) {
-      // If img exists, it should have an alt text
-      const img = imgTags[0] as HTMLImageElement
-      expect(img.alt).toBeTruthy()
-    } else {
-      // Must have a placeholder element
+    if (placeholderDiv) {
+      // Placeholder path: placeholder div is present (correct behavior)
       expect(placeholderDiv).toBeTruthy()
+    } else {
+      // Non-placeholder path: must have an img with a non-empty alt attribute
+      const imgTags = container.querySelectorAll('img')
+      expect(imgTags.length).toBeGreaterThan(0)
+      const productImg = Array.from(imgTags).find(
+        (img) => (img as HTMLImageElement).alt && (img as HTMLImageElement).alt.length > 0
+      )
+      expect(productImg).toBeTruthy()
     }
   })
 })

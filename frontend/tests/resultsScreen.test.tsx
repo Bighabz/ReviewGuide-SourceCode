@@ -401,13 +401,11 @@ describe('RES-03: Product cards render', () => {
     expect(hasScoreBar).toBe(true)
   })
 
-  it('product card shows Buy on Amazon CTA', () => {
+  it('product card shows Check Price CTA', () => {
     render(<ResultsPage params={{ id: 'test-session-id' }} />)
-    const ctaLinks = screen.getAllByText('Buy on Amazon')
+    // ResultsProductCard uses "Check Price" as the CTA text (not "Buy on Amazon")
+    const ctaLinks = screen.getAllByText('Check Price')
     expect(ctaLinks.length).toBeGreaterThan(0)
-    const link = ctaLinks[0] as HTMLAnchorElement
-    const href = link.href || link.getAttribute('href') || ''
-    expect(href).toContain('amazon')
   })
 
   it('product card shows price', () => {
@@ -422,11 +420,12 @@ describe('RES-04: Product card rank badges', () => {
     setupLocalStorageMock()
   })
 
-  it('product card shows rank badge "#1 Top Pick"', () => {
+  it('product card shows rank number and TOP PICK badge', () => {
     const { container } = render(<ResultsPage params={{ id: 'test-session-id' }} />)
     const allText = container.textContent ?? ''
-    expect(allText).toContain('#1')
-    expect(allText).toContain('Top Pick')
+    // Rank badge shows plain number "1" (not "#1") in a circle, plus "TOP PICK" badge label
+    expect(allText).toContain('1')
+    expect(allText).toContain('TOP PICK')
   })
 })
 

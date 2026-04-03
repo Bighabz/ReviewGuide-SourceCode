@@ -269,14 +269,23 @@ describe('CHAT-03 — Status display', () => {
     expect(screen.getByText('Researching 4 sources')).toBeTruthy()
   })
 
-  it('renders fallback "Thinking..." when isThinking=true but statusText is empty', () => {
+  it('renders animated dots (not a status text span) when isThinking=true but statusText is empty', () => {
     const message = makeAssistantMessage({
       content: '',
       isThinking: true,
       statusText: '',
     })
-    render(<Message message={message} />)
-    expect(screen.getByText('Thinking...')).toBeTruthy()
+    const { container } = render(<Message message={message} />)
+    // When statusText is empty the component shows only the bouncing dots animation.
+    // The .stream-status-text span is NOT rendered (no text to show).
+    const statusTextEl = container.querySelector('.stream-status-text')
+    expect(statusTextEl).toBeNull()
+    // The thinking indicator container itself should be present (dots animation).
+    const hasThinkingIndicator =
+      container.querySelector('[class*="animate-bounce"]') !== null ||
+      container.querySelector('[class*="animate-bounce-dot"]') !== null ||
+      container.querySelector('[class*="rounded-full"][class*="bg-[var(--primary)]"]') !== null
+    expect(hasThinkingIndicator).toBe(true)
   })
 
   it('does NOT render status text when isThinking=false', () => {

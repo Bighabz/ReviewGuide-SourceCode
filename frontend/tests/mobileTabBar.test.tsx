@@ -1,10 +1,13 @@
 /**
  * Phase 12 — NAV-01 (mobile tab bar) + NAV-05 (safe area)
  *
- * Tests for MobileTabBar component (to be created at frontend/components/MobileTabBar.tsx).
+ * Tests for MobileTabBar component (frontend/components/MobileTabBar.tsx).
  *
- * These tests are in the RED state — they will fail until Plan 02 creates the
- * production component. That is expected and correct.
+ * Updated in Phase 22 to match current component:
+ * - 3 Link tabs (Home, History, Saved) + 1 Settings button = 4 interactive elements
+ * - Tabs use <Link> (renders as <a>), not <button>
+ * - Active detection via data-active="true" attribute
+ * - No "Ask" FAB / no Discover / no Compare / no Profile labels
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
@@ -34,16 +37,23 @@ describe('MobileTabBar — tab count and labels (NAV-01)', () => {
     mockPush.mockClear()
   })
 
-  it('renders exactly 5 tab items', () => {
+  it('renders exactly 4 interactive elements (3 link tabs + 1 settings button)', () => {
     render(<MobileTabBar />)
-    // Each tab is a button — query all buttons and expect 5.
+    // 3 tabs rendered as <Link> (role="link") + 1 Settings button (role="button")
+    const links = screen.getAllByRole('link')
     const buttons = screen.getAllByRole('button')
-    expect(buttons).toHaveLength(5)
+    expect(links).toHaveLength(3)
+    expect(buttons).toHaveLength(1)
   })
 
-  it('renders Discover label', () => {
+  it('renders Home label', () => {
     render(<MobileTabBar />)
-    expect(screen.getByText('Discover')).toBeTruthy()
+    expect(screen.getByText('Home')).toBeTruthy()
+  })
+
+  it('renders History label', () => {
+    render(<MobileTabBar />)
+    expect(screen.getByText('History')).toBeTruthy()
   })
 
   it('renders Saved label', () => {
@@ -51,70 +61,58 @@ describe('MobileTabBar — tab count and labels (NAV-01)', () => {
     expect(screen.getByText('Saved')).toBeTruthy()
   })
 
-  it('renders Ask label', () => {
+  it('renders Settings label', () => {
     render(<MobileTabBar />)
-    expect(screen.getByText('Ask')).toBeTruthy()
-  })
-
-  it('renders Compare label', () => {
-    render(<MobileTabBar />)
-    expect(screen.getByText('Compare')).toBeTruthy()
-  })
-
-  it('renders Profile label', () => {
-    render(<MobileTabBar />)
-    expect(screen.getByText('Profile')).toBeTruthy()
+    expect(screen.getByText('Settings')).toBeTruthy()
   })
 })
 
-describe('MobileTabBar — FAB navigation (NAV-01)', () => {
+describe('MobileTabBar — History link navigation (NAV-01)', () => {
   beforeEach(() => {
     currentPathname = '/'
     mockPush.mockClear()
   })
 
-  it('FAB button calls router.push with /chat?new=1 on click', () => {
+  it('History link has href="/chat"', () => {
     render(<MobileTabBar />)
-    // The Ask/FAB button is the central raised button.
-    const askButton = screen.getByText('Ask').closest('button')
-    expect(askButton).toBeTruthy()
-    fireEvent.click(askButton!)
-    expect(mockPush).toHaveBeenCalledWith('/chat?new=1')
+    // History tab is a Link (renders as <a>)
+    const historyLink = screen.getByText('History').closest('a')
+    expect(historyLink).toBeTruthy()
+    const href = historyLink!.getAttribute('href') ?? ''
+    expect(href).toBe('/chat')
   })
 
-  it('FAB button click does not navigate to any other route', () => {
+  it('Home link has href="/"', () => {
     render(<MobileTabBar />)
-    const askButton = screen.getByText('Ask').closest('button')
-    fireEvent.click(askButton!)
-    expect(mockPush).toHaveBeenCalledTimes(1)
-    const callArg = mockPush.mock.calls[0][0]
-    expect(callArg).toBe('/chat?new=1')
+    const homeLink = screen.getByText('Home').closest('a')
+    expect(homeLink).toBeTruthy()
+    const href = homeLink!.getAttribute('href') ?? ''
+    expect(href).toBe('/')
   })
 })
 
 describe('MobileTabBar — active tab highlighting (NAV-01)', () => {
-  it('Discover tab has active styling when pathname is /browse', () => {
+  it('Home tab has active styling when pathname is /browse', () => {
     currentPathname = '/browse'
     render(<MobileTabBar />)
-    const discoverButton = screen.getByText('Discover').closest('button')
-    expect(discoverButton).toBeTruthy()
-    // Active tab should have blue color class or aria-selected/aria-current.
-    // Accept either aria-current="page" or a CSS class containing "active" / "blue" / "#1B4DFF".
+    const homeLink = screen.getByText('Home').closest('a')
+    expect(homeLink).toBeTruthy()
+    // Active tab uses data-active="true" or aria-current="page"
     const isActive =
-      discoverButton!.getAttribute('aria-current') === 'page' ||
-      discoverButton!.className.includes('active') ||
-      discoverButton!.className.includes('blue') ||
-      discoverButton!.getAttribute('data-active') === 'true'
+      homeLink!.getAttribute('aria-current') === 'page' ||
+      homeLink!.className.includes('active') ||
+      homeLink!.className.includes('blue') ||
+      homeLink!.getAttribute('data-active') === 'true'
     expect(isActive).toBe(true)
   })
 
-  it('Discover tab does NOT have active styling when pathname is /chat', () => {
+  it('Home tab does NOT have active styling when pathname is /chat', () => {
     currentPathname = '/chat'
     render(<MobileTabBar />)
-    const discoverButton = screen.getByText('Discover').closest('button')
+    const homeLink = screen.getByText('Home').closest('a')
     const isActive =
-      discoverButton!.getAttribute('aria-current') === 'page' ||
-      discoverButton!.getAttribute('data-active') === 'true'
+      homeLink!.getAttribute('aria-current') === 'page' ||
+      homeLink!.getAttribute('data-active') === 'true'
     expect(isActive).toBe(false)
   })
 })
@@ -201,6 +199,6 @@ describe('MobileTabBar — keyboard hide behavior (NAV-01)', () => {
 
     render(<MobileTabBar />)
     // Tab bar should be visible — tab labels should be in the document.
-    expect(screen.getByText('Discover')).toBeTruthy()
+    expect(screen.getByText('Home')).toBeTruthy()
   })
 })
