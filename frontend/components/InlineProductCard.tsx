@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { motion } from 'framer-motion'
 import { stripMarkdown } from '@/lib/stripMarkdown'
 import { curatedLinks } from '@/lib/curatedLinks'
 import { resolveProductImage, isPlaceholderImage } from '@/lib/productImages'
@@ -83,8 +84,13 @@ export default function InlineProductCard({ products }: InlineProductCardProps) 
         const { label, emoji } = getRankBadge(index)
 
         return (
-          <div
+          <motion.div
             key={index}
+            whileHover={{
+              backgroundColor: 'var(--surface-hover)',
+              x: 2,
+            }}
+            transition={{ type: 'spring', stiffness: 400, damping: 28 }}
             className="h-16 flex flex-row items-center gap-3 px-1 overflow-hidden border-b border-[var(--border)] last:border-b-0"
           >
             {/* Product image */}
@@ -120,7 +126,7 @@ export default function InlineProductCard({ products }: InlineProductCardProps) 
             {/* Right: price + buy link */}
             <div className="flex flex-col items-end flex-shrink-0 gap-0.5">
               {product.price != null && (
-                <span className="font-semibold text-base" style={{ color: 'var(--text-primary)' }}>
+                <span className="font-bold text-lg" style={{ color: 'var(--text)' }}>
                   ${product.price}
                 </span>
               )}
@@ -136,7 +142,7 @@ export default function InlineProductCard({ products }: InlineProductCardProps) 
                  'View deal'}
               </a>
             </div>
-          </div>
+          </motion.div>
         )
       })}
     </div>

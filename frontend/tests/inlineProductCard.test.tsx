@@ -152,14 +152,19 @@ describe('CHAT-02 — Product name and price', () => {
     expect(hasTruncate).toBe(true)
   })
 
-  it('price renders with font-semibold styling', () => {
+  it('price renders with font-bold styling (upgraded from font-semibold)', () => {
     const { container } = render(<InlineProductCard products={singleProduct} />)
-    // Price element must be present and bold
-    const priceEl =
-      screen.queryByText('$349') ||
-      screen.queryByText('349') ||
-      container.querySelector('[class*="font-semibold"]')
+    // Price element must use font-bold text-lg (V3 upgrade)
+    const priceEl = screen.queryByText('$349') as HTMLElement | null
     expect(priceEl).toBeTruthy()
+    expect(priceEl!.className).toContain('font-bold')
+  })
+
+  it('price renders with text-lg size class', () => {
+    render(<InlineProductCard products={singleProduct} />)
+    const priceEl = screen.queryByText('$349') as HTMLElement | null
+    expect(priceEl).toBeTruthy()
+    expect(priceEl!.className).toContain('text-lg')
   })
 
   it('price displays with dollar sign prefix', () => {
