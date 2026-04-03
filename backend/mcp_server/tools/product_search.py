@@ -253,7 +253,7 @@ Return ONLY a JSON object with product names:
         # Use PRODUCT_SEARCH_MODEL with configurable max_tokens (important for reasoning models)
         response = await model_service.generate(
             messages=[
-                {"role": "system", "content": f"You are a product name generator. Today's date is {datetime.date.today().isoformat()}. Generate product names based on user's request using the LATEST models and versions available as of today. For example, if asked about iPhones, use the current generation (not older ones). NEVER refuse or say a product doesn't exist. Always return valid JSON with product names."},
+                {"role": "system", "content": f"You are a product name generator. Today's date is {datetime.date.today().isoformat()}. Generate product names based on user's request using the LATEST models and versions available as of today. For example, if asked about iPhones, use the current generation (not older ones). NEVER refuse or say a product doesn't exist. Always return valid JSON with product names. IMPORTANT: Do NOT include accessories, replacement parts, cases, chargers, cables, adapters, filters, or other add-on items. Only return the primary products the user is asking about."},
                 {"role": "user", "content": prompt}
             ],
             model=settings.PRODUCT_SEARCH_MODEL,

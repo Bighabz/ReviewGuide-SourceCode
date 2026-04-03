@@ -290,6 +290,59 @@ def _filter_relevant_products(
     return filtered
 
 
+def _parse_budget(budget_str: str) -> tuple:
+    """
+    Parse a budget string into (min_price, max_price) numeric bounds.
+
+    Handles:
+    - "under $500" / "below $500" / "less than $500" → (None, 500.0)
+    - "$100-$200" / "$100 to $200" → (100.0, 200.0)
+    - "around $500" / "about $500" / "roughly $500" → (400.0, 600.0)
+
+    Returns (None, None) when no pattern matches.
+    """
+    import re
+    if not budget_str or not isinstance(budget_str, str):
+        return None, None
+    # "under $500", "below $500", "less than $500"
+    m = re.search(r'(?:under|below|less\s+than)\s*\$?([\d,]+)', budget_str, re.I)
+    if m:
+        return None, float(m.group(1).replace(',', ''))
+    # "$100-$200" or "$100 to $200" or "100–200"
+    m = re.search(r'\$?([\d,]+)\s*[-\u2013to]+\s*\$?([\d,]+)', budget_str, re.I)
+    if m:
+        return float(m.group(1).replace(',', '')), float(m.group(2).replace(',', ''))
+    # "around $500", "about $500", "roughly $500"
+    m = re.search(r'(?:around|about|roughly)\s*\$?([\d,]+)', budget_str, re.I)
+    if m:
+        center = float(m.group(1).replace(',', ''))
+        return center * 0.8, center * 1.2
+    return None, None
+
+
+def _extract_price(offer: dict) -> float | None:
+    """
+    Extract a numeric price from an offer dict.
+
+    The offer's price field may be a float, int, or a string like "$499.99" or "1,299".
+    Returns None when the price cannot be determined.
+    """
+    price = offer.get("price")
+    if price is None:
+        return None
+    if isinstance(price, (int, float)):
+        return float(price) if price > 0 else None
+    if isinstance(price, str):
+        import re
+        cleaned = re.sub(r'[^\d.]', '', price)
+        try:
+            val = float(cleaned)
+            return val if val > 0 else None
+        except ValueError:
+            return None
+    return None
+
+
 @tool_error_handler(tool_name="product_compose", error_message="Failed to compose product response")
 async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -327,6 +380,7 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
     try:
         # Read from state
         user_message = state.get("user_message", "")
+        user_message_lower = user_message.lower()
         normalized_products = state.get("normalized_products", [])
         affiliate_products_raw = state.get("affiliate_products", {})  # Dynamic: {"ebay": [...], "amazon": [...]}
         intent = state.get("intent", "product")
@@ -424,10 +478,22 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
                     "provider": provider_name
                 })
 
+        # Parse budget constraint once — used for offer-level filtering below
+        budget_str = (slots.get("budget", "") or "") if slots else ""
+        budget_min, budget_max = _parse_budget(budget_str)
+
         products_with_offers = []
         for product in normalized_products:
             product_copy = product.copy()
             product_name = product.get('name', '')
+
+            # Skip products whose name matches an accessory keyword
+            # (supplements _filter_relevant_products which only checks offer titles)
+            if not any(kw in user_message_lower for kw in ACCESSORY_KEYWORDS):
+                product_name_lower = product_name.lower()
+                if any(kw in product_name_lower for kw in ACCESSORY_KEYWORDS):
+                    logger.info(f"[product_compose] Suppressed accessory product: {product_name}")
+                    continue
 
             # Find matching affiliate links from ALL providers
             all_offers_for_product = []
@@ -447,6 +513,16 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
                     })
 
             if all_offers_for_product:
+                # Apply budget enforcement: filter out offers exceeding the max price.
+                # If all offers exceed the budget, keep them all so the user still sees results.
+                if budget_max is not None:
+                    in_budget = [o for o in all_offers_for_product if _extract_price(o) is not None and _extract_price(o) <= budget_max]
+                    if in_budget:
+                        removed_count = len(all_offers_for_product) - len(in_budget)
+                        if removed_count > 0:
+                            logger.info(f"[product_compose] Budget filter (≤${budget_max:.0f}): removed {removed_count} over-budget offer(s) for {product_name}")
+                        all_offers_for_product = in_budget
+
                 # Best offer = first with a real price, or just first
                 priced = [o for o in all_offers_for_product if o.get("price", 0) > 0]
                 product_copy["best_offer"] = priced[0] if priced else all_offers_for_product[0]
@@ -661,6 +737,11 @@ Products to describe:
         # Products with reviews (use fuzzy matching for offer lookup)
         if review_bundles:
             for pname, bundle in review_bundles.items():
+                # Skip accessory products from the blog data (unless user is asking for accessories)
+                if not any(kw in user_message_lower for kw in ACCESSORY_KEYWORDS):
+                    if any(kw in pname.lower() for kw in ACCESSORY_KEYWORDS):
+                        logger.info(f"[product_compose] Suppressed accessory from blog: {pname}")
+                        continue
                 label_str = f" ({editorial_labels[pname]})" if pname in editorial_labels else ""
                 rating = bundle.get("avg_rating", 0)
                 total = bundle.get("total_reviews", 0)
