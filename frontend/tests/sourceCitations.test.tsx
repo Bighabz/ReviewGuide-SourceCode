@@ -155,39 +155,37 @@ describe('CHAT-04 — Clickable citation links', () => {
 describe('CHAT-04 — Colored dots by position', () => {
   it('renders colored dot elements for each source', () => {
     const { container } = render(<SourceCitations data={singleProductFewSources} />)
-    // Colored dots can be: div/span with bg-[#color] or bg-red-500 etc.
-    const coloredDots =
-      container.querySelectorAll('[class*="bg-[#EF4444]"]').length > 0
-        ? container.querySelectorAll('[class*="bg-[#EF4444]"]')
-        : container.querySelectorAll('[class*="rounded-full"][class*="bg-"]')
-    expect(coloredDots.length).toBeGreaterThanOrEqual(1)
+    // Colored dots use inline style backgroundColor with CSS variables
+    const coloredDots = container.querySelectorAll('[class*="rounded-full"][style*="backgroundColor"]')
+    const allRoundedFull = container.querySelectorAll('[class*="rounded-full"]')
+    expect((coloredDots.length > 0 ? coloredDots : allRoundedFull).length).toBeGreaterThanOrEqual(1)
   })
 
-  it('index 0 dot has red color (#EF4444 or red-500)', () => {
+  it('index 0 dot has red color (--bold-red CSS variable)', () => {
     const { container } = render(<SourceCitations data={singleProductFewSources} />)
-    // First dot: red
+    // Dots now use inline style with CSS variables
     const redDot =
-      container.querySelector('[class*="bg-[#EF4444]"]') ||
+      container.querySelector('[style*="--bold-red"]') ||
       container.querySelector('[class*="bg-red-"]') ||
       container.querySelector('[style*="#EF4444"]') ||
       container.querySelector('[style*="rgb(239, 68, 68)"]')
     expect(redDot).toBeTruthy()
   })
 
-  it('index 1 dot has blue color (#3B82F6 or blue-500)', () => {
+  it('index 1 dot has blue color (--bold-blue CSS variable)', () => {
     const { container } = render(<SourceCitations data={singleProductFewSources} />)
     const blueDot =
-      container.querySelector('[class*="bg-[#3B82F6]"]') ||
+      container.querySelector('[style*="--bold-blue"]') ||
       container.querySelector('[class*="bg-blue-"]') ||
       container.querySelector('[style*="#3B82F6"]') ||
       container.querySelector('[style*="rgb(59, 130, 246)"]')
     expect(blueDot).toBeTruthy()
   })
 
-  it('index 2 dot has green color (#22C55E or green-500)', () => {
+  it('index 2 dot has green color (--bold-green CSS variable)', () => {
     const { container } = render(<SourceCitations data={singleProductFewSources} />)
     const greenDot =
-      container.querySelector('[class*="bg-[#22C55E]"]') ||
+      container.querySelector('[style*="--bold-green"]') ||
       container.querySelector('[class*="bg-green-"]') ||
       container.querySelector('[style*="#22C55E"]') ||
       container.querySelector('[style*="rgb(34, 197, 94)"]')

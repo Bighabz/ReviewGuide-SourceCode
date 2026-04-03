@@ -54,9 +54,12 @@ export default function CategoryNav({ className = '' }: { className?: string }) 
             <div className="mt-8 px-4">
                 <div className="bg-gradient-to-br from-[var(--secondary)] to-blue-900 rounded-xl p-4 text-white text-center shadow-lg">
                     <p className="text-sm font-bold mb-2">Need specific advice?</p>
-                    <p className="text-xs text-blue-200 mb-3">Our AI can compare products specifically for your needs.</p>
+                    <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>Our AI can compare products specifically for your needs.</p>
                     <Link href="/chat">
-                        <button className="w-full py-2 bg-white text-[var(--secondary)] rounded-lg text-xs font-bold hover:bg-blue-50 transition-colors">
+                        <button
+                          className="w-full py-2 rounded-lg text-xs font-bold transition-colors hover:bg-[var(--surface-hover)]"
+                          style={{ backgroundColor: 'var(--background)', color: 'var(--secondary)' }}
+                        >
                             Start Chat
                         </button>
                     </Link>

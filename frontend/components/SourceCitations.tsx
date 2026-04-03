@@ -25,8 +25,12 @@ interface SourceCitationsProps {
   title?: string
 }
 
-const DOT_COLORS = ['#EF4444', '#3B82F6', '#22C55E', '#F97316']
-const DOT_BG_CLASSES = ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-orange-500']
+const DOT_COLORS = [
+  'var(--bold-red)',
+  'var(--bold-blue)',
+  'var(--bold-green)',
+  'var(--bold-amber)',
+]
 
 export default function SourceCitations({ data, title = 'Sources' }: SourceCitationsProps) {
   const [expanded, setExpanded] = useState(false)
@@ -70,14 +74,14 @@ export default function SourceCitations({ data, title = 'Sources' }: SourceCitat
         >
           {/* Colored dot */}
           <span
-            className={`w-2 h-2 rounded-full flex-shrink-0 ${DOT_BG_CLASSES[index % DOT_BG_CLASSES.length]}`}
+            className="w-2 h-2 rounded-full flex-shrink-0"
             style={{ backgroundColor: DOT_COLORS[index % DOT_COLORS.length] }}
           />
 
           {/* Source name */}
           <span
             className="font-medium text-sm flex-shrink-0"
-            style={{ color: 'var(--text-primary)' }}
+            style={{ color: 'var(--text)' }}
           >
             {source.site_name}
           </span>

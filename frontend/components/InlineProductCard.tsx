@@ -109,7 +109,7 @@ export default function InlineProductCard({ products }: InlineProductCardProps) 
                   {emoji && <span aria-hidden="true">{emoji}</span>}
                   <span>{label}</span>
                 </span>
-                <span className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>
+                <span className="font-semibold text-sm truncate" style={{ color: 'var(--text)' }}>
                   {product.name}
                 </span>
               </div>

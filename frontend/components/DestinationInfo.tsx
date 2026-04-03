@@ -20,7 +20,10 @@ export default function DestinationInfo({ data }: DestinationInfoProps) {
       {weather && (
         <div className="p-5 rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-card transition-shadow hover:shadow-md">
           <div className="flex items-start gap-4">
-            <div className="p-3 rounded-xl bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+            <div
+              className="p-3 rounded-xl"
+              style={{ backgroundColor: 'color-mix(in srgb, var(--bold-blue) 10%, transparent)', color: 'var(--bold-blue)' }}
+            >
               <Cloud size={22} />
             </div>
             <div className="flex-1">
@@ -39,7 +42,10 @@ export default function DestinationInfo({ data }: DestinationInfoProps) {
       {best_season && (
         <div className="p-5 rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-card transition-shadow hover:shadow-md">
           <div className="flex items-start gap-4">
-            <div className="p-3 rounded-xl bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
+            <div
+              className="p-3 rounded-xl"
+              style={{ backgroundColor: 'color-mix(in srgb, var(--bold-amber) 10%, transparent)', color: 'var(--bold-amber)' }}
+            >
               <Calendar size={22} />
             </div>
             <div className="flex-1">
@@ -58,7 +64,10 @@ export default function DestinationInfo({ data }: DestinationInfoProps) {
       {tips && tips.length > 0 && (
         <div className="p-5 rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-card transition-shadow hover:shadow-md sm:col-span-2">
           <div className="flex items-start gap-4">
-            <div className="p-3 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+            <div
+              className="p-3 rounded-xl"
+              style={{ backgroundColor: 'var(--success-light)', color: 'var(--bold-green)' }}
+            >
               <Lightbulb size={22} />
             </div>
             <div className="flex-1">
@@ -68,7 +77,7 @@ export default function DestinationInfo({ data }: DestinationInfoProps) {
               <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
                 {tips.map((tip, idx) => (
                   <li key={idx} className="flex items-start gap-2 text-sm text-[var(--text-secondary)]">
-                    <span className="text-emerald-500 font-bold mt-1">•</span>
+                    <span className="font-bold mt-1" style={{ color: 'var(--bold-green)' }}>•</span>
                     <span className="leading-snug">{tip}</span>
                   </li>
                 ))}
@@ -82,7 +91,10 @@ export default function DestinationInfo({ data }: DestinationInfoProps) {
       {local_customs && (
         <div className="p-5 rounded-xl border border-[var(--border)] bg-[var(--surface)] shadow-card transition-shadow hover:shadow-md sm:col-span-2">
           <div className="flex items-start gap-4">
-            <div className="p-3 rounded-xl bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
+            <div
+              className="p-3 rounded-xl"
+              style={{ backgroundColor: 'color-mix(in srgb, var(--secondary) 10%, transparent)', color: 'var(--secondary)' }}
+            >
               <Users size={22} />
             </div>
             <div className="flex-1">

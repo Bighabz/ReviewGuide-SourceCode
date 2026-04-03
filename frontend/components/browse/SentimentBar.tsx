@@ -20,8 +20,7 @@ export default function SentimentBar({ positive, neutral, negative, showLabels, 
         <div className={`w-full ${className}`}>
             <div className="flex h-1.5 w-full rounded-full overflow-hidden bg-[var(--surface-hover)]">
                 <div
-                    style={{ width: `${posPct}%` }}
-                    className="bg-emerald-500"
+                    style={{ width: `${posPct}%`, backgroundColor: 'var(--bold-green)' }}
                 />
                 <div
                     style={{ width: `${neuPct}%` }}
@@ -34,8 +33,8 @@ export default function SentimentBar({ positive, neutral, negative, showLabels, 
             </div>
             {showLabels && (
                 <div className="flex justify-between text-[10px] sm:text-xs mt-1 text-[var(--text-muted)] font-medium">
-                    <span className="text-emerald-600">{Math.round(posPct)}% Positive</span>
-                    {negPct > 5 && <span className="text-rose-500">{Math.round(negPct)}% Critiques</span>}
+                    <span style={{ color: 'var(--bold-green)' }}>{Math.round(posPct)}% Positive</span>
+                    {negPct > 5 && <span style={{ color: 'var(--bold-red)' }}>{Math.round(negPct)}% Critiques</span>}
                 </div>
             )}
         </div>

@@ -25,20 +25,20 @@ export function StarRating({
 
     return (
         <div className={cn("flex items-center gap-1", className)}>
-            <div className="flex text-yellow-500">
+            <div className="flex" style={{ color: 'var(--rating-star)' }}>
                 {[...Array(fullStars)].map((_, i) => (
                     <Star key={`full-${i}`} size={size} fill="currentColor" strokeWidth={0} />
                 ))}
                 {hasHalfStar && (
                     <div className="relative">
-                        <Star size={size} className="text-gray-300" fill="currentColor" strokeWidth={0} />
+                        <Star size={size} className="text-[var(--border-strong)]" fill="currentColor" strokeWidth={0} />
                         <div className="absolute top-0 left-0 overflow-hidden w-1/2">
-                            <Star size={size} className="text-yellow-500" fill="currentColor" strokeWidth={0} />
+                            <Star size={size} fill="currentColor" strokeWidth={0} />
                         </div>
                     </div>
                 )}
                 {[...Array(emptyStars)].map((_, i) => (
-                    <Star key={`empty-${i}`} size={size} className="text-gray-300" fill="currentColor" strokeWidth={0} />
+                    <Star key={`empty-${i}`} size={size} className="text-[var(--border-strong)]" fill="currentColor" strokeWidth={0} />
                 ))}
             </div>
 
