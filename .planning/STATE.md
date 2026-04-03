@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Visual Overhaul â Bold Editorial
 status: executing
-stopped_at: Completed 20-02-PLAN.md
-last_updated: "2026-04-03T07:08:22.818Z"
+stopped_at: Completed 21-01-PLAN.md
+last_updated: "2026-04-03T07:09:27.065Z"
 last_activity: 2026-04-01 — 18-02 complete (15 category hero images approved)
 progress:
   total_phases: 23
   completed_phases: 18
   total_plans: 63
-  completed_plans: 56
+  completed_plans: 57
   percent: 92
 ---
 
@@ -62,6 +62,7 @@ Progress: [█████████░] 92%
 | Phase 23-qa-remediation-unified-bug-fixes P05 | 435 | 2 tasks | 6 files |
 | Phase 23-qa-remediation-unified-bug-fixes P06 | 18 | 2 tasks | 2 files |
 | Phase 20-discover-browse-page-upgrades P02 | 6 | 2 tasks | 4 files |
+| Phase 21-chat-results-card-polish P01 | 7 | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -111,6 +112,9 @@ Progress: [█████████░] 92%
 - [Phase 20-discover-browse-page-upgrades]: color-mix(in srgb) used for tinted chip backgrounds — avoids adding new CSS classes, works inline with CSS variables
 - [Phase 20-discover-browse-page-upgrades]: TrendingCards thumbnail uses topic.iconBg as CSS background fallback while lazy images load — prevents empty white box
 - [Phase 20-discover-browse-page-upgrades]: Per-item accent color as data field (accentColor in ChipConfig) rather than hardcoded CSS class map
+- [Phase 21-chat-results-card-polish]: Wave 0 cardAnimations tests use transparent framer-motion mock recording whileHover/transition as data attributes for spring config assertion without full runtime
+- [Phase 21-chat-results-card-polish]: InlineProductCard price color changed from --text-primary to --text (V3 canonical token)
+- [Phase 21-chat-results-card-polish]: product-card-hover CSS class removal deferred to Plan 02 per CARD-04 contract
 
 ### Pending Todos
 
@@ -128,6 +132,6 @@ Progress: [█████████░] 92%
 
 ## Session Continuity
 
-Last session: 2026-04-03T07:08:22.800Z
-Stopped at: Completed 20-02-PLAN.md
+Last session: 2026-04-03T07:09:27.055Z
+Stopped at: Completed 21-01-PLAN.md
 Resume file: None

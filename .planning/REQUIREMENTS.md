@@ -36,15 +36,15 @@
 
 ### Chat Page Polish
 
-- [ ] **CHT-01**: AI response bubbles have updated typography (bolder headings, better spacing)
-- [ ] **CHT-02**: Inline product cards have subtle hover animations and bolder price display
+- [x] **CHT-01**: AI response bubbles have updated typography (bolder headings, better spacing)
+- [x] **CHT-02**: Inline product cards have subtle hover animations and bolder price display
 
 ### Product Cards
 
 - [ ] **CARD-01**: ProductReview cards have premium spacing, stronger typography, and subtle entrance animations
 - [ ] **CARD-02**: "Where to Buy" section uses clean 3-column layout with merchant labels derived from URL
 - [ ] **CARD-03**: TopPickBlock has bolder visual treatment — stronger gradient CTA, larger product image
-- [ ] **CARD-04**: Card hover effects use spring animations via Framer Motion
+- [x] **CARD-04**: Card hover effects use spring animations via Framer Motion
 
 ### Results Page Polish
 
@@ -96,12 +96,12 @@
 | DISC-07 | Phase 20 | Complete |
 | BRW-01 | Phase 20 | Pending |
 | BRW-02 | Phase 20 | Pending |
-| CHT-01 | Phase 21 | Pending |
-| CHT-02 | Phase 21 | Pending |
+| CHT-01 | Phase 21 | Complete |
+| CHT-02 | Phase 21 | Complete |
 | CARD-01 | Phase 21 | Pending |
 | CARD-02 | Phase 21 | Pending |
 | CARD-03 | Phase 21 | Pending |
-| CARD-04 | Phase 21 | Pending |
+| CARD-04 | Phase 21 | Complete |
 | RES-07 | Phase 21 | Pending |
 | RES-08 | Phase 21 | Pending |
 | QA-01 | Phase 22 | Pending |
