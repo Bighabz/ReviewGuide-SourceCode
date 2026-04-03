@@ -49,7 +49,9 @@ describe('TRVL-01: ResortCards card rendering', () => {
     expect(listItems).toHaveLength(0)
 
     // Should render card-like elements with the attraction names
-    expect(screen.getByText('Seven Mile Beach, Negril')).toBeInTheDocument()
+    // ResortCards splits "Seven Mile Beach, Negril" into primary name + location hint
+    expect(screen.getByText('Seven Mile Beach')).toBeInTheDocument()
+    expect(screen.getByText('Negril')).toBeInTheDocument()
     expect(screen.getByText('Dunn\'s River Falls')).toBeInTheDocument()
   })
 

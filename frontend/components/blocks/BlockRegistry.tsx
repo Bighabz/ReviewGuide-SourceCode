@@ -26,6 +26,7 @@ import PriceComparison from '@/components/PriceComparison'
 import InlineProductCard from '@/components/InlineProductCard'
 import SourceCitations from '@/components/SourceCitations'
 import TopPickBlock from '@/components/TopPickBlock'
+import ResortCards from '@/components/ResortCards'
 import DOMPurify from 'dompurify'
 
 /** Each renderer receives the normalized block and returns JSX or null */
@@ -111,7 +112,7 @@ const BLOCK_RENDERERS: Record<string, BlockRenderer> = {
         <ListBlock title={b.title ?? 'Things to Do'} items={(b.data as string[]) ?? []} type="activities" />
     ),
     attractions: (b) => (
-        <ListBlock title={b.title ?? 'Must-See Attractions'} items={(b.data as string[]) ?? []} type="attractions" />
+        <ResortCards title={b.title ?? 'Must-See Attractions'} items={(b.data as string[]) ?? []} />
     ),
     restaurants: (b) => (
         <ListBlock title={b.title ?? 'Recommended Restaurants'} items={(b.data as string[]) ?? []} type="restaurants" />
@@ -132,7 +133,10 @@ const BLOCK_RENDERERS: Record<string, BlockRenderer> = {
         </div>
     ),
     conclusion: (b) => (
-        <div className="mt-4 px-3 sm:px-4 py-3 rounded-2xl rounded-tl-md bg-[var(--surface-elevated)] border border-[var(--border)] text-[14px] sm:text-[15px] leading-relaxed text-[var(--text)]">
+        <div
+            className="mt-2 p-4 rounded-xl border border-[var(--border)] text-[14px] sm:text-[15px] leading-relaxed text-[var(--text-secondary)]"
+            style={{ background: 'color-mix(in srgb, var(--primary) 6%, var(--surface))' }}
+        >
             {(b.data as any)?.text}
         </div>
     ),
