@@ -231,6 +231,7 @@ def capturing_model_service():
     fake_service = MagicMock()
     fake_service.generate = fake_generate
     fake_service.generate_compose = fake_generate
+    fake_service.generate_compose_with_streaming = AsyncMock(side_effect=fake_generate)
 
     with patch("app.services.model_service.model_service", fake_service):
         yield fake_service, captured_calls
@@ -416,6 +417,7 @@ def capturing_model_service_v2():
     fake_service = MagicMock()
     fake_service.generate = fake_generate
     fake_service.generate_compose = fake_generate
+    fake_service.generate_compose_with_streaming = AsyncMock(side_effect=fake_generate)
 
     with patch("app.services.model_service.model_service", fake_service):
         yield fake_service, captured_calls
@@ -580,3 +582,377 @@ async def test_comparison_follow_up(capturing_model_service_v2):
         f"Expected at least one product_comparison block, got types: "
         f"{[b.get('type') for b in result['ui_blocks']]}"
     )
+
+
+# ---------------------------------------------------------------------------
+# QAR-01: Fallback loop must use `continue` (not `break`) on duplicate
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_fallback_loop_continue(capturing_model_service_v2):
+    """
+    QAR-01: When blog_product_names has ["Product A", "Product B", "Product C"]
+    and "Product A" is already in seen_card_names (has a product_review card),
+    fallback cards must still be generated for "Product B" and "Product C".
+
+    The bug: a `break` statement exits the loop on first duplicate, so B and C
+    are silently skipped. Fix requires `continue` instead of `break`.
+    """
+    fake_service, captured_calls = capturing_model_service_v2
+
+    # "Product A" will get a review card (has affiliate_products + review_data)
+    # "Product B" and "Product C" are blog-mentioned but have no offers
+    state = {
+        "user_message": "best gadgets",
+        "intent": "product",
+        "slots": {},
+        "normalized_products": [
+            {"name": "Product A", "price": 99, "url": "https://example.com/a"},
+        ],
+        "affiliate_products": {
+            "amazon": [
+                {
+                    "product_name": "Product A",
+                    "offers": [
+                        {
+                            "title": "Product A",
+                            "price": 99.00,
+                            "currency": "USD",
+                            "url": "https://amazon.com/product-a",
+                            "merchant": "Amazon",
+                            "image_url": "https://example.com/img/a.jpg",
+                        }
+                    ],
+                }
+            ],
+            "ebay": [
+                {
+                    "product_name": "Product A",
+                    "offers": [
+                        {
+                            "title": "Product A",
+                            "price": 89.00,
+                            "currency": "USD",
+                            "url": "https://ebay.com/product-a",
+                            "merchant": "eBay",
+                            "image_url": "https://example.com/img/a-ebay.jpg",
+                        }
+                    ],
+                }
+            ],
+        },
+        "review_data": {
+            "Product A": {
+                "avg_rating": 4.5,
+                "total_reviews": 500,
+                "quality_score": 0.9,
+                "sources": [
+                    {"site_name": "Wirecutter", "url": "https://wirecutter.com/a", "snippet": "Great product A"},
+                ],
+            }
+        },
+        # blog_product_names must include A (already has card) BEFORE B and C
+        "blog_data": "## Product A\nGreat gadget.\n\n## Product B\nAlso worth considering.\n\n## Product C\nAnother option.",
+        "comparison_html": None,
+        "comparison_data": None,
+        "general_product_info": "",
+        "conversation_history": [],
+        "last_search_context": {},
+        "search_history": [],
+    }
+
+    result = await product_compose(state)
+    assert result["success"] is True
+
+    review_blocks = result["ui_blocks"]
+    product_names_in_cards = [
+        b["data"]["product_name"]
+        for b in review_blocks
+        if b.get("type") == "product_review"
+    ]
+
+    # "Product B" and "Product C" must appear as fallback cards
+    assert "Product B" in product_names_in_cards, (
+        f"Expected 'Product B' in product cards (fallback), got: {product_names_in_cards}. "
+        f"BUG: loop break on 'Product A' duplicate skipped B and C."
+    )
+    assert "Product C" in product_names_in_cards, (
+        f"Expected 'Product C' in product cards (fallback), got: {product_names_in_cards}. "
+        f"BUG: loop break on 'Product A' duplicate skipped B and C."
+    )
+
+
+# ---------------------------------------------------------------------------
+# QAR-02: Single-provider products must emit product cards
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_single_provider_card(capturing_model_service_v2):
+    """
+    QAR-02: A product with only 1 provider (e.g., only Amazon) and a valid
+    non-placeholder URL must still emit a product_review card. The current
+    multi-provider guard requires 2 providers or curated amzn.to/eBay offers,
+    silently dropping legitimate single-retailer products.
+    """
+    fake_service, captured_calls = capturing_model_service_v2
+
+    state = {
+        "user_message": "best coffee maker",
+        "intent": "product",
+        "slots": {},
+        "normalized_products": [
+            {"name": "Breville Barista Express", "price": 699, "url": "https://breville.com/barista-express"},
+        ],
+        "affiliate_products": {
+            # Only one provider — serper_shopping (not curated amzn.to, not eBay)
+            "serper_shopping": [
+                {
+                    "product_name": "Breville Barista Express",
+                    "offers": [
+                        {
+                            "title": "Breville Barista Express",
+                            "price": 699.00,
+                            "currency": "USD",
+                            "url": "https://www.bestbuy.com/breville-barista-express",
+                            "merchant": "Best Buy",
+                            "image_url": "https://example.com/img/breville.jpg",
+                            "source": "serper_shopping",
+                        }
+                    ],
+                }
+            ],
+        },
+        "review_data": {
+            "Breville Barista Express": {
+                "avg_rating": 4.8,
+                "total_reviews": 2000,
+                "quality_score": 0.92,
+                "sources": [
+                    {"site_name": "Wirecutter", "url": "https://wirecutter.com/breville", "snippet": "Best espresso machine"},
+                ],
+            }
+        },
+        "comparison_html": None,
+        "comparison_data": None,
+        "general_product_info": "",
+        "conversation_history": [],
+        "last_search_context": {},
+        "search_history": [],
+    }
+
+    result = await product_compose(state)
+    assert result["success"] is True
+
+    review_blocks = [b for b in result["ui_blocks"] if b.get("type") == "product_review"]
+    product_names_in_cards = [b["data"]["product_name"] for b in review_blocks]
+
+    assert "Breville Barista Express" in product_names_in_cards, (
+        f"Expected 'Breville Barista Express' product card (single-provider with valid URL), "
+        f"got: {product_names_in_cards}. "
+        f"BUG: multi-provider gate silently dropped it."
+    )
+
+    # The card must use the real offer URL (not an Amazon search fallback)
+    breville_block = next(
+        (b for b in review_blocks if b["data"].get("product_name") == "Breville Barista Express"),
+        None
+    )
+    assert breville_block is not None, "Expected Breville Barista Express product_review block"
+
+    affiliate_links = breville_block["data"].get("affiliate_links", [])
+    assert len(affiliate_links) >= 1, "Expected at least 1 affiliate link in Breville card"
+
+    # Real cards use the actual offer URL; fallback cards use Amazon search URL with ?k= param
+    actual_link = affiliate_links[0].get("affiliate_link", "")
+    assert "amazon.com/s?k=" not in actual_link, (
+        f"Expected real offer URL (https://www.bestbuy.com/breville-barista-express), "
+        f"but got Amazon search fallback URL: {actual_link}. "
+        f"BUG: multi-provider gate dropped the real offer; only fallback search URL was generated."
+    )
+
+
+# ---------------------------------------------------------------------------
+# QAR-03: Merchant label must match offer domain (no Amazon label on BestBuy URL)
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_label_domain_parity(capturing_model_service_v2):
+    """
+    QAR-03: When an offer has source="Amazon" (label) but url pointing to
+    bestbuy.com, the emitted product card's affiliate_links must NOT contain
+    an entry where merchant="Amazon" and affiliate_link contains "bestbuy.com".
+    The fix should either correct the label or exclude the mismatched offer.
+    """
+    fake_service, captured_calls = capturing_model_service_v2
+
+    state = {
+        "user_message": "best laptop",
+        "intent": "product",
+        "slots": {},
+        "normalized_products": [
+            {"name": "Dell XPS 15", "price": 1299, "url": "https://dell.com/xps15"},
+        ],
+        "affiliate_products": {
+            "amazon": [
+                {
+                    "product_name": "Dell XPS 15",
+                    "offers": [
+                        {
+                            # Mislabeled: source says "Amazon" but URL is BestBuy
+                            "title": "Dell XPS 15",
+                            "price": 1299.00,
+                            "currency": "USD",
+                            "url": "https://www.bestbuy.com/site/dell-xps-15",
+                            "merchant": "Amazon",
+                            "image_url": "https://example.com/img/dell.jpg",
+                            "source": "Amazon",
+                        }
+                    ],
+                }
+            ],
+            "ebay": [
+                {
+                    "product_name": "Dell XPS 15",
+                    "offers": [
+                        {
+                            "title": "Dell XPS 15",
+                            "price": 1199.00,
+                            "currency": "USD",
+                            "url": "https://ebay.com/dell-xps-15",
+                            "merchant": "eBay",
+                            "image_url": "https://example.com/img/dell-ebay.jpg",
+                            "source": "ebay",
+                        }
+                    ],
+                }
+            ],
+        },
+        "review_data": {
+            "Dell XPS 15": {
+                "avg_rating": 4.6,
+                "total_reviews": 3000,
+                "quality_score": 0.91,
+                "sources": [
+                    {"site_name": "The Verge", "url": "https://theverge.com/dell-xps", "snippet": "Excellent display"},
+                ],
+            }
+        },
+        "comparison_html": None,
+        "comparison_data": None,
+        "general_product_info": "",
+        "conversation_history": [],
+        "last_search_context": {},
+        "search_history": [],
+    }
+
+    result = await product_compose(state)
+    assert result["success"] is True
+
+    review_blocks = [b for b in result["ui_blocks"] if b.get("type") == "product_review"]
+    assert len(review_blocks) >= 1, f"Expected at least one product_review block, got: {[b.get('type') for b in result['ui_blocks']]}"
+
+    dell_block = next(
+        (b for b in review_blocks if b["data"].get("product_name") == "Dell XPS 15"),
+        None
+    )
+    assert dell_block is not None, "Expected Dell XPS 15 product_review block"
+
+    affiliate_links = dell_block["data"].get("affiliate_links", [])
+
+    # Check that no affiliate link has merchant="Amazon" but URL pointing to bestbuy.com
+    for link in affiliate_links:
+        merchant = (link.get("merchant") or "").lower()
+        url = (link.get("affiliate_link") or "").lower()
+        assert not (merchant == "amazon" and "bestbuy.com" in url), (
+            f"Label-domain mismatch: merchant='Amazon' but URL='{link.get('affiliate_link')}'. "
+            f"Fix must correct label or exclude the offer."
+        )
+
+
+# ---------------------------------------------------------------------------
+# QAR-07: Citation URLs must start with "http" — no fabricated/empty URLs
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_citations_have_real_urls(capturing_model_service_v2):
+    """
+    QAR-07: When review_bundles have sources with a mix of real http URLs,
+    empty strings, and None values, the citations list must contain ONLY
+    URLs that start with "http". Empty and None values must be excluded.
+    """
+    fake_service, captured_calls = capturing_model_service_v2
+
+    state = {
+        "user_message": "best running shoes",
+        "intent": "product",
+        "slots": {},
+        "normalized_products": [
+            {"name": "Nike Pegasus 40", "price": 130, "url": "https://nike.com/pegasus-40"},
+        ],
+        "affiliate_products": {
+            "amazon": [
+                {
+                    "product_name": "Nike Pegasus 40",
+                    "offers": [
+                        {
+                            "title": "Nike Pegasus 40",
+                            "price": 130.00,
+                            "currency": "USD",
+                            "url": "https://amazon.com/nike-pegasus",
+                            "merchant": "Amazon",
+                            "image_url": "https://example.com/img/nike.jpg",
+                            "source": "amazon",
+                        }
+                    ],
+                }
+            ],
+            "ebay": [
+                {
+                    "product_name": "Nike Pegasus 40",
+                    "offers": [
+                        {
+                            "title": "Nike Pegasus 40",
+                            "price": 119.00,
+                            "currency": "USD",
+                            "url": "https://ebay.com/nike-pegasus",
+                            "merchant": "eBay",
+                            "image_url": "https://example.com/img/nike-ebay.jpg",
+                            "source": "ebay",
+                        }
+                    ],
+                }
+            ],
+        },
+        "review_data": {
+            "Nike Pegasus 40": {
+                "avg_rating": 4.7,
+                "total_reviews": 5000,
+                "quality_score": 0.93,
+                "sources": [
+                    # Mix of real URLs, empty strings, and None
+                    {"site_name": "Runner's World", "url": "https://runnersworld.com/pegasus", "snippet": "Best everyday trainer"},
+                    {"site_name": "BadSource", "url": "", "snippet": "Some review"},
+                    {"site_name": "NoneSource", "url": None, "snippet": "Another review"},
+                    {"site_name": "Road Runner", "url": "https://roadrunnersports.com/pegasus", "snippet": "Great cushioning"},
+                ],
+            }
+        },
+        "comparison_html": None,
+        "comparison_data": None,
+        "general_product_info": "",
+        "conversation_history": [],
+        "last_search_context": {},
+        "search_history": [],
+    }
+
+    result = await product_compose(state)
+    assert result["success"] is True
+
+    citations = result.get("citations", [])
+    assert len(citations) >= 1, f"Expected at least 1 citation, got 0"
+
+    for url in citations:
+        assert url and url.startswith("http"), (
+            f"Citation URL must start with 'http', got: {repr(url)}. "
+            f"Empty/None URLs from review sources must be filtered out."
+        )
