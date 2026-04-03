@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Visual Overhaul — Bold Editorial
 status: executing
-stopped_at: Completed 23-05-PLAN.md
-last_updated: "2026-04-03T06:11:08.678Z"
+stopped_at: Completed 23-06-PLAN.md
+last_updated: "2026-04-03T06:23:36.664Z"
 last_activity: 2026-04-01 — 18-02 complete (15 category hero images approved)
 progress:
   total_phases: 23
-  completed_phases: 17
+  completed_phases: 18
   total_plans: 58
-  completed_plans: 54
+  completed_plans: 55
   percent: 92
 ---
 
@@ -60,6 +60,7 @@ Progress: [█████████░] 92%
 | Phase 23-qa-remediation-unified-bug-fixes P01 | 609 | 2 tasks | 2 files |
 | Phase 23-qa-remediation-unified-bug-fixes P04 | 344 | 2 tasks | 3 files |
 | Phase 23-qa-remediation-unified-bug-fixes P05 | 435 | 2 tasks | 6 files |
+| Phase 23-qa-remediation-unified-bug-fixes P06 | 18 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -104,6 +105,8 @@ Progress: [█████████░] 92%
 - [Phase 23-qa-remediation-unified-bug-fixes]: Sentinel bottomRef scroll replaces setInterval polling — reliable iOS Safari behaviour
 - [Phase 23-qa-remediation-unified-bug-fixes]: Queue user messages during streaming via useState + useEffect instead of silent drop (QAR-18)
 - [Phase 23-qa-remediation-unified-bug-fixes]: trackSessionId helper centralises chat_all_session_ids writes; session ID in URL for browser history continuity
+- [Phase Phase 23-qa-remediation-unified-bug-fixes]: Budget enforcement gate tests mixed-offer scenario (some in-budget, some not) per design — all-over-budget products are intentionally kept
+- [Phase Phase 23-qa-remediation-unified-bug-fixes]: Regression gate CI commands: python -m pytest tests/test_regression_gate.py -v (backend) + npm run test -- --run tests/regressionGate.test.tsx (frontend)
 
 ### Pending Todos
 
@@ -121,6 +124,6 @@ Progress: [█████████░] 92%
 
 ## Session Continuity
 
-Last session: 2026-04-03T06:11:08.667Z
-Stopped at: Completed 23-05-PLAN.md
+Last session: 2026-04-03T06:23:36.651Z
+Stopped at: Completed 23-06-PLAN.md
 Resume file: None
