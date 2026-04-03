@@ -10,7 +10,7 @@ const topPickVariants = {
   hover: {
     y: -4,
     boxShadow: '0 12px 32px rgba(28,25,23,0.10)',
-    transition: { type: 'spring', stiffness: 400, damping: 28 },
+    transition: { type: 'spring' as const, stiffness: 400, damping: 28 },
   },
 }
 
