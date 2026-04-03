@@ -1,6 +1,7 @@
 export interface CuratedProduct {
   asin: string
   url: string
+  name?: string // Product display name for EditorsPicks cards
 }
 
 export interface CuratedTopic {
@@ -18,11 +19,11 @@ export const curatedLinks: CuratedCategory = {
       description:
         'Block out the world and focus — our top picks for immersive sound and all-day comfort.',
       products: [
-        { asin: 'B0C3HCD34R', url: 'https://amzn.to/4cg2c2g' },
-        { asin: 'B0CQXMXJC5', url: 'https://amzn.to/46sYSNy' },
-        { asin: 'B0C8PR4W22', url: 'https://amzn.to/40hVQbz' },
-        { asin: 'B0G64H1QX7', url: 'https://amzn.to/4qWWrtW' },
-        { asin: 'B0CCZ26B5V', url: 'https://amzn.to/4kZCHVl' },
+        { asin: 'B0C3HCD34R', url: 'https://amzn.to/4cg2c2g', name: 'Sony WH-1000XM5' },
+        { asin: 'B0CQXMXJC5', url: 'https://amzn.to/46sYSNy', name: 'Bose QC Ultra' },
+        { asin: 'B0C8PR4W22', url: 'https://amzn.to/40hVQbz', name: 'Apple AirPods Max' },
+        { asin: 'B0G64H1QX7', url: 'https://amzn.to/4qWWrtW', name: 'Sony WH-1000XM4' },
+        { asin: 'B0CCZ26B5V', url: 'https://amzn.to/4kZCHVl', name: 'Bose QC45' },
       ],
     },
     {
@@ -30,11 +31,11 @@ export const curatedLinks: CuratedCategory = {
       description:
         'Reliable machines that handle lectures, code, and everything in between without breaking the bank.',
       products: [
-        { asin: 'B0DV5R3Y6B', url: 'https://amzn.to/4tSpXE1' },
-        { asin: 'B0DY1ZSZGQ', url: 'https://amzn.to/3OtNdIf' },
-        { asin: 'B0GL1GHKNK', url: 'https://amzn.to/40srrqS' },
-        { asin: 'B0GGRBPMLD', url: 'https://amzn.to/3ZTVpE2' },
-        { asin: 'B0DZDC3WW5', url: 'https://amzn.to/4kUxiPj' },
+        { asin: 'B0DV5R3Y6B', url: 'https://amzn.to/4tSpXE1', name: 'MacBook Air M3' },
+        { asin: 'B0DY1ZSZGQ', url: 'https://amzn.to/3OtNdIf', name: 'Dell XPS 13' },
+        { asin: 'B0GL1GHKNK', url: 'https://amzn.to/40srrqS', name: 'HP Spectre x360' },
+        { asin: 'B0GGRBPMLD', url: 'https://amzn.to/3ZTVpE2', name: 'Lenovo IdeaPad 5i' },
+        { asin: 'B0DZDC3WW5', url: 'https://amzn.to/4kUxiPj', name: 'ASUS Vivobook 15' },
       ],
     },
     {
@@ -42,11 +43,11 @@ export const curatedLinks: CuratedCategory = {
       description:
         'Flagship-level cameras and performance at a fraction of the price.',
       products: [
-        { asin: 'B0DM1RCBHR', url: 'https://amzn.to/40wHa8k' },
-        { asin: 'B0FRG6XMSP', url: 'https://amzn.to/4baYypf' },
-        { asin: 'B0FRYBKRZP', url: 'https://amzn.to/4s7D16v' },
-        { asin: 'B0FTG3Z4YT', url: 'https://amzn.to/4ucdsmS' },
-        { asin: 'B09SM24S8C', url: 'https://amzn.to/4aAkUjS' },
+        { asin: 'B0DM1RCBHR', url: 'https://amzn.to/40wHa8k', name: 'Google Pixel 8a' },
+        { asin: 'B0FRG6XMSP', url: 'https://amzn.to/4baYypf', name: 'Samsung A55' },
+        { asin: 'B0FRYBKRZP', url: 'https://amzn.to/4s7D16v', name: 'Motorola Edge 50' },
+        { asin: 'B0FTG3Z4YT', url: 'https://amzn.to/4ucdsmS', name: 'OnePlus Nord 4' },
+        { asin: 'B09SM24S8C', url: 'https://amzn.to/4aAkUjS', name: 'iPhone SE 3rd Gen' },
       ],
     },
     {
@@ -54,12 +55,12 @@ export const curatedLinks: CuratedCategory = {
       description:
         'From pool parties to park sessions — portable speakers that punch well above their size.',
       products: [
-        { asin: 'B0CH9K2ZLF', url: 'https://amzn.to/40tnceG' },
-        { asin: 'B08X4YMTPM', url: 'https://amzn.to/4cW8fcm' },
-        { asin: 'B0FMK5C52K', url: 'https://amzn.to/3OE2Rkf' },
-        { asin: 'B094LS37Z4', url: 'https://amzn.to/4aUTEeI' },
-        { asin: 'B0DVSR7QM5', url: 'https://amzn.to/46ZowJS' },
-        { asin: 'B01MTB55WH', url: 'https://amzn.to/4sflr0x' },
+        { asin: 'B0CH9K2ZLF', url: 'https://amzn.to/40tnceG', name: 'JBL Charge 5' },
+        { asin: 'B08X4YMTPM', url: 'https://amzn.to/4cW8fcm', name: 'Bose SoundLink Flex' },
+        { asin: 'B0FMK5C52K', url: 'https://amzn.to/3OE2Rkf', name: 'Sony SRS-XB33' },
+        { asin: 'B094LS37Z4', url: 'https://amzn.to/4aUTEeI', name: 'Anker Soundcore 3' },
+        { asin: 'B0DVSR7QM5', url: 'https://amzn.to/46ZowJS', name: 'UE Hyperboom' },
+        { asin: 'B01MTB55WH', url: 'https://amzn.to/4sflr0x', name: 'JBL Xtreme 2' },
       ],
     },
   ],
@@ -69,11 +70,11 @@ export const curatedLinks: CuratedCategory = {
       description:
         'Hands-free cleaning that keeps up with shedding season — tested on real pet households.',
       products: [
-        { asin: 'B0DHCJ571Z', url: 'https://amzn.to/4kZU08C' },
-        { asin: 'B0DWG3C3ZF', url: 'https://amzn.to/3ZYKrNt' },
-        { asin: 'B0FP2XWWSP', url: 'https://amzn.to/4cK6Jdq' },
-        { asin: 'B0FXGKW7ZK', url: 'https://amzn.to/4sxhxAv' },
-        { asin: 'B07R295MLS', url: 'https://amzn.to/46qmUst' },
+        { asin: 'B0DHCJ571Z', url: 'https://amzn.to/4kZU08C', name: 'iRobot Roomba j9+' },
+        { asin: 'B0DWG3C3ZF', url: 'https://amzn.to/3ZYKrNt', name: 'Roborock S8 Pro' },
+        { asin: 'B0FP2XWWSP', url: 'https://amzn.to/4cK6Jdq', name: 'Shark Matrix Plus' },
+        { asin: 'B0FXGKW7ZK', url: 'https://amzn.to/4sxhxAv', name: 'Eufy X10 Pro Omni' },
+        { asin: 'B07R295MLS', url: 'https://amzn.to/46qmUst', name: 'Roomba 694' },
       ],
     },
     {
@@ -119,11 +120,11 @@ export const curatedLinks: CuratedCategory = {
       description:
         'Ergonomic sit-stand desks that actually relieve lower back strain — tested by remote workers.',
       products: [
-        { asin: 'B09RMD7R15', url: 'https://amzn.to/4rHjBWv' },
-        { asin: 'B0FSS4M57Z', url: 'https://amzn.to/3ZTY3ts' },
-        { asin: 'B0FJX2TWP3', url: 'https://amzn.to/3MTqx3r' },
-        { asin: 'B0FPC7XF5D', url: 'https://amzn.to/3ZYlH84' },
-        { asin: 'B0DQTTC37M', url: 'https://amzn.to/3MIFHsr' },
+        { asin: 'B09RMD7R15', url: 'https://amzn.to/4rHjBWv', name: 'Flexispot E7 Pro' },
+        { asin: 'B0FSS4M57Z', url: 'https://amzn.to/3ZTY3ts', name: 'Uplift V2 Commercial' },
+        { asin: 'B0FJX2TWP3', url: 'https://amzn.to/3MTqx3r', name: 'Fully Jarvis Bamboo' },
+        { asin: 'B0FPC7XF5D', url: 'https://amzn.to/3ZYlH84', name: 'Flexispot E5 Plus' },
+        { asin: 'B0DQTTC37M', url: 'https://amzn.to/3MIFHsr', name: 'SHW Electric Desk' },
       ],
     },
     {
@@ -131,11 +132,11 @@ export const curatedLinks: CuratedCategory = {
       description:
         'Science-backed picks to sharpen your focus and sustain energy without the crash.',
       products: [
-        { asin: 'B09ZBC7DNT', url: 'https://amzn.to/4aSaSto' },
-        { asin: 'B0FSNYKYQ1', url: 'https://amzn.to/4u2BIrA' },
-        { asin: 'B0DF6YL2RD', url: 'https://amzn.to/3ZTq1FL' },
-        { asin: 'B00J547PAA', url: 'https://amzn.to/4cgr1el' },
-        { asin: 'B0DCGQJ1DX', url: 'https://amzn.to/4kXo0lz' },
+        { asin: 'B09ZBC7DNT', url: 'https://amzn.to/4aSaSto', name: 'Alpha Brain' },
+        { asin: 'B0FSNYKYQ1', url: 'https://amzn.to/4u2BIrA', name: 'Thesis Clarity' },
+        { asin: 'B0DF6YL2RD', url: 'https://amzn.to/3ZTq1FL', name: 'Mind Lab Pro' },
+        { asin: 'B00J547PAA', url: 'https://amzn.to/4cgr1el', name: "Doctor's Best CoQ10" },
+        { asin: 'B0DCGQJ1DX', url: 'https://amzn.to/4kXo0lz', name: 'Nootropics Depot CDP' },
       ],
     },
     {
@@ -143,11 +144,11 @@ export const curatedLinks: CuratedCategory = {
       description:
         'Head-to-head comparison of the two biggest names in percussion therapy.',
       products: [
-        { asin: 'B0CDHLKJ2H', url: 'https://amzn.to/4kZ7fX1' },
-        { asin: 'B0CDMX8QBZ', url: 'https://amzn.to/4l2yxMq' },
-        { asin: 'B09JB64T9Z', url: 'https://amzn.to/4tXXqNg' },
-        { asin: 'B0CNS894RH', url: 'https://amzn.to/4qWfnsA' },
-        { asin: 'B0FKCJNHWB', url: 'https://amzn.to/4l0t7kX' },
+        { asin: 'B0CDHLKJ2H', url: 'https://amzn.to/4kZ7fX1', name: 'Theragun Pro' },
+        { asin: 'B0CDMX8QBZ', url: 'https://amzn.to/4l2yxMq', name: 'Theragun Prime' },
+        { asin: 'B09JB64T9Z', url: 'https://amzn.to/4tXXqNg', name: 'Hypervolt 2 Pro' },
+        { asin: 'B0CNS894RH', url: 'https://amzn.to/4qWfnsA', name: 'Hypervolt Go 2' },
+        { asin: 'B0FKCJNHWB', url: 'https://amzn.to/4l0t7kX', name: 'Achedaway Pro' },
       ],
     },
     {
@@ -155,11 +156,11 @@ export const curatedLinks: CuratedCategory = {
       description:
         'Accurate heart rate, sleep tracking, and step counts without the smartwatch price.',
       products: [
-        { asin: 'B0G2BR4MJ7', url: 'https://amzn.to/3ZXGdpy' },
-        { asin: 'B0G8FBXBWD', url: 'https://amzn.to/4aRMcBb' },
-        { asin: 'B0F9PHLR2D', url: 'https://amzn.to/4scnhiz' },
-        { asin: 'B0F9PHLR2D', url: 'https://amzn.to/4tWNnb3' },
-        { asin: 'B0GMGTRSJR', url: 'https://amzn.to/46u0M0j' },
+        { asin: 'B0G2BR4MJ7', url: 'https://amzn.to/3ZXGdpy', name: 'Fitbit Inspire 3' },
+        { asin: 'B0G8FBXBWD', url: 'https://amzn.to/4aRMcBb', name: 'Garmin vivosmart 5' },
+        { asin: 'B0F9PHLR2D', url: 'https://amzn.to/4scnhiz', name: 'Samsung Galaxy Fit3' },
+        { asin: 'B0F9PHLR2D', url: 'https://amzn.to/4tWNnb3', name: 'Xiaomi Smart Band 8' },
+        { asin: 'B0GMGTRSJR', url: 'https://amzn.to/46u0M0j', name: 'Amazfit Band 7' },
       ],
     },
     {
@@ -194,11 +195,11 @@ export const curatedLinks: CuratedCategory = {
       description:
         'Trail-ready boots with solid ankle support and waterproofing — no break-in period needed.',
       products: [
-        { asin: 'B0G8J8KB4Y', url: 'https://amzn.to/4aIxo7G' },
-        { asin: 'B0CC8X9T96', url: 'https://amzn.to/4aU6jP2' },
-        { asin: 'B089Y3KJ76', url: 'https://amzn.to/3MvKUUr' },
-        { asin: 'B0987X1QZK', url: 'https://amzn.to/3OAEGDf' },
-        { asin: 'B0987XXZ75', url: 'https://amzn.to/3P2NBNS' },
+        { asin: 'B0G8J8KB4Y', url: 'https://amzn.to/4aIxo7G', name: 'Merrell Moab Speed' },
+        { asin: 'B0CC8X9T96', url: 'https://amzn.to/4aU6jP2', name: 'Salomon X Ultra 4' },
+        { asin: 'B089Y3KJ76', url: 'https://amzn.to/3MvKUUr', name: 'Columbia Redmond III' },
+        { asin: 'B0987X1QZK', url: 'https://amzn.to/3OAEGDf', name: 'Keen Targhee III' },
+        { asin: 'B0987XXZ75', url: 'https://amzn.to/3P2NBNS', name: 'HOKA Anacapa Low' },
       ],
     },
     {
@@ -206,11 +207,11 @@ export const curatedLinks: CuratedCategory = {
       description:
         'Arch support meets all-day comfort — footwear that keeps flat feet pain-free.',
       products: [
-        { asin: 'B08QFSC1P6', url: 'https://amzn.to/3P4MahS' },
-        { asin: 'B0CZ7MGXT6', url: 'https://amzn.to/3MvLcdZ' },
-        { asin: 'B0CNWRQ6Y1', url: 'https://amzn.to/4si597f' },
-        { asin: 'B08H2GWTQP', url: 'https://amzn.to/47ebcRY' },
-        { asin: 'B09H3P9MXL', url: 'https://amzn.to/3ZYOMQL' },
+        { asin: 'B08QFSC1P6', url: 'https://amzn.to/3P4MahS', name: 'Brooks Adrenaline GTS' },
+        { asin: 'B0CZ7MGXT6', url: 'https://amzn.to/3MvLcdZ', name: 'New Balance 1540v3' },
+        { asin: 'B0CNWRQ6Y1', url: 'https://amzn.to/4si597f', name: 'ASICS Gel-Kayano 30' },
+        { asin: 'B08H2GWTQP', url: 'https://amzn.to/47ebcRY', name: 'Saucony Guide 16' },
+        { asin: 'B09H3P9MXL', url: 'https://amzn.to/3ZYOMQL', name: 'Vionic Walker Classic' },
       ],
     },
     {
@@ -218,11 +219,11 @@ export const curatedLinks: CuratedCategory = {
       description:
         'Which wearable tracks your workouts better? We break down GPS accuracy, battery life, and features.',
       products: [
-        { asin: 'B092RCLKHN', url: 'https://amzn.to/46rIc94' },
-        { asin: 'B0GL9R2637', url: 'https://amzn.to/4tXZNQ5' },
-        { asin: 'B0BW288CHV', url: 'https://amzn.to/4rFsj7D' },
-        { asin: 'B0FQF5BZ8Z', url: 'https://amzn.to/4l6ws1R' },
-        { asin: 'B0FQFW7M9H', url: 'https://amzn.to/4tWPfAB' },
+        { asin: 'B092RCLKHN', url: 'https://amzn.to/46rIc94', name: 'Garmin Forerunner 265' },
+        { asin: 'B0GL9R2637', url: 'https://amzn.to/4tXZNQ5', name: 'Garmin Fenix 8' },
+        { asin: 'B0BW288CHV', url: 'https://amzn.to/4rFsj7D', name: 'Apple Watch Ultra 2' },
+        { asin: 'B0FQF5BZ8Z', url: 'https://amzn.to/4l6ws1R', name: 'Apple Watch Series 10' },
+        { asin: 'B0FQFW7M9H', url: 'https://amzn.to/4tWPfAB', name: 'Garmin Venu 3' },
       ],
     },
     {
@@ -230,11 +231,11 @@ export const curatedLinks: CuratedCategory = {
       description:
         'Foldable, quiet, and gym-quality — treadmills that fit your home and your budget.',
       products: [
-        { asin: 'B0F64RQ7CT', url: 'https://amzn.to/4aC70hb' },
-        { asin: 'B0G8DVSVF4', url: 'https://amzn.to/4siFxXX' },
-        { asin: 'B0CZ9B8JSB', url: 'https://amzn.to/46pe8uP' },
-        { asin: 'B0CR6WB19J', url: 'https://amzn.to/46VPrGw' },
-        { asin: 'B0FP2N8GTL', url: 'https://amzn.to/4qX2ZJ2' },
+        { asin: 'B0F64RQ7CT', url: 'https://amzn.to/4aC70hb', name: 'NordicTrack T 6.5 S' },
+        { asin: 'B0G8DVSVF4', url: 'https://amzn.to/4siFxXX', name: 'LifeFitness T3' },
+        { asin: 'B0CZ9B8JSB', url: 'https://amzn.to/46pe8uP', name: 'Schwinn 810 Treadmill' },
+        { asin: 'B0CR6WB19J', url: 'https://amzn.to/46VPrGw', name: 'ProForm Carbon T7' },
+        { asin: 'B0FP2N8GTL', url: 'https://amzn.to/4qX2ZJ2', name: 'Sunny SF-T7603' },
       ],
     },
   ],

@@ -34,8 +34,8 @@ vi.mock('@/lib/curatedLinks', () => ({
         title: 'Best Noise-Cancelling Headphones',
         description: 'Block out the world',
         products: [
-          { asin: 'B0C3HCD34R', url: 'https://amzn.to/4cg2c2g' },
-          { asin: 'B0CQXMXJC5', url: 'https://amzn.to/46sYSNy' },
+          { asin: 'B0C3HCD34R', url: 'https://amzn.to/4cg2c2g', name: 'Sony WH-1000XM5' },
+          { asin: 'B0CQXMXJC5', url: 'https://amzn.to/46sYSNy', name: 'Bose QC Ultra' },
         ],
       },
     ],
@@ -72,9 +72,26 @@ describe('EditorsPicks', () => {
     expect(images.length).toBeGreaterThanOrEqual(1)
     images.forEach((img) => {
       const src = img.getAttribute('src') || ''
-      expect(src).toContain('images-na.ssl-images-amazon.com/images/I/')
+      expect(src).toMatch(/media-amazon\.com\/images\//)
       expect(src).not.toContain('placehold.co')
     })
+  })
+
+  it('renders cards with w-44 width class (BRW-02)', () => {
+    const { container } = render(<EditorsPicks categorySlug="electronics" />)
+    const links = container.querySelectorAll('a[target="_blank"]')
+    expect(links.length).toBeGreaterThanOrEqual(1)
+    links.forEach((link) => {
+      expect(link.className).toContain('w-44')
+    })
+  })
+
+  it('displays product name instead of generic Option label (BRW-02)', () => {
+    render(<EditorsPicks categorySlug="electronics" />)
+    expect(screen.getByText('Sony WH-1000XM5')).toBeTruthy()
+    expect(screen.getByText('Bose QC Ultra')).toBeTruthy()
+    expect(screen.queryByText('Option 1')).toBeNull()
+    expect(screen.queryByText('Option 2')).toBeNull()
   })
 
   it('wires affiliate links from curatedLinks to product cards', () => {

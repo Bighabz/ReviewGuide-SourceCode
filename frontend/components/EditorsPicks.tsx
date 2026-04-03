@@ -74,19 +74,23 @@ export default function EditorsPicks({ categorySlug }: EditorsPicksProps) {
                   href={product.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-shrink-0 w-36 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] overflow-hidden shadow-card product-card-hover"
+                  className="flex-shrink-0 w-44 rounded-xl border border-[var(--border)] bg-[var(--surface-elevated)] overflow-hidden shadow-card product-card-hover"
                 >
+                  <div
+                    className="h-[3px] w-full"
+                    style={{ background: 'var(--primary)' }}
+                  />
                   <ProductImage
                     asin={product.asin}
-                    alt={`${topic.title} Option ${idx + 1}`}
+                    alt={product.name || `${topic.title} Option ${idx + 1}`}
                   />
-                  <div className="flex items-center justify-between px-2.5 py-2">
-                    <span className="text-xs font-medium text-[var(--text-secondary)]">
-                      Option {idx + 1}
+                  <div className="flex items-center justify-between px-3 py-2.5">
+                    <span className="text-xs font-semibold text-[var(--text)] truncate">
+                      {product.name || `Option ${idx + 1}`}
                     </span>
                     <ExternalLink
                       size={10}
-                      className="opacity-60"
+                      className="opacity-60 flex-shrink-0"
                       style={{ color: 'var(--text-secondary)' }}
                     />
                   </div>
