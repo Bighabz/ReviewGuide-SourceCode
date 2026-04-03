@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Visual Overhaul â Bold Editorial
 status: executing
-stopped_at: Completed 21-03-PLAN.md
-last_updated: "2026-04-03T07:21:44.992Z"
+stopped_at: Completed 22-02-PLAN.md
+last_updated: "2026-04-03T07:58:35.003Z"
 last_activity: 2026-04-01 — 18-02 complete (15 category hero images approved)
 progress:
   total_phases: 23
   completed_phases: 20
-  total_plans: 63
-  completed_plans: 60
+  total_plans: 66
+  completed_plans: 61
   percent: 92
 ---
 
@@ -66,6 +66,7 @@ Progress: [█████████░] 92%
 | Phase 20-discover-browse-page-upgrades P01 | 8 | 2 tasks | 6 files |
 | Phase 21-chat-results-card-polish P02 | 796 | 2 tasks | 3 files |
 | Phase 21-chat-results-card-polish P03 | 12 | 2 tasks | 4 files |
+| Phase 22-visual-qa-consistency-pass P02 | 291 | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -124,6 +125,9 @@ Progress: [█████████░] 92%
 - [Phase 21-chat-results-card-polish]: deriveMerchant pattern: clean merchant field first, fall back to URL hostname domainMap, then capitalize first subdomain segment
 - [Phase 21-chat-results-card-polish]: ResultsPage source dots upgraded alongside ResultsMainPanel for visual consistency and test coverage via ResultsPage render
 - [Phase 21-chat-results-card-polish]: V3 badge pattern: --bold-amber/--bold-blue/--bold-green bg with white text + px-2.5 py-1 rounded-md font-bold tracking-wider for stronger badge presence
+- [Phase 22-visual-qa-consistency-pass]: ListBlock colorMap refactored to styleMap using React.CSSProperties objects instead of Tailwind class strings
+- [Phase 22-visual-qa-consistency-pass]: SourceCitations DOT_COLORS changed from hex literals to CSS variable strings for theme-aware dot colors
+- [Phase 22-visual-qa-consistency-pass]: sourceCitations test assertions updated to query [style*='--bold-red/blue/green'] matching inline-style dot approach
 
 ### Pending Todos
 
@@ -141,6 +145,6 @@ Progress: [█████████░] 92%
 
 ## Session Continuity
 
-Last session: 2026-04-03T07:17:01.054Z
-Stopped at: Completed 21-03-PLAN.md
+Last session: 2026-04-03T07:58:34.978Z
+Stopped at: Completed 22-02-PLAN.md
 Resume file: None
