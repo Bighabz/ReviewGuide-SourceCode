@@ -984,3 +984,259 @@ async def test_citations_have_real_urls(capturing_model_service_v2):
             f"Citation URL must start with 'http', got: {repr(url)}. "
             f"Empty/None URLs from review sources must be filtered out."
         )
+
+
+# ---------------------------------------------------------------------------
+# QAR-04: Accessory suppression at product-name level in compose
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_accessory_suppression(capturing_model_service_v2):
+    """
+    QAR-04: When normalized_products contains a mix of real products (e.g.,
+    "MacBook Pro 16") and accessories (e.g., "USB-C Charger for MacBook",
+    "Laptop Case Sleeve"), the final product_review cards must NOT include any
+    product whose name matches an accessory keyword (charger, case, etc.).
+
+    This tests product-NAME level suppression (not just offer title filtering).
+    The test fails before the fix because product names are not checked against
+    ACCESSORY_KEYWORDS in the compose loop.
+    """
+    fake_service, captured_calls = capturing_model_service_v2
+
+    state = {
+        "user_message": "best laptops for students",
+        "intent": "product",
+        "slots": {"category": "laptops"},
+        "normalized_products": [
+            {"name": "MacBook Pro 16", "price": 2499, "url": "https://apple.com/macbook-pro"},
+            {"name": "USB-C Charger for MacBook", "price": 49, "url": "https://example.com/charger"},
+            {"name": "Laptop Case Sleeve", "price": 29, "url": "https://example.com/case"},
+        ],
+        "affiliate_products": {
+            "amazon": [
+                {
+                    "product_name": "MacBook Pro 16",
+                    "offers": [
+                        {
+                            "title": "MacBook Pro 16",
+                            "price": 2499.00,
+                            "currency": "USD",
+                            "url": "https://amazon.com/macbook-pro-16",
+                            "merchant": "Amazon",
+                            "image_url": "https://example.com/img/mbp.jpg",
+                        }
+                    ],
+                },
+                {
+                    "product_name": "USB-C Charger for MacBook",
+                    "offers": [
+                        {
+                            "title": "USB-C Charger for MacBook",
+                            "price": 49.00,
+                            "currency": "USD",
+                            "url": "https://amazon.com/usbc-charger",
+                            "merchant": "Amazon",
+                            "image_url": "https://example.com/img/charger.jpg",
+                        }
+                    ],
+                },
+                {
+                    "product_name": "Laptop Case Sleeve",
+                    "offers": [
+                        {
+                            "title": "Laptop Case Sleeve",
+                            "price": 29.00,
+                            "currency": "USD",
+                            "url": "https://amazon.com/laptop-case",
+                            "merchant": "Amazon",
+                            "image_url": "https://example.com/img/case.jpg",
+                        }
+                    ],
+                },
+            ],
+            "ebay": [
+                {
+                    "product_name": "MacBook Pro 16",
+                    "offers": [
+                        {
+                            "title": "MacBook Pro 16",
+                            "price": 2399.00,
+                            "currency": "USD",
+                            "url": "https://ebay.com/macbook-pro-16",
+                            "merchant": "eBay",
+                            "image_url": "https://example.com/img/mbp-ebay.jpg",
+                        }
+                    ],
+                },
+            ],
+        },
+        "review_data": {
+            "MacBook Pro 16": {
+                "avg_rating": 4.8,
+                "total_reviews": 3000,
+                "quality_score": 0.95,
+                "sources": [
+                    {"site_name": "Wirecutter", "url": "https://wirecutter.com/macbook", "snippet": "Best laptop"},
+                ],
+            },
+            "USB-C Charger for MacBook": {
+                "avg_rating": 4.1,
+                "total_reviews": 500,
+                "quality_score": 0.70,
+                "sources": [
+                    {"site_name": "Amazon", "url": "https://amazon.com/charger-review", "snippet": "Works fine"},
+                ],
+            },
+            "Laptop Case Sleeve": {
+                "avg_rating": 4.0,
+                "total_reviews": 300,
+                "quality_score": 0.65,
+                "sources": [
+                    {"site_name": "Amazon", "url": "https://amazon.com/case-review", "snippet": "Good fit"},
+                ],
+            },
+        },
+        "comparison_html": None,
+        "comparison_data": None,
+        "general_product_info": "",
+        "conversation_history": [],
+        "last_search_context": {},
+        "search_history": [],
+    }
+
+    result = await product_compose(state)
+    assert result["success"] is True
+
+    review_blocks = [b for b in result["ui_blocks"] if b.get("type") == "product_review"]
+    product_names_in_cards = [b["data"]["product_name"] for b in review_blocks]
+
+    # The real laptop must appear
+    assert "MacBook Pro 16" in product_names_in_cards, (
+        f"Expected 'MacBook Pro 16' in product cards, got: {product_names_in_cards}"
+    )
+
+    # Accessories must NOT appear as product cards
+    accessory_names_in_cards = [
+        n for n in product_names_in_cards
+        if any(kw in n.lower() for kw in ("charger", "case", "cable", "adapter", "sleeve"))
+    ]
+    assert len(accessory_names_in_cards) == 0, (
+        f"Accessories must not appear as product cards, but found: {accessory_names_in_cards}. "
+        f"BUG: product names not checked against ACCESSORY_KEYWORDS in compose loop."
+    )
+
+
+# ---------------------------------------------------------------------------
+# QAR-05: Budget enforcement filters over-budget offers before compose
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_budget_enforcement(capturing_model_service_v2):
+    """
+    QAR-05: When budget="under $500" is in slots and offers are priced at
+    $399, $799, and $1299, the product card for the main product must only
+    show the $399 offer (in-budget). The $799 and $1299 offers must be
+    excluded from the card's affiliate_links.
+
+    This tests _parse_budget() numeric parsing and offer-level filtering
+    in product_compose. The test fails before the fix because no budget
+    parsing or filtering exists.
+    """
+    fake_service, captured_calls = capturing_model_service_v2
+
+    state = {
+        "user_message": "best laptops under $500",
+        "intent": "product",
+        "slots": {"category": "laptops", "budget": "under $500"},
+        "normalized_products": [
+            {"name": "Acer Aspire 5", "price": 399, "url": "https://acer.com/aspire5"},
+        ],
+        "affiliate_products": {
+            "amazon": [
+                {
+                    "product_name": "Acer Aspire 5",
+                    "offers": [
+                        {
+                            "title": "Acer Aspire 5 - Budget",
+                            "price": 399.00,
+                            "currency": "USD",
+                            "url": "https://amazon.com/acer-aspire5-budget",
+                            "merchant": "Amazon",
+                            "image_url": "https://example.com/img/aspire5.jpg",
+                        },
+                        {
+                            "title": "Acer Aspire 5 - Mid",
+                            "price": 799.00,
+                            "currency": "USD",
+                            "url": "https://amazon.com/acer-aspire5-mid",
+                            "merchant": "Amazon",
+                            "image_url": "https://example.com/img/aspire5-mid.jpg",
+                        },
+                        {
+                            "title": "Acer Aspire 5 - Premium",
+                            "price": 1299.00,
+                            "currency": "USD",
+                            "url": "https://amazon.com/acer-aspire5-premium",
+                            "merchant": "Amazon",
+                            "image_url": "https://example.com/img/aspire5-premium.jpg",
+                        },
+                    ],
+                }
+            ],
+            "ebay": [
+                {
+                    "product_name": "Acer Aspire 5",
+                    "offers": [
+                        {
+                            "title": "Acer Aspire 5",
+                            "price": 379.00,
+                            "currency": "USD",
+                            "url": "https://ebay.com/acer-aspire5",
+                            "merchant": "eBay",
+                            "image_url": "https://example.com/img/aspire5-ebay.jpg",
+                        },
+                    ],
+                }
+            ],
+        },
+        "review_data": {
+            "Acer Aspire 5": {
+                "avg_rating": 4.3,
+                "total_reviews": 2500,
+                "quality_score": 0.82,
+                "sources": [
+                    {"site_name": "Wirecutter", "url": "https://wirecutter.com/acer", "snippet": "Best budget laptop"},
+                ],
+            }
+        },
+        "comparison_html": None,
+        "comparison_data": None,
+        "general_product_info": "",
+        "conversation_history": [],
+        "last_search_context": {},
+        "search_history": [],
+    }
+
+    result = await product_compose(state)
+    assert result["success"] is True
+
+    review_blocks = [b for b in result["ui_blocks"] if b.get("type") == "product_review"]
+    assert len(review_blocks) >= 1, f"Expected at least 1 product_review block, got 0"
+
+    acer_block = next(
+        (b for b in review_blocks if b["data"].get("product_name") == "Acer Aspire 5"),
+        None
+    )
+    assert acer_block is not None, "Expected 'Acer Aspire 5' product_review block"
+
+    affiliate_links = acer_block["data"].get("affiliate_links", [])
+    over_budget_links = [
+        lnk for lnk in affiliate_links
+        if lnk.get("price") is not None and lnk["price"] > 500
+    ]
+    assert len(over_budget_links) == 0, (
+        f"Budget 'under $500' must exclude offers over $500, but found over-budget links: "
+        f"{[{'price': l.get('price'), 'url': l.get('affiliate_link')} for l in over_budget_links]}. "
+        f"BUG: _parse_budget() and offer filtering not yet implemented."
+    )
