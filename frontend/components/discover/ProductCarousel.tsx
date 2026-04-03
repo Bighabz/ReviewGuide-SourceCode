@@ -28,7 +28,6 @@ const SLIDES: ProductSlide[] = [
     subtitle: 'Sony WH-1000XM6 leads for noise cancellation',
     score: '4.7',
     scoreLabel: 'Expert Score',
-    price: '$348',
     query: 'Best noise-cancelling headphones 2026',
     image: '/images/products/headphones.webp',
     gradient: 'linear-gradient(135deg, #DBEAFE 0%, #93C5FD 50%, #60A5FA 100%)',
@@ -36,12 +35,12 @@ const SLIDES: ProductSlide[] = [
   },
   {
     id: 'tokyo',
-    tag: 'TRENDING',
+    tag: 'GUIDE',
     tagColor: '#9A3412',
     title: 'Tokyo Travel Guide',
     subtitle: '7-day itinerary with flights, stays & hidden gems',
-    score: '4.9',
-    scoreLabel: 'Traveler Rating',
+    score: '4.8',
+    scoreLabel: 'Editor Rating',
     query: 'Tokyo travel guide flights hotels hidden gems',
     image: '/images/products/tokyo.webp',
     gradient: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 50%, #FBBF24 100%)',
@@ -49,13 +48,12 @@ const SLIDES: ProductSlide[] = [
   },
   {
     id: 'laptops',
-    tag: 'BEST VALUE',
+    tag: 'VS',
     tagColor: '#166534',
     title: 'Laptops for Students',
     subtitle: 'M4 MacBook Air vs ThinkPad X1 — expert verdict',
     score: '4.6',
     scoreLabel: 'Expert Score',
-    price: '$999',
     query: 'Best laptops for students 2026',
     image: '/images/products/laptop.webp',
     gradient: 'linear-gradient(135deg, #D1FAE5 0%, #6EE7B7 50%, #34D399 100%)',
@@ -77,13 +75,12 @@ const SLIDES: ProductSlide[] = [
   },
   {
     id: 'running',
-    tag: 'NEW',
+    tag: 'RANKED',
     tagColor: '#991B1B',
     title: 'Running Shoes Ranked',
     subtitle: 'Nike Vaporfly 4 vs Adidas Adizero Pro 4',
     score: '4.5',
     scoreLabel: 'Expert Score',
-    price: '$260',
     query: 'Best running shoes trail treadmill 2026',
     image: '/images/products/shoes.webp',
     gradient: 'linear-gradient(135deg, #FFE4E6 0%, #FDA4AF 50%, #FB7185 100%)',
@@ -236,10 +233,14 @@ export default function ProductCarousel() {
             <span className="text-[10px] font-medium uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
               {slide.scoreLabel}
             </span>
-            <span className="flex items-center gap-1 text-xs font-semibold transition-colors group-hover:gap-2"
-              style={{ color: 'var(--primary)' }}>
+            <a
+              href={`/chat?q=${encodeURIComponent(slide.query)}&new=1`}
+              className="flex items-center gap-1 text-xs font-semibold transition-colors group-hover:gap-2"
+              style={{ color: 'var(--primary)' }}
+              onClick={(e) => e.stopPropagation()}
+            >
               Research <ArrowRight size={12} className="transition-transform group-hover:translate-x-0.5" />
-            </span>
+            </a>
           </div>
         </div>
       </div>
