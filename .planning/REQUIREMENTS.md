@@ -54,7 +54,7 @@
 ### Visual QA
 
 - [ ] **QA-01**: Full site screenshot walk-through on mobile and desktop confirms visual consistency
-- [ ] **QA-02**: designTokens.test.ts updated to cover new tokens
+- [x] **QA-02**: designTokens.test.ts updated to cover new tokens
 - [x] **QA-03**: No hardcoded colors remain in refreshed components (all use CSS variables)
 
 ## v4.0 Requirements (Deferred)
@@ -105,7 +105,7 @@
 | RES-07 | Phase 21 | Complete |
 | RES-08 | Phase 21 | Complete |
 | QA-01 | Phase 22 | Pending |
-| QA-02 | Phase 22 | Pending |
+| QA-02 | Phase 22 | Complete |
 | QA-03 | Phase 22 | Complete |
 
 **Coverage:**
