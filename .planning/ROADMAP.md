@@ -386,7 +386,11 @@ Plans:
   1. A complete screenshot walk-through (homepage, a browse category page, a chat session with product results, the results page) on both mobile (375px) and desktop (1440px) shows consistent bold editorial visual language across all four surfaces
   2. `npm run test:run` passes with new assertions in designTokens.test.ts that cover every CSS variable added in Phase 17 â no new token is untested
   3. A grep for hardcoded color values (`text-green-700`, `text-red-700`, `text-emerald-600`, `bg-blue-`, `text-blue-`, and similar Tailwind palette utilities) in all components modified during v3.0 returns zero results
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 22-01-PLAN.md — Fix 19 pre-existing test failures + add V3.0 token coverage assertions (QA-02)
+- [ ] 22-02-PLAN.md — Replace hardcoded Tailwind colors in 11 v3.0-modified components with CSS variables (QA-03)
+- [ ] 22-03-PLAN.md — Final automated gates + human visual walk-through checkpoint (QA-01)
 
 ### Phase 23: QA Remediation â Unified Bug Fixes
 
