@@ -452,7 +452,7 @@ v3.0 phases execute in order: 17 -> 18 -> 19 -> 20 -> 21 -> 22. Phases 17 and 18
 | 17. Token Foundation + Dark Mode Fixes | 2/2 | Complete    | 2026-04-01 | - |
 | 18. AI Image Generation | 3/3 | Complete    | 2026-04-01 | - |
 | 19. Mosaic Hero | 2/2 | Complete   | 2026-04-01 | - |
-| 20. Discover + Browse Page Upgrades | 2/2 | Complete   | 2026-04-03 | - |
-| 21. Chat + Results Card Polish | 3/3 | Complete   | 2026-04-03 | - |
+| 20. Discover + Browse Page Upgrades | 2/2 | Complete    | 2026-04-03 | - |
+| 21. Chat + Results Card Polish | 3/3 | Complete    | 2026-04-03 | - |
 | 22. Visual QA + Consistency Pass | v3.0 | 0/TBD | Not started | - |
 | 23. QA Remediation | 7/7 | Complete    | 2026-04-03 | - |
