@@ -123,6 +123,35 @@ describe('IMG-02: Product mosaic images', () => {
 })
 
 // ---------------------------------------------------------------------------
+// DISC-07: Product carousel slide images exist on disk
+// ---------------------------------------------------------------------------
+
+const EXPECTED_CAROUSEL_SLIDES = [
+  'headphones.webp',
+  'laptop.webp',
+  'tokyo.webp',
+  'vacuum.webp',
+  'shoes.webp',
+  'smart-home.webp',
+]
+
+describe('DISC-07: Product carousel slide images', () => {
+  it('all carousel slide .webp files exist in products directory', () => {
+    if (!existsSync(productsDir)) {
+      console.log('SKIP: products/ directory does not exist yet')
+      return
+    }
+    const existing = readdirSync(productsDir)
+    for (const expected of EXPECTED_CAROUSEL_SLIDES) {
+      expect(
+        existing,
+        `Missing carousel slide image: ${expected}`
+      ).toContain(expected)
+    }
+  })
+})
+
+// ---------------------------------------------------------------------------
 // IMG-03: All WebP files under 200KB
 // ---------------------------------------------------------------------------
 
