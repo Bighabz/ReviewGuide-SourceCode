@@ -5,6 +5,27 @@ import { motion } from 'framer-motion'
 import { Award, ExternalLink, Star, ChevronDown, ChevronUp } from 'lucide-react'
 import { stripMarkdown } from '@/lib/stripMarkdown'
 
+const FALLBACK_KEYWORDS: Record<string, string> = {
+  headphone: '/images/products/fallback-headphones.webp',
+  earbuds: '/images/products/fallback-headphones.webp',
+  laptop: '/images/products/fallback-laptop.webp',
+  vacuum: '/images/products/fallback-kitchen.webp',
+  robot: '/images/products/fallback-kitchen.webp',
+  kitchen: '/images/products/fallback-kitchen.webp',
+  fitness: '/images/products/fallback-fitness.webp',
+  shoe: '/images/products/fallback-fitness.webp',
+  running: '/images/products/fallback-fitness.webp',
+  car: '/images/products/fallback-car.webp',
+}
+
+function getFallbackImage(name: string): string {
+  const lower = name.toLowerCase()
+  for (const [kw, src] of Object.entries(FALLBACK_KEYWORDS)) {
+    if (lower.includes(kw)) return src
+  }
+  return '/images/products/fallback-default.webp'
+}
+
 const topPickVariants = {
   rest: { y: 0 },
   hover: {
@@ -74,18 +95,12 @@ export default function TopPickBlock({
 
       <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
         <div className="flex-shrink-0 w-full sm:w-[200px] h-[140px] sm:h-[200px] rounded-xl overflow-hidden bg-[var(--surface)]">
-          {imageUrl ? (
-            <img
-              src={imageUrl}
-              alt={productName}
-              className="w-full h-full object-contain p-2"
-              loading="lazy"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <Award size={40} className="text-[var(--text-muted)]" />
-            </div>
-          )}
+          <img
+            src={imageUrl || getFallbackImage(productName)}
+            alt={productName}
+            className="w-full h-full object-contain p-2"
+            loading="lazy"
+          />
         </div>
 
         <div className="flex-1 min-w-0">
