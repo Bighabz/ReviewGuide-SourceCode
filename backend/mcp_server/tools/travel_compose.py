@@ -76,6 +76,20 @@ async def travel_compose(state: Dict[str, Any]) -> Dict[str, Any]:
     intent = state.get("intent", "travel")
 
     logger.info(f"[travel_compose] Composing travel response")
+
+    # --- Recovery path: all upstream tools failed/timed out ---
+    if not any([itinerary, hotels, flights, activities, cars, destination_facts, general_travel_info]):
+        logger.warning("[travel_compose] All travel data missing — returning recovery prompt")
+        return {
+            "assistant_text": (
+                "I ran into an issue fetching travel details. "
+                "You can try again, or ask for a specific piece -- "
+                "e.g., 'Show me hotels in Paris' or 'Give me a 3-day itinerary for Tokyo.'"
+            ),
+            "ui_blocks": [],
+            "citations": [],
+            "success": True,
+        }
     logger.info(f"[travel_compose] State keys: {list(state.keys())}")
     logger.info(f"[travel_compose] itinerary from state: {itinerary}")
     logger.info(f"[travel_compose] hotels from state: {hotels}")
@@ -140,6 +154,24 @@ async def travel_compose(state: Dict[str, Any]) -> Dict[str, Any]:
                 parts.append("I've gathered some recommendations for your trip.")
             elif weather:
                 parts.append("Here's what you should know about the destination.")
+
+        # Partial data note: inform user about what couldn't be fetched
+        missing = []
+        if not has_itinerary and not has_general_info:
+            missing.append("itinerary")
+        if not has_flights:
+            missing.append("flights")
+        if not has_hotels:
+            missing.append("hotels")
+
+        # Only add a partial note when at least one thing succeeded but something is missing
+        has_any = has_itinerary or has_hotels or has_flights or has_cars or has_activities or has_destination_facts
+        if has_any and missing and len(missing) < 3:
+            missing_str = " and ".join(missing)
+            parts.append(
+                f"I couldn't find {missing_str} for this trip -- "
+                "you can ask me to search for those specifically."
+            )
 
         assistant_text = " ".join(parts)
 

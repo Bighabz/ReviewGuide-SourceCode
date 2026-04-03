@@ -9,6 +9,7 @@ from app.core.centralized_logger import get_logger
 from app.core.error_manager import tool_error_handler
 import sys
 import os
+import time
 from typing import Dict, Any
 from datetime import datetime, timedelta
 
@@ -66,6 +67,13 @@ async def travel_search_cars(state: Dict[str, Any]) -> Dict[str, Any]:
         }
     """
     try:
+        # Emit streaming status update before executing
+        state["stream_chunk_data"] = {
+            "type": "tool_citation",
+            "data": {"message": "Checking car rentals..."}
+        }
+        start = time.monotonic()
+
         # Read from state
         slots = state.get("slots", {})
         destination = slots.get("destination", "")
@@ -120,17 +128,21 @@ async def travel_search_cars(state: Dict[str, Any]) -> Dict[str, Any]:
             except Exception as e:
                 logger.warning(f"[travel_search_cars] Provider {provider_key} failed: {e}")
 
+        elapsed = round(time.monotonic() - start, 2)
         return {
             "cars": cars,
             "citations": citations,
+            "tool_timing": {**state.get("tool_timing", {}), "travel_search_cars": elapsed},
             "success": len(cars) > 0,
         }
 
     except Exception as e:
         logger.error(f"[travel_search_cars] Error: {e}", exc_info=True)
+        elapsed = round(time.monotonic() - start, 2)
         return {
             "cars": [],
             "citations": [],
             "error": str(e),
+            "tool_timing": {**state.get("tool_timing", {}), "travel_search_cars": elapsed},
             "success": False
         }

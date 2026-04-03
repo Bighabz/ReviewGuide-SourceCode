@@ -9,6 +9,7 @@ from app.core.error_manager import tool_error_handler
 import sys
 import os
 import json
+import time
 from typing import Dict, Any
 from datetime import datetime, timedelta
 from app.core.error_manager import tool_error_handler
@@ -63,6 +64,13 @@ async def travel_itinerary(state: Dict[str, Any]) -> Dict[str, Any]:
         }
     """
     try:
+        # Emit streaming status update before executing
+        state["stream_chunk_data"] = {
+            "type": "tool_citation",
+            "data": {"message": "Building your itinerary..."}
+        }
+        start = time.monotonic()
+
         # Read from state
         slots = state.get("slots", {})
         destination = slots.get("destination")
@@ -103,18 +111,22 @@ Keep activities concise (max 15 words each). Max 2 highlights per day."""
 
         logger.info(f"[travel_itinerary] Generated {len(data.get('itinerary', []))} days")
 
+        elapsed = round(time.monotonic() - start, 2)
         return {
             "itinerary": data.get("itinerary", []),
             "destination_overview": data.get("overview", ""),
+            "tool_timing": {**state.get("tool_timing", {}), "travel_itinerary": elapsed},
             "success": True
         }
 
     except Exception as e:
         logger.error(f"[travel_itinerary] Error: {e}", exc_info=True)
 
+        elapsed = round(time.monotonic() - start, 2)
         return {
             "itinerary": [],
             "destination_overview": "",
             "error": str(e),
+            "tool_timing": {**state.get("tool_timing", {}), "travel_itinerary": elapsed},
             "success": False
         }

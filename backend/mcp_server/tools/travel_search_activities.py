@@ -10,6 +10,7 @@ from app.core.error_manager import tool_error_handler
 from app.core.config import settings
 import sys
 import os
+import time
 from typing import Dict, Any
 
 # Add backend to path (portable path)
@@ -70,16 +71,25 @@ async def travel_search_activities(state: Dict[str, Any]) -> Dict[str, Any]:
         }
     """
     try:
+        # Emit streaming status update before executing
+        state["stream_chunk_data"] = {
+            "type": "tool_citation",
+            "data": {"message": "Finding activities..."}
+        }
+        start = time.monotonic()
+
         # Read from state
         slots = state.get("slots", {})
         destination = slots.get("destination", "")
 
         if not destination:
             logger.warning("[travel_search_activities] No destination in slots")
+            elapsed = round(time.monotonic() - start, 2)
             return {
                 "activities": [],
                 "citations": [],
                 "error": "No destination provided",
+                "tool_timing": {**state.get("tool_timing", {}), "travel_search_activities": elapsed},
                 "success": False,
             }
 
@@ -119,17 +129,21 @@ async def travel_search_activities(state: Dict[str, Any]) -> Dict[str, Any]:
 
         logger.info(f"[travel_search_activities] Found {len(activities)} activities in {destination}")
 
+        elapsed = round(time.monotonic() - start, 2)
         return {
             "activities": activities,
             "citations": citations,
+            "tool_timing": {**state.get("tool_timing", {}), "travel_search_activities": elapsed},
             "success": len(activities) > 0,
         }
 
     except Exception as e:
         logger.error(f"[travel_search_activities] Error: {e}", exc_info=True)
+        elapsed = round(time.monotonic() - start, 2)
         return {
             "activities": [],
             "citations": [],
             "error": str(e),
+            "tool_timing": {**state.get("tool_timing", {}), "travel_search_activities": elapsed},
             "success": False,
         }

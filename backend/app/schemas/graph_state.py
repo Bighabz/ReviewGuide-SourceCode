@@ -82,6 +82,9 @@ class GraphState(TypedDict):
     # Streaming Data
     stream_chunk_data: Optional[Dict[str, Any]]  # Data to be streamed immediately: {"type": "itinerary", "data": [...]}
 
+    # Tool Timing (per-tool elapsed seconds for diagnostics)
+    tool_timing: Dict[str, float]  # {"travel_itinerary": 1.23, "travel_search_hotels": 0.45, ...}
+
     # Ranking
     ranked_items: List[Dict[str, Any]]
 

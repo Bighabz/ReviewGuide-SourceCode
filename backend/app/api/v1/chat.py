@@ -334,6 +334,7 @@ async def generate_chat_stream(
             "itinerary": halt_state_data.get("itinerary", []) if halt_state_data else [],
             "travel_results": halt_state_data.get("travel_results") if halt_state_data else None,
             "stream_chunk_data": None,
+            "tool_timing": {},  # Per-tool elapsed seconds — prevents LangGraph channel crash
             "ranked_items": [],
             "assistant_text": None,
             "ui_blocks": [],
