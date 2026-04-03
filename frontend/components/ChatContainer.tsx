@@ -753,7 +753,7 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
   }
 
   return (
-    <div id="chat-container" className="flex-1 flex flex-col overflow-hidden relative" style={{ background: 'var(--background)' }}>
+    <div id="chat-container" className="flex-1 flex flex-col overflow-clip relative" style={{ background: 'var(--background)' }}>
       {/* Welcome Screen (no messages) */}
       {messages.length === 0 && (
         <div id="welcome-screen" className="flex-1 overflow-y-auto">
@@ -876,7 +876,7 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
 
           <div
             id="chat-input-wrapper"
-            className="sticky bottom-0 p-3 sm:p-4 z-40"
+            className="sticky bottom-0 p-3 sm:p-4 z-[300]"
             style={{
               borderTop: '1px solid var(--border)',
               background: 'var(--surface)',

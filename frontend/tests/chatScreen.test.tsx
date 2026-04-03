@@ -398,8 +398,9 @@ describe('QAR-11 — Stop button dark mode styling', () => {
       'utf-8'
     )
 
-    // Find the stop button: it contains "Stop generating"
-    const stopBtnMatch = src.match(/Stop generating[\s\S]{0,400}?<\/button>/)
+    // Find the stop button: look for the button tag that precedes "Stop generating"
+    // The pattern: <button ...className="..."> then "Stop generating"
+    const stopBtnMatch = src.match(/<button[\s\S]{0,600}?Stop generating[\s\S]{0,50}?<\/button>/)
     expect(stopBtnMatch).toBeTruthy()
 
     const stopBtnCode = stopBtnMatch![0]

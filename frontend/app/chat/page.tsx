@@ -127,17 +127,17 @@ function ChatPageContent() {
   }
 
   return (
-    <div className="h-dvh flex flex-col overflow-hidden bg-[var(--background)] text-[var(--text)]">
+    <div className="h-dvh flex flex-col overflow-clip bg-[var(--background)] text-[var(--text)]">
 
       {/* Content area below topbar */}
-      <div className="flex-1 flex overflow-hidden relative">
+      <div className="flex-1 flex overflow-clip relative">
         {/* Mobile category sidebar overlay */}
         {sidebarOpen && (
           <CategorySidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         )}
 
         {/* Full-width chat */}
-        <main className="flex flex-1 flex-col overflow-hidden">
+        <main className="flex flex-1 flex-col overflow-clip">
           <ErrorBoundary>
             <ChatContainer
               clearHistoryTrigger={clearHistoryTrigger}

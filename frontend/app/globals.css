@@ -271,7 +271,7 @@ body {
   background: var(--background);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
+  overflow-x: clip;
   overscroll-behavior: none;
   overscroll-behavior-x: none;
   scroll-behavior: smooth;

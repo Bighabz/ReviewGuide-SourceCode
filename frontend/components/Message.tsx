@@ -116,7 +116,7 @@ export default function Message({ message, isLast = false }: MessageProps) {
       id={`message-${message.id}`}
       className="w-full py-4 sm:py-5 px-3 sm:px-4"
     >
-      <div id="message-container" className="mr-auto flex gap-2 sm:gap-4 items-start flex-row overflow-hidden max-w-full" style={{ maxWidth: '780px' }}>
+      <div id="message-container" className="mr-auto flex gap-2 sm:gap-4 items-start flex-row overflow-clip max-w-full" style={{ maxWidth: '780px' }}>
         {/* Avatar - Only show for assistant */}
         {!isUser && (
           <div className="flex-shrink-0 mt-0.5">
@@ -149,7 +149,7 @@ export default function Message({ message, isLast = false }: MessageProps) {
               // Regular user message: editorial bubble
               <>
                 <div className="relative group flex items-start justify-end max-w-full gap-2.5">
-                  <div className="px-4 py-3 rounded-tl-[20px] rounded-tr-[20px] rounded-br-[4px] rounded-bl-[20px] bg-[var(--primary)] text-white shadow-card max-w-[85%]" style={{ minWidth: 'fit-content' }}>
+                  <div className="px-4 py-3 rounded-tl-[20px] rounded-tr-[20px] rounded-br-[4px] rounded-bl-[20px] bg-[var(--primary)] text-white shadow-card max-w-[85%]">
                     <p className="whitespace-pre-wrap text-[15px] leading-relaxed">
                       {message.content}
                     </p>
