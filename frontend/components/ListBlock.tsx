@@ -47,7 +47,7 @@ export default function ListBlock({ title, items, type }: ListBlockProps) {
         <div className="p-2.5 rounded-lg" style={styles.bg}>
           <Icon size={20} style={styles.text} />
         </div>
-        <h3 className="font-serif font-bold text-lg text-[var(--text)]">
+        <h3 className="font-sans font-bold text-lg text-[var(--text)]">
           {title}
         </h3>
       </div>

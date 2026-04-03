@@ -37,7 +37,7 @@ export default function ItineraryView({ days }: ItineraryViewProps) {
   return (
     <div className="space-y-6 mt-6">
       <div>
-        <h3 className="font-serif text-xl text-[var(--text)] flex items-center gap-2">
+        <h3 className="font-sans font-bold text-xl text-[var(--text)] flex items-center gap-2">
           <Calendar size={22} strokeWidth={1.5} className="text-[var(--primary)]" />
           Your Itinerary
         </h3>
@@ -61,7 +61,7 @@ export default function ItineraryView({ days }: ItineraryViewProps) {
               {/* Header */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 pb-4 border-b border-[var(--border)]">
                 <div>
-                  <h4 className="font-serif text-lg text-[var(--text)]">{day.title}</h4>
+                  <h4 className="font-sans font-bold text-lg text-[var(--text)]">{day.title}</h4>
                   <p className="text-sm text-[var(--text-muted)] mt-1">{day.date}</p>
                 </div>
               </div>

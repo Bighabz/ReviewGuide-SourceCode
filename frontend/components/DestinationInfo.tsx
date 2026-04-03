@@ -27,7 +27,7 @@ export default function DestinationInfo({ data }: DestinationInfoProps) {
               <Cloud size={22} />
             </div>
             <div className="flex-1">
-              <h4 className="font-serif font-bold text-base mb-1 text-[var(--text)]">
+              <h4 className="font-sans font-bold text-[15px] text-[var(--text)] mb-1">
                 Weather & Climate
               </h4>
               <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
@@ -49,7 +49,7 @@ export default function DestinationInfo({ data }: DestinationInfoProps) {
               <Calendar size={22} />
             </div>
             <div className="flex-1">
-              <h4 className="font-serif font-bold text-base mb-1 text-[var(--text)]">
+              <h4 className="font-sans font-bold text-[15px] text-[var(--text)] mb-1">
                 Best Time to Visit
               </h4>
               <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
@@ -71,7 +71,7 @@ export default function DestinationInfo({ data }: DestinationInfoProps) {
               <Lightbulb size={22} />
             </div>
             <div className="flex-1">
-              <h4 className="font-serif font-bold text-base mb-3 text-[var(--text)]">
+              <h4 className="font-sans font-bold text-[15px] text-[var(--text)] mb-3">
                 Travel Tips
               </h4>
               <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-2">
@@ -98,7 +98,7 @@ export default function DestinationInfo({ data }: DestinationInfoProps) {
               <Users size={22} />
             </div>
             <div className="flex-1">
-              <h4 className="font-serif font-bold text-base mb-1 text-[var(--text)]">
+              <h4 className="font-sans font-bold text-[15px] text-[var(--text)] mb-1">
                 Local Customs & Etiquette
               </h4>
               <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
