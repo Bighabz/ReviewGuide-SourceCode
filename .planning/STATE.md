@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Visual Overhaul â Bold Editorial
 status: executing
-stopped_at: Completed 21-02-PLAN.md
-last_updated: "2026-04-03T07:15:16.631Z"
+stopped_at: Completed 21-03-PLAN.md
+last_updated: "2026-04-03T07:17:01.072Z"
 last_activity: 2026-04-01 — 18-02 complete (15 category hero images approved)
 progress:
   total_phases: 23
-  completed_phases: 19
+  completed_phases: 20
   total_plans: 63
-  completed_plans: 59
+  completed_plans: 60
   percent: 92
 ---
 
@@ -65,6 +65,7 @@ Progress: [█████████░] 92%
 | Phase 21-chat-results-card-polish P01 | 7 | 3 tasks | 5 files |
 | Phase 20-discover-browse-page-upgrades P01 | 8 | 2 tasks | 6 files |
 | Phase 21-chat-results-card-polish P02 | 796 | 2 tasks | 3 files |
+| Phase 21-chat-results-card-polish P03 | 12 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -121,6 +122,8 @@ Progress: [█████████░] 92%
 - [Phase 20-discover-browse-page-upgrades]: CuratedProduct.name is optional field — fallback to Option N preserves backward compat for categories without names
 - [Phase 21-chat-results-card-polish]: Use as const on 'spring' and 'easeOut' string literals in Framer Motion variants — Easing union type does not accept bare string
 - [Phase 21-chat-results-card-polish]: deriveMerchant pattern: clean merchant field first, fall back to URL hostname domainMap, then capitalize first subdomain segment
+- [Phase 21-chat-results-card-polish]: ResultsPage source dots upgraded alongside ResultsMainPanel for visual consistency and test coverage via ResultsPage render
+- [Phase 21-chat-results-card-polish]: V3 badge pattern: --bold-amber/--bold-blue/--bold-green bg with white text + px-2.5 py-1 rounded-md font-bold tracking-wider for stronger badge presence
 
 ### Pending Todos
 
@@ -138,6 +141,6 @@ Progress: [█████████░] 92%
 
 ## Session Continuity
 
-Last session: 2026-04-03T07:15:16.618Z
-Stopped at: Completed 21-02-PLAN.md
+Last session: 2026-04-03T07:17:01.054Z
+Stopped at: Completed 21-03-PLAN.md
 Resume file: None

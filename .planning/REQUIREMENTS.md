@@ -41,15 +41,15 @@
 
 ### Product Cards
 
-- [ ] **CARD-01**: ProductReview cards have premium spacing, stronger typography, and subtle entrance animations
-- [ ] **CARD-02**: "Where to Buy" section uses clean 3-column layout with merchant labels derived from URL
-- [ ] **CARD-03**: TopPickBlock has bolder visual treatment — stronger gradient CTA, larger product image
+- [x] **CARD-01**: ProductReview cards have premium spacing, stronger typography, and subtle entrance animations
+- [x] **CARD-02**: "Where to Buy" section uses clean 3-column layout with merchant labels derived from URL
+- [x] **CARD-03**: TopPickBlock has bolder visual treatment — stronger gradient CTA, larger product image
 - [x] **CARD-04**: Card hover effects use spring animations via Framer Motion
 
 ### Results Page Polish
 
-- [ ] **RES-07**: Product grid cards match new bold visual language
-- [ ] **RES-08**: Sources section has stronger visual presence with bolder dot colors
+- [x] **RES-07**: Product grid cards match new bold visual language
+- [x] **RES-08**: Sources section has stronger visual presence with bolder dot colors
 
 ### Visual QA
 
@@ -98,12 +98,12 @@
 | BRW-02 | Phase 20 | Complete |
 | CHT-01 | Phase 21 | Complete |
 | CHT-02 | Phase 21 | Complete |
-| CARD-01 | Phase 21 | Pending |
-| CARD-02 | Phase 21 | Pending |
-| CARD-03 | Phase 21 | Pending |
+| CARD-01 | Phase 21 | Complete |
+| CARD-02 | Phase 21 | Complete |
+| CARD-03 | Phase 21 | Complete |
 | CARD-04 | Phase 21 | Complete |
-| RES-07 | Phase 21 | Pending |
-| RES-08 | Phase 21 | Pending |
+| RES-07 | Phase 21 | Complete |
+| RES-08 | Phase 21 | Complete |
 | QA-01 | Phase 22 | Pending |
 | QA-02 | Phase 22 | Pending |
 | QA-03 | Phase 22 | Pending |
