@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { motion } from 'framer-motion'
 import { resolveProductImage, isPlaceholderImage } from '@/lib/productImages'
 import type { ExtractedProduct } from '@/lib/extractResultsData'
 
@@ -21,9 +22,9 @@ const GRADIENT_BGS = [
 const POSITION_SCORES = [94, 91, 88, 82, 78, 74]
 
 function getBadge(index: number): { label: string; bg: string; color: string } {
-  if (index === 0) return { label: 'TOP PICK', bg: '#FEF3C7', color: '#92400E' }
-  if (index === 1) return { label: 'BEST VALUE', bg: '#DBEAFE', color: '#1E40AF' }
-  if (index === 2) return { label: 'PREMIUM', bg: '#F3E8FF', color: '#6B21A8' }
+  if (index === 0) return { label: 'TOP PICK', bg: 'var(--bold-amber)', color: '#FFFFFF' }
+  if (index === 1) return { label: 'BEST VALUE', bg: 'var(--bold-blue)', color: '#FFFFFF' }
+  if (index === 2) return { label: 'PREMIUM', bg: 'var(--bold-green)', color: '#FFFFFF' }
   return { label: `#${index + 1}`, bg: 'var(--surface-elevated)', color: 'var(--text-secondary)' }
 }
 
@@ -37,8 +38,13 @@ export default function ResultsProductCard({ product, index }: ResultsProductCar
   const linkUrl = product.url || `https://www.amazon.com/s?k=${encodeURIComponent(product.name)}&tag=revguide-20`
 
   return (
-    <div
-      className="rounded-2xl border overflow-hidden product-card-hover transition-all duration-200 hover:shadow-card-hover hover:-translate-y-0.5"
+    <motion.div
+      whileHover={{
+        y: -4,
+        boxShadow: '0 12px 32px rgba(28,25,23,0.10)',
+      }}
+      transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+      className="rounded-2xl border overflow-hidden"
       style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
     >
       {/* Image area with gradient background */}
@@ -70,13 +76,13 @@ export default function ResultsProductCard({ product, index }: ResultsProductCar
       <div className="p-4">
         {/* Badge */}
         <span
-          className="inline-block px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide mb-2"
+          className="inline-block px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider mb-2"
           style={{ background: badge.bg, color: badge.color }}
         >
           {badge.label}
         </span>
 
-        <h3 className="text-[15px] font-semibold mb-1" style={{ color: 'var(--text)' }}>
+        <h3 className="text-base font-bold mb-1 font-serif tracking-tight" style={{ color: 'var(--text)' }}>
           {product.name}
         </h3>
 
@@ -118,6 +124,6 @@ export default function ResultsProductCard({ product, index }: ResultsProductCar
           Check Price
         </a>
       </div>
-    </div>
+    </motion.div>
   )
 }
