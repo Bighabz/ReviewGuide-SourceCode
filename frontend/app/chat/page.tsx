@@ -162,14 +162,14 @@ function ChatPageContent() {
     <div className="h-full flex flex-col overflow-clip bg-[var(--background)] text-[var(--text)]">
 
       {/* Content area below topbar */}
-      <div className="flex-1 flex overflow-clip relative">
+      <div className="flex-1 flex overflow-clip relative min-h-0">
         {/* Mobile category sidebar overlay */}
         {sidebarOpen && (
           <CategorySidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
         )}
 
         {/* Full-width chat */}
-        <main className="flex flex-1 flex-col overflow-clip">
+        <main className="flex flex-1 flex-col overflow-clip min-h-0">
           <ErrorBoundary>
             <ChatContainer
               clearHistoryTrigger={clearHistoryTrigger}
