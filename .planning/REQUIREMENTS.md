@@ -59,7 +59,7 @@
 
 ### Travel Response UI
 
-- [ ] **TRV-01**: Must-See Attractions renders as visual resort cards with hero images (not flat bullet list with pin icons)
+- [x] **TRV-01**: Must-See Attractions renders as visual resort cards with hero images (not flat bullet list with pin icons)
 - [ ] **TRV-02**: Hotel PLPLinkCard displays destination hero image at top with updated "Search on Expedia" CTA
 - [ ] **TRV-03**: Flight PLPLinkCard displays destination hero image at top, Caribbean text wrapping fixed, updated "Search on Expedia" CTA
 - [ ] **TRV-04**: All travel section headers use sans-serif font (font-serif removed from HotelCards, FlightCards, DestinationInfo, ItineraryView, ListBlock)
@@ -119,7 +119,7 @@
 | QA-01 | Phase 22 | Pending |
 | QA-02 | Phase 22 | Complete |
 | QA-03 | Phase 22 | Complete |
-| TRV-01 | Phase 24 | Pending |
+| TRV-01 | Phase 24 | Complete |
 | TRV-02 | Phase 24 | Pending |
 | TRV-03 | Phase 24 | Pending |
 | TRV-04 | Phase 24 | Pending |
