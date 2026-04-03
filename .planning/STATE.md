@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Visual Overhaul — Bold Editorial
 status: executing
-stopped_at: Completed 23-04-PLAN.md
-last_updated: "2026-04-03T06:09:23.385Z"
+stopped_at: Completed 23-05-PLAN.md
+last_updated: "2026-04-03T06:11:08.678Z"
 last_activity: 2026-04-01 — 18-02 complete (15 category hero images approved)
 progress:
   total_phases: 23
   completed_phases: 17
   total_plans: 58
-  completed_plans: 53
+  completed_plans: 54
   percent: 92
 ---
 
@@ -59,6 +59,7 @@ Progress: [█████████░] 92%
 | Phase 23-qa-remediation-unified-bug-fixes P02 | 581 | 2 tasks | 7 files |
 | Phase 23-qa-remediation-unified-bug-fixes P01 | 609 | 2 tasks | 2 files |
 | Phase 23-qa-remediation-unified-bug-fixes P04 | 344 | 2 tasks | 3 files |
+| Phase 23-qa-remediation-unified-bug-fixes P05 | 435 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -100,6 +101,9 @@ Progress: [█████████░] 92%
 - [Phase 23-qa-remediation-unified-bug-fixes]: Label-domain parity: correct Amazon labels pointing to non-Amazon URLs rather than excluding the offer entirely
 - [Phase Phase 23-qa-remediation-unified-bug-fixes]: Accessory suppression applied at three layers in compose: products_with_offers loop, review_bundles blog iteration, and fallback card path
 - [Phase Phase 23-qa-remediation-unified-bug-fixes]: _parse_budget returns (None, None) on no match — budget filtering only activates when budget string is parseable; all offers preserved if all exceed budget
+- [Phase 23-qa-remediation-unified-bug-fixes]: Sentinel bottomRef scroll replaces setInterval polling — reliable iOS Safari behaviour
+- [Phase 23-qa-remediation-unified-bug-fixes]: Queue user messages during streaming via useState + useEffect instead of silent drop (QAR-18)
+- [Phase 23-qa-remediation-unified-bug-fixes]: trackSessionId helper centralises chat_all_session_ids writes; session ID in URL for browser history continuity
 
 ### Pending Todos
 
@@ -117,6 +121,6 @@ Progress: [█████████░] 92%
 
 ## Session Continuity
 
-Last session: 2026-04-03T06:09:23.368Z
-Stopped at: Completed 23-04-PLAN.md
+Last session: 2026-04-03T06:11:08.667Z
+Stopped at: Completed 23-05-PLAN.md
 Resume file: None
