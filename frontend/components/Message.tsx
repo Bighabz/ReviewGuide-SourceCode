@@ -202,9 +202,13 @@ export default function Message({ message, isLast = false }: MessageProps) {
                     <div className="prose prose-sm sm:prose-base max-w-none
                         text-[var(--text)]
                         prose-headings:font-serif prose-headings:tracking-tight prose-headings:text-[var(--text)]
+                        prose-h1:text-[var(--heading-lg)] prose-h1:font-bold prose-h1:leading-[1.15]
+                        prose-h2:text-[var(--heading-md)] prose-h2:font-bold prose-h2:leading-[1.15]
+                        prose-h3:text-[var(--heading-sm)] prose-h3:font-semibold prose-h3:leading-[1.2]
                         prose-p:text-[var(--text)] prose-p:leading-relaxed prose-p:text-[15px]
+                        prose-p:mb-3
                         prose-strong:text-[var(--text)] prose-strong:font-semibold
-                        prose-li:text-[var(--text)] prose-li:marker:text-[var(--text-muted)]
+                        prose-li:text-[var(--text)] prose-li:marker:text-[var(--text-muted)] prose-li:leading-relaxed
                         prose-pre:bg-[var(--surface)] prose-pre:border prose-pre:border-[var(--border)] prose-pre:rounded-xl
                         prose-a:text-[var(--primary)] prose-a:no-underline hover:prose-a:underline"
                     >
