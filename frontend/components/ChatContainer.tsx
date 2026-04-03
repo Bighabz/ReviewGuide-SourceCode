@@ -10,6 +10,7 @@ import { streamChat, fetchConversationHistory, NextSuggestion, ResponseMetadata 
 import { SUGGESTION_CLICK_PREFIX } from '@/lib/utils'
 import { TRENDING_SEARCHES, UI_TEXT, CHAT_CONFIG } from '@/lib/constants'
 import { saveRecentSearch } from '@/lib/recentSearches'
+import { getStaticResponse, STATIC_RESPONSES_ENABLED } from '@/lib/staticResponses'
 import { useStreamReducer } from '@/hooks/useStreamReducer'
 import { TOOL_BLOCK_MAP, BLOCK_SKELETON_CONFIG } from '@/lib/skeletonMap'
 import type { SkeletonBlockType } from '@/components/BlockSkeleton'
@@ -268,13 +269,28 @@ export default function ChatContainer({ clearHistoryTrigger, externalSessionId, 
         content: initialQuery,
         timestamp: new Date(),
       }
-      setMessages([userMessage])
 
-      // Set session ID and trigger stream with explicit session ID
+      // Set session ID
       setSessionId(externalSessionId)
       localStorage.setItem(CHAT_CONFIG.SESSION_STORAGE_KEY, externalSessionId)
 
-      // Pass session ID directly since state update is async
+      // Check for pre-cached static response (homepage buttons)
+      const staticResponse = STATIC_RESPONSES_ENABLED ? getStaticResponse(initialQuery) : null
+      if (staticResponse) {
+        const aiMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: staticResponse.content,
+          timestamp: new Date(),
+          ui_blocks: staticResponse.ui_blocks,
+          followups: staticResponse.followups,
+        }
+        setMessages([userMessage, aiMessage])
+        return
+      }
+
+      // No static response — use live API
+      setMessages([userMessage])
       handleStream(initialQuery, false, externalSessionId)
     }
   }, [initialQuery, isLoadingHistory, isStreaming, externalSessionId])
