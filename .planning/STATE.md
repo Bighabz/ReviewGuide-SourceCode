@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Visual Overhaul — Bold Editorial
 status: executing
-stopped_at: Completed 23-01-PLAN.md
-last_updated: "2026-04-03T06:00:46.501Z"
+stopped_at: Completed 23-04-PLAN.md
+last_updated: "2026-04-03T06:09:23.385Z"
 last_activity: 2026-04-01 — 18-02 complete (15 category hero images approved)
 progress:
   total_phases: 23
   completed_phases: 17
   total_plans: 58
-  completed_plans: 52
+  completed_plans: 53
   percent: 92
 ---
 
@@ -58,6 +58,7 @@ Progress: [█████████░] 92%
 | Phase 23-qa-remediation-unified-bug-fixes P03 | 382 | 2 tasks | 9 files |
 | Phase 23-qa-remediation-unified-bug-fixes P02 | 581 | 2 tasks | 7 files |
 | Phase 23-qa-remediation-unified-bug-fixes P01 | 609 | 2 tasks | 2 files |
+| Phase 23-qa-remediation-unified-bug-fixes P04 | 344 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -97,6 +98,8 @@ Progress: [█████████░] 92%
 - [Phase 23-qa-remediation-unified-bug-fixes]: Relaxed multi-provider gate from >=2 providers to >=1 real offer — single-retailer products with valid URLs should not be silently dropped
 - [Phase 23-qa-remediation-unified-bug-fixes]: Fallback loop split: cap check uses break, duplicate check uses continue — preserves 5-card cap while iterating past duplicates
 - [Phase 23-qa-remediation-unified-bug-fixes]: Label-domain parity: correct Amazon labels pointing to non-Amazon URLs rather than excluding the offer entirely
+- [Phase Phase 23-qa-remediation-unified-bug-fixes]: Accessory suppression applied at three layers in compose: products_with_offers loop, review_bundles blog iteration, and fallback card path
+- [Phase Phase 23-qa-remediation-unified-bug-fixes]: _parse_budget returns (None, None) on no match — budget filtering only activates when budget string is parseable; all offers preserved if all exceed budget
 
 ### Pending Todos
 
@@ -114,6 +117,6 @@ Progress: [█████████░] 92%
 
 ## Session Continuity
 
-Last session: 2026-04-03T06:00:46.486Z
-Stopped at: Completed 23-01-PLAN.md
+Last session: 2026-04-03T06:09:23.368Z
+Stopped at: Completed 23-04-PLAN.md
 Resume file: None

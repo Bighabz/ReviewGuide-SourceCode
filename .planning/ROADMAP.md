@@ -448,4 +448,4 @@ v3.0 phases execute in order: 17 -> 18 -> 19 -> 20 -> 21 -> 22. Phases 17 and 18
 | 20. Discover + Browse Page Upgrades | v3.0 | 0/TBD | Not started | - |
 | 21. Chat + Results Card Polish | v3.0 | 0/TBD | Not started | - |
 | 22. Visual QA + Consistency Pass | v3.0 | 0/TBD | Not started | - |
-| 23. QA Remediation | 4/7 | In Progress|  | - |
+| 23. QA Remediation | 5/7 | In Progress|  | - |
