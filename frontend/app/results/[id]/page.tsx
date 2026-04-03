@@ -133,10 +133,10 @@ export default function ResultsPage({ params }: ResultsPageProps) {
                     style={{ color: 'var(--text)' }}
                   >
                     <span
-                      className="w-2 h-2 rounded-full flex-shrink-0"
+                      className="w-3 h-3 rounded-full flex-shrink-0"
                       style={{ backgroundColor: dotColor }}
                     />
-                    <span className="font-medium">{source.site_name}</span>
+                    <span className="font-semibold">{source.site_name}</span>
                     {source.title && (
                       <span
                         className="text-xs truncate"

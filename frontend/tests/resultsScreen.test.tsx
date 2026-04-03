@@ -487,3 +487,53 @@ describe('RES-06: Sources section', () => {
     expect(hasColoredDots).toBe(true)
   })
 })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RES-07 + RES-08: Visual polish — v3.0 bold editorial upgrades (Plan 03)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('RES-07 + RES-08: v3.0 visual polish', () => {
+  beforeEach(() => {
+    setupLocalStorageMock()
+  })
+
+  it('source dots are w-3 h-3 (not w-2 h-2)', () => {
+    const { container } = render(<ResultsPage params={{ id: 'test-session-id' }} />)
+    const dots = Array.from(container.querySelectorAll('.rounded-full'))
+    // Source dots should have w-3 h-3 (upgraded from w-2 h-2)
+    const upgradedDots = dots.filter(el => {
+      const cls = (el as HTMLElement).className
+      return cls.includes('w-3') && cls.includes('h-3')
+    })
+    expect(upgradedDots.length).toBeGreaterThan(0)
+    // Old w-2 h-2 source dots should no longer exist
+    const oldDots = dots.filter(el => {
+      const cls = (el as HTMLElement).className
+      return cls.includes('w-2') && cls.includes('h-2')
+    })
+    expect(oldDots.length).toBe(0)
+  })
+
+  it('source site names use font-semibold', () => {
+    render(<ResultsPage params={{ id: 'test-session-id' }} />)
+    const wirecutter = screen.getByText('Wirecutter')
+    expect(wirecutter.className).toContain('font-semibold')
+  })
+
+  it('product cards do not have product-card-hover class', () => {
+    const { container } = render(<ResultsPage params={{ id: 'test-session-id' }} />)
+    const allEls = Array.from(container.querySelectorAll('*'))
+    const hasOldHoverClass = allEls.some(el =>
+      (el as HTMLElement).className?.includes?.('product-card-hover')
+    )
+    expect(hasOldHoverClass).toBe(false)
+  })
+
+  it('product name heading uses font-bold', () => {
+    const { container } = render(<ResultsPage params={{ id: 'test-session-id' }} />)
+    const boldHeadings = Array.from(container.querySelectorAll('h3')).filter(el =>
+      el.className.includes('font-bold')
+    )
+    expect(boldHeadings.length).toBeGreaterThan(0)
+  })
+})

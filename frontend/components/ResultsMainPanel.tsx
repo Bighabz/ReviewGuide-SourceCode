@@ -139,8 +139,15 @@ export default function ResultsMainPanel({ messages, sessionTitle }: ResultsMain
                   className="flex items-center gap-2.5 text-sm hover:underline transition-colors hover:text-[var(--primary)]"
                   style={{ color: 'var(--text-secondary)' }}
                 >
-                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: SOURCE_COLORS[idx % SOURCE_COLORS.length] }} />
-                  <span className="font-medium" style={{ color: 'var(--text)' }}>{source.site_name}</span>
+                  <span
+                    className="w-3 h-3 rounded-full flex-shrink-0 ring-2 ring-offset-1"
+                    style={{
+                      backgroundColor: SOURCE_COLORS[idx % SOURCE_COLORS.length],
+                      ['--tw-ring-color' as string]: SOURCE_COLORS[idx % SOURCE_COLORS.length] + '40',
+                      ['--tw-ring-offset-color' as string]: 'var(--surface)',
+                    }}
+                  />
+                  <span className="font-semibold" style={{ color: 'var(--text)' }}>{source.site_name}</span>
                   {source.title && <span className="text-xs truncate">— {source.title}</span>}
                 </a>
               ))}
