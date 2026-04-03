@@ -180,7 +180,10 @@ export default function ProductCarousel({ items, title }: ProductCarouselProps) 
                         {item.merchant}
                       </span>
                       {item.best_price && (
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:bg-emerald-400/15 dark:text-emerald-400">
+                        <span
+                          className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider"
+                          style={{ backgroundColor: 'var(--success-light)', color: 'var(--bold-green)' }}
+                        >
                           Best Price
                         </span>
                       )}
@@ -210,7 +213,7 @@ export default function ProductCarousel({ items, title }: ProductCarouselProps) 
                           {item.price?.toFixed(2) ?? 'N/A'}
                         </span>
                         {item.best_price && item.savings != null && item.savings > 0 && (
-                          <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                          <p className="text-[11px] font-medium" style={{ color: 'var(--bold-green)' }}>
                             Save ${item.savings.toFixed(2)}{item.compared_retailer ? ` vs ${item.compared_retailer}` : ''}
                           </p>
                         )}

@@ -55,8 +55,8 @@ export default function PriceComparison({ items, title = 'Price Comparison' }: P
                 </p>
                 {product.savings > 0 && (
                   <div className="flex items-center gap-1 mt-0.5">
-                    <TrendingDown size={13} className="text-emerald-600 dark:text-emerald-400" />
-                    <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                    <TrendingDown size={13} style={{ color: 'var(--bold-green)' }} />
+                    <span className="text-xs font-medium" style={{ color: 'var(--bold-green)' }}>
                       Save ${product.savings.toFixed(2)} by comparing
                     </span>
                   </div>
@@ -89,18 +89,20 @@ export default function PriceComparison({ items, title = 'Price Comparison' }: P
                       {offer.merchant}
                     </span>
                     {offer.best && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 whitespace-nowrap">
+                      <span
+                        className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap"
+                        style={{ backgroundColor: 'var(--success-light)', color: 'var(--bold-green)' }}
+                      >
                         <BadgeCheck size={10} />
                         Best Price
                       </span>
                     )}
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className={`text-sm font-semibold ${
-                      offer.best
-                        ? 'text-emerald-600 dark:text-emerald-400'
-                        : 'text-[var(--text)]'
-                    }`}>
+                    <span
+                      className="text-sm font-semibold"
+                      style={{ color: offer.best ? 'var(--bold-green)' : 'var(--text)' }}
+                    >
                       ${offer.price.toFixed(2)}
                     </span>
                     <span className="inline-flex items-center gap-1 text-xs text-[var(--primary)] font-medium whitespace-nowrap">

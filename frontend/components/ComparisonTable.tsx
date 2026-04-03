@@ -49,7 +49,7 @@ export default function ComparisonTable({ data, title }: ComparisonTableProps) {
     if (!rating) return <span className="text-[var(--text-muted)]">N/A</span>
     return (
       <div className="flex items-center gap-1">
-        <Star size={14} className="fill-yellow-400 text-yellow-400" />
+        <Star size={14} style={{ color: 'var(--rating-star)', fill: 'var(--rating-star)' }} />
         <span className="font-medium text-[var(--text)]">{rating.toFixed(1)}</span>
         {review_count && (
           <span className="text-xs text-[var(--text-muted)]">
@@ -137,11 +137,15 @@ export default function ComparisonTable({ data, title }: ComparisonTableProps) {
                       onMouseLeave={() => setHoveredColumn(null)}
                     >
                       <span
-                        className={`text-lg font-bold ${isBest ? 'text-emerald-600 dark:text-emerald-400' : 'text-[var(--text)]'}`}
+                        className="text-lg font-bold"
+                        style={{ color: isBest ? 'var(--bold-green)' : 'var(--text)' }}
                       >
                         {formatPrice(product.price, product.currency)}
                         {isBest && (
-                          <span className="ml-1.5 text-[10px] font-bold uppercase tracking-wide text-emerald-600 px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30">
+                          <span
+                            className="ml-1.5 text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full"
+                            style={{ color: 'var(--bold-green)', backgroundColor: 'var(--success-light)' }}
+                          >
                             Best
                           </span>
                         )}
@@ -169,7 +173,10 @@ export default function ComparisonTable({ data, title }: ComparisonTableProps) {
                       <div className="flex justify-center items-center gap-1">
                         {renderRating(product.rating, product.review_count)}
                         {isBest && product.rating && (
-                          <span className="ml-1 text-[10px] text-emerald-600 font-bold bg-emerald-100 px-1.5 py-0.5 rounded-full dark:bg-emerald-900/30 dark:text-emerald-400">Top</span>
+                          <span
+                            className="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                            style={{ color: 'var(--bold-green)', backgroundColor: 'var(--success-light)' }}
+                          >Top</span>
                         )}
                       </div>
                     </td>
@@ -213,7 +220,7 @@ export default function ComparisonTable({ data, title }: ComparisonTableProps) {
                         <ul className="space-y-2">
                           {product.pros.slice(0, 3).map((pro, proIdx) => (
                             <li key={proIdx} className="flex items-start gap-1.5 leading-snug">
-                              <Check size={14} className="text-emerald-500 flex-shrink-0 mt-0.5" />
+                              <Check size={14} style={{ color: 'var(--bold-green)', flexShrink: 0, marginTop: '2px' }} />
                               <span className="text-[var(--text)] opacity-90">{pro}</span>
                             </li>
                           ))}
@@ -244,7 +251,7 @@ export default function ComparisonTable({ data, title }: ComparisonTableProps) {
                         <ul className="space-y-2">
                           {product.cons.slice(0, 3).map((con, conIdx) => (
                             <li key={conIdx} className="flex items-start gap-1.5 leading-snug">
-                              <X size={14} className="text-red-500 flex-shrink-0 mt-0.5" />
+                              <X size={14} style={{ color: 'var(--bold-red)', flexShrink: 0, marginTop: '2px' }} />
                               <span className="text-[var(--text)] opacity-90">{con}</span>
                             </li>
                           ))}

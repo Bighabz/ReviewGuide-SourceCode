@@ -50,13 +50,20 @@ export default function AffiliateLinks({ productName, affiliateLinks, rank }: Af
               rel="noopener noreferrer"
               className={`flex items-center justify-between p-3 rounded-lg border transition-all group/link ${
                 isLowest
-                  ? 'border-green-500/30 bg-green-500/5 hover:bg-green-500/10'
+                  ? ''
                   : 'border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--surface-hover)] hover:border-[var(--primary)]/30'
               }`}
+            style={isLowest ? {
+              borderColor: 'color-mix(in srgb, var(--bold-green) 30%, transparent)',
+              backgroundColor: 'var(--success-light)',
+            } : undefined}
             >
               <div className="flex items-center gap-2">
                 {isLowest && (
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-green-600 bg-green-100 px-1.5 py-0.5 rounded dark:text-green-400 dark:bg-green-900/30">
+                  <span
+                    className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
+                    style={{ color: 'var(--price-deal)', backgroundColor: 'var(--success-light)' }}
+                  >
                     Best Price
                   </span>
                 )}
@@ -65,7 +72,10 @@ export default function AffiliateLinks({ productName, affiliateLinks, rank }: Af
                 </span>
               </div>
               <div className="flex items-center gap-3 shrink-0">
-                <span className={`text-base font-bold font-serif ${isLowest ? 'text-green-600 dark:text-green-400' : 'text-[var(--text)]'}`}>
+                <span
+                  className="text-base font-bold font-serif"
+                  style={{ color: isLowest ? 'var(--price-deal)' : 'var(--text)' }}
+                >
                   {link.currency} {link.price.toFixed(2)}
                 </span>
                 <span className="text-xs font-medium text-[var(--primary)] group-hover/link:text-[var(--primary-hover)] flex items-center gap-1">
