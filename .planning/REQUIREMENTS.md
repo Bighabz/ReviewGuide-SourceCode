@@ -31,8 +31,8 @@
 
 ### Browse Pages Polish
 
-- [ ] **BRW-01**: Category hero sections use new AI-generated bold images as backgrounds
-- [ ] **BRW-02**: Editor's Picks cards have bolder styling consistent with new visual language
+- [x] **BRW-01**: Category hero sections use new AI-generated bold images as backgrounds
+- [x] **BRW-02**: Editor's Picks cards have bolder styling consistent with new visual language
 
 ### Chat Page Polish
 
@@ -94,8 +94,8 @@
 | HERO-04 | Phase 19 | Complete |
 | DISC-06 | Phase 20 | Complete |
 | DISC-07 | Phase 20 | Complete |
-| BRW-01 | Phase 20 | Pending |
-| BRW-02 | Phase 20 | Pending |
+| BRW-01 | Phase 20 | Complete |
+| BRW-02 | Phase 20 | Complete |
 | CHT-01 | Phase 21 | Complete |
 | CHT-02 | Phase 21 | Complete |
 | CARD-01 | Phase 21 | Pending |

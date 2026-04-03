@@ -297,7 +297,7 @@ Plans:
 - [x] **Phase 17: Token Foundation + Dark Mode Fixes** - Add bold CSS tokens, fix hardcoded dark mode colors across product card leaf components (completed 2026-04-01)
 - [x] **Phase 18: AI Image Generation** - Generate and commit all hero, mosaic, and category images as a unified visual batch (completed 2026-04-01)
 - [x] **Phase 19: Mosaic Hero** - Build MosaicHero component and wire into discover landing page (completed 2026-04-01)
-- [ ] **Phase 20: Discover + Browse Page Upgrades** - Bold category heroes, upgraded carousel and trending cards, per-category accent color injection
+- [x] **Phase 20: Discover + Browse Page Upgrades** - Bold category heroes, upgraded carousel and trending cards, per-category accent color injection (completed 2026-04-03)
 - [ ] **Phase 21: Chat + Results Card Polish** - Premium product card treatment across all chat and results card variants
 - [ ] **Phase 22: Visual QA + Consistency Pass** - Full site screenshot walk-through, token test coverage, hardcoded color audit
 
@@ -452,7 +452,7 @@ v3.0 phases execute in order: 17 -> 18 -> 19 -> 20 -> 21 -> 22. Phases 17 and 18
 | 17. Token Foundation + Dark Mode Fixes | 2/2 | Complete    | 2026-04-01 | - |
 | 18. AI Image Generation | 3/3 | Complete    | 2026-04-01 | - |
 | 19. Mosaic Hero | 2/2 | Complete   | 2026-04-01 | - |
-| 20. Discover + Browse Page Upgrades | 1/2 | In Progress|  | - |
+| 20. Discover + Browse Page Upgrades | 2/2 | Complete   | 2026-04-03 | - |
 | 21. Chat + Results Card Polish | 1/3 | In Progress|  | - |
 | 22. Visual QA + Consistency Pass | v3.0 | 0/TBD | Not started | - |
 | 23. QA Remediation | 7/7 | Complete    | 2026-04-03 | - |
