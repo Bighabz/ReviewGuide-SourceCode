@@ -129,7 +129,7 @@ export default function MessageList({ messages, isStreaming }: MessageListProps)
   return (
     <div
       ref={containerRef}
-      className="flex-1 overflow-y-auto p-3 sm:p-6 relative"
+      className="flex-1 overflow-y-auto p-3 pt-16 md:pt-6 sm:px-6 sm:pb-6 relative"
       style={{
         overflowAnchor: 'none',
         // QAR-14: iOS Safari momentum scroll + overscroll containment
