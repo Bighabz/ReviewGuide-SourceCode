@@ -600,16 +600,21 @@ async def test_fallback_loop_continue(capturing_model_service_v2):
     """
     fake_service, captured_calls = capturing_model_service_v2
 
-    # "Product A" will get a review card (has affiliate_products + review_data)
-    # "Product B" and "Product C" are blog-mentioned but have no offers
+    # "Product A" gets a main review card (has affiliate offers from 2 providers)
+    # "Product B" and "Product C" have review data (so they appear in blog_product_names)
+    # but NO affiliate offers — they should get fallback cards instead.
+    # The order in review_data dict must put A first, then B, then C.
     state = {
         "user_message": "best gadgets",
         "intent": "product",
         "slots": {},
         "normalized_products": [
             {"name": "Product A", "price": 99, "url": "https://example.com/a"},
+            {"name": "Product B", "price": 149, "url": "https://example.com/b"},
+            {"name": "Product C", "price": 199, "url": "https://example.com/c"},
         ],
         "affiliate_products": {
+            # Product A has both amazon + ebay → gets main review card
             "amazon": [
                 {
                     "product_name": "Product A",
@@ -640,8 +645,11 @@ async def test_fallback_loop_continue(capturing_model_service_v2):
                     ],
                 }
             ],
+            # Product B and C have NO affiliate offers in any provider
         },
         "review_data": {
+            # Order matters: A first (gets main card → added to seen_card_names)
+            # then B and C (no offers → should get fallback cards)
             "Product A": {
                 "avg_rating": 4.5,
                 "total_reviews": 500,
@@ -649,10 +657,24 @@ async def test_fallback_loop_continue(capturing_model_service_v2):
                 "sources": [
                     {"site_name": "Wirecutter", "url": "https://wirecutter.com/a", "snippet": "Great product A"},
                 ],
-            }
+            },
+            "Product B": {
+                "avg_rating": 4.2,
+                "total_reviews": 300,
+                "quality_score": 0.8,
+                "sources": [
+                    {"site_name": "Wirecutter", "url": "https://wirecutter.com/b", "snippet": "Good product B"},
+                ],
+            },
+            "Product C": {
+                "avg_rating": 4.0,
+                "total_reviews": 200,
+                "quality_score": 0.75,
+                "sources": [
+                    {"site_name": "The Verge", "url": "https://theverge.com/c", "snippet": "Decent product C"},
+                ],
+            },
         },
-        # blog_product_names must include A (already has card) BEFORE B and C
-        "blog_data": "## Product A\nGreat gadget.\n\n## Product B\nAlso worth considering.\n\n## Product C\nAnother option.",
         "comparison_html": None,
         "comparison_data": None,
         "general_product_info": "",
@@ -671,7 +693,13 @@ async def test_fallback_loop_continue(capturing_model_service_v2):
         if b.get("type") == "product_review"
     ]
 
+    # "Product A" must have a main review card (it has affiliate offers)
+    assert "Product A" in product_names_in_cards, (
+        f"Expected 'Product A' main review card, got: {product_names_in_cards}"
+    )
+
     # "Product B" and "Product C" must appear as fallback cards
+    # (they have review data → appear in blog_product_names, but no offers → fallback)
     assert "Product B" in product_names_in_cards, (
         f"Expected 'Product B' in product cards (fallback), got: {product_names_in_cards}. "
         f"BUG: loop break on 'Product A' duplicate skipped B and C."

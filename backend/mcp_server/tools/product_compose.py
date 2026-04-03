@@ -80,6 +80,37 @@ def _fuzzy_product_match(query_name: str, candidate_name: str, threshold: float 
     return len(intersection) / len(union) >= threshold
 
 
+# Domain -> merchant name mapping for label-domain parity correction
+_DOMAIN_TO_MERCHANT = {
+    "amazon.com": "Amazon",
+    "amzn.to": "Amazon",
+    "ebay.com": "eBay",
+    "walmart.com": "Walmart",
+    "bestbuy.com": "Best Buy",
+    "target.com": "Target",
+    "bhphotovideo.com": "B&H Photo",
+    "newegg.com": "Newegg",
+    "costco.com": "Costco",
+    "homedepot.com": "Home Depot",
+    "lowes.com": "Lowe's",
+}
+
+
+def _domain_to_merchant(url: str) -> str:
+    """Derive merchant name from URL domain. Returns empty string if unknown."""
+    try:
+        from urllib.parse import urlparse
+        host = urlparse(url).netloc.lower().lstrip("www.")
+        for domain, merchant in _DOMAIN_TO_MERCHANT.items():
+            if domain in host:
+                return merchant
+        # Use capitalized domain root as fallback (e.g., "example" from "example.com")
+        parts = host.split(".")
+        return parts[0].title() if parts else ""
+    except Exception:
+        return ""
+
+
 def _assign_editorial_labels(review_data: dict, products_with_offers: list) -> dict:
     """Assign editorial labels based on review quality + price data.
     Returns {product_name: label} mapping."""
@@ -934,14 +965,11 @@ RULES:
                 if o.get("url") and "placehold.co" not in o.get("image_url", "")
             ]
 
-            # Require at least 2 providers (e.g., both eBay + Amazon)
+            # Require at least 1 real offer with a valid URL (relaxed from 2-provider gate)
+            # Provider set is still computed for ranking/deduplication purposes
             providers_in_offers = set(o.get("source", "") for o in real_offers)
-            if len(providers_in_offers) < 2:
-                # Fallback: include if at least 1 real offer exists (for curated Amazon links)
-                curated_offers = [o for o in real_offers if "amzn.to" in o.get("url", "")]
-                ebay_offers = [o for o in real_offers if o.get("source") == "ebay"]
-                if not (curated_offers or ebay_offers):
-                    continue
+            if not real_offers:
+                continue
 
             if pname in seen_card_names:
                 continue
@@ -1002,13 +1030,26 @@ RULES:
 
             for o in capped_offers:
                 img = o.get("image_url", "")
+                offer_url = o.get("url", "")
+                offer_merchant = o.get("merchant", "")
+                # Label-domain parity: correct merchant label if it doesn't match the URL domain
+                derived_merchant = _domain_to_merchant(offer_url)
+                if (
+                    derived_merchant
+                    and offer_merchant.lower() != derived_merchant.lower()
+                    and "amazon" in offer_merchant.lower()
+                    and "amazon" not in offer_url.lower()
+                    and "amzn.to" not in offer_url.lower()
+                ):
+                    # Mislabeled as Amazon but URL is a different domain — correct the label
+                    offer_merchant = derived_merchant
                 affiliate_links.append({
                     "product_id": f"{o.get('source', 'unknown')}-{idx}",
-                    "title": o.get("merchant", "") + " - " + pname,
+                    "title": offer_merchant + " - " + pname,
                     "price": o.get("price", 0),
                     "currency": o.get("currency", "USD"),
-                    "affiliate_link": o.get("url", ""),
-                    "merchant": o.get("merchant", ""),
+                    "affiliate_link": offer_url,
+                    "merchant": offer_merchant,
                     "image_url": img,
                     "rating": o.get("rating"),
                     "review_count": o.get("review_count"),
@@ -1062,8 +1103,10 @@ RULES:
         # Every product mentioned in the blog article must have a clickable card
         fallback_card_count = 0
         for pname in blog_product_names:
-            if pname in seen_card_names or review_card_count + fallback_card_count >= 5:
-                break
+            if review_card_count + fallback_card_count >= 5:
+                break   # cap reached — stop entirely
+            if pname in seen_card_names:
+                continue   # skip duplicate but keep iterating
 
             # Build Amazon search URL as fallback affiliate link
             amazon_search_url = f"https://www.amazon.com/s?k={quote_plus(pname)}&tag=revguide-20"
@@ -1231,13 +1274,15 @@ RULES:
                 assistant_text = "Here's what I found for you."
 
         # Create citations — prefer review source URLs (Wirecutter, Reddit, etc.)
+        # Only include URLs that start with "http" to exclude fabricated/empty URLs
         review_source_urls = []
         for bundle in review_bundles.values():
             for source in bundle.get("sources", [])[:2]:
-                if source.get("url"):
-                    review_source_urls.append(source["url"])
+                url = source.get("url")
+                if url and url.startswith("http"):
+                    review_source_urls.append(url)
 
-        citations = review_source_urls[:5] or [p["url"] for p in normalized_products if p.get("url")][:5]
+        citations = review_source_urls[:5] or [p["url"] for p in normalized_products if p.get("url") and p["url"].startswith("http")][:5]
 
         # Log summary
         provider_summary = ", ".join([f"{len(affiliate_products.get(p, []))} {p}" for p in sorted_providers])
