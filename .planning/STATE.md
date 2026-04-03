@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: Visual Overhaul â Bold Editorial
 status: executing
-stopped_at: Completed 20-01-PLAN.md
-last_updated: "2026-04-03T07:10:30.526Z"
+stopped_at: Completed 21-02-PLAN.md
+last_updated: "2026-04-03T07:15:16.631Z"
 last_activity: 2026-04-01 — 18-02 complete (15 category hero images approved)
 progress:
   total_phases: 23
   completed_phases: 19
   total_plans: 63
-  completed_plans: 58
+  completed_plans: 59
   percent: 92
 ---
 
@@ -64,6 +64,7 @@ Progress: [█████████░] 92%
 | Phase 20-discover-browse-page-upgrades P02 | 6 | 2 tasks | 4 files |
 | Phase 21-chat-results-card-polish P01 | 7 | 3 tasks | 5 files |
 | Phase 20-discover-browse-page-upgrades P01 | 8 | 2 tasks | 6 files |
+| Phase 21-chat-results-card-polish P02 | 796 | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -118,6 +119,8 @@ Progress: [█████████░] 92%
 - [Phase 21-chat-results-card-polish]: product-card-hover CSS class removal deferred to Plan 02 per CARD-04 contract
 - [Phase 20-discover-browse-page-upgrades]: kids-toys mapped to cat-gaming.webp, baby to cat-home-decor.webp, big-tall reuses cat-fashion.webp as closest editorial match
 - [Phase 20-discover-browse-page-upgrades]: CuratedProduct.name is optional field — fallback to Option N preserves backward compat for categories without names
+- [Phase 21-chat-results-card-polish]: Use as const on 'spring' and 'easeOut' string literals in Framer Motion variants — Easing union type does not accept bare string
+- [Phase 21-chat-results-card-polish]: deriveMerchant pattern: clean merchant field first, fall back to URL hostname domainMap, then capitalize first subdomain segment
 
 ### Pending Todos
 
@@ -135,6 +138,6 @@ Progress: [█████████░] 92%
 
 ## Session Continuity
 
-Last session: 2026-04-03T07:10:30.510Z
-Stopped at: Completed 20-01-PLAN.md
+Last session: 2026-04-03T07:15:16.618Z
+Stopped at: Completed 21-02-PLAN.md
 Resume file: None
