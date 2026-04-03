@@ -81,7 +81,7 @@ function PLPLinkCard({ flight, fullHeight = false }: { flight: FlightPLPLink; fu
       {/* Hero image */}
       <div className="relative h-[120px] sm:h-[140px] overflow-clip">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/images/products/fallback-flight.webp" alt="" aria-hidden="true" className="w-full h-full object-cover" loading="lazy" />
+        <img src="/images/travel/hero-flight.webp" alt="" aria-hidden="true" className="w-full h-full object-cover" loading="lazy" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
       </div>
 

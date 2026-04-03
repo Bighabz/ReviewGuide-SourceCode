@@ -9,21 +9,28 @@ interface ResortCardsProps {
 
 /**
  * Deterministic image map: lowercase name fragments → image paths.
- * Pre-populated with Caribbean-specific entries.
- * These will be upgraded to proper AI-generated images in Plan 03.
+ * Maps attraction/resort name keywords to AI-generated travel hero images.
  */
 const RESORT_IMAGE_MAP: Record<string, string> = {
-  'seven mile': '/images/products/fallback-hotel.webp',
-  "dunn": '/images/categories/cat-travel.webp',
-  'blue mountain': '/images/categories/cat-travel.webp',
-  'rick': '/images/products/fallback-hotel.webp',
-  'negril': '/images/products/fallback-hotel.webp',
-  'montego': '/images/categories/cat-travel.webp',
-  'ocho rios': '/images/products/fallback-hotel.webp',
-  'bob marley': '/images/categories/cat-travel.webp',
+  'seven mile': '/images/travel/hero-caribbean.webp',
+  'dunn': '/images/travel/hero-caribbean.webp',
+  'blue mountain': '/images/travel/hero-mountains.webp',
+  'rick': '/images/travel/hero-caribbean.webp',
+  'negril': '/images/travel/hero-caribbean.webp',
+  'montego': '/images/travel/hero-caribbean.webp',
+  'ocho rios': '/images/travel/hero-caribbean.webp',
+  'bob marley': '/images/travel/hero-caribbean.webp',
+  'beach': '/images/travel/hero-caribbean.webp',
+  'temple': '/images/travel/hero-asia.webp',
+  'palace': '/images/travel/hero-europe.webp',
+  'castle': '/images/travel/hero-europe.webp',
+  'cathedral': '/images/travel/hero-europe.webp',
+  'mountain': '/images/travel/hero-mountains.webp',
+  'alpine': '/images/travel/hero-mountains.webp',
+  'ski': '/images/travel/hero-mountains.webp',
 }
 
-const FALLBACK_IMAGE = '/images/products/fallback-hotel.webp'
+const FALLBACK_IMAGE = '/images/travel/fallback-resort.webp'
 
 /**
  * Deterministic image lookup — NO Math.random().
