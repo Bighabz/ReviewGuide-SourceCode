@@ -428,6 +428,16 @@ Plans:
 - [ ] 23-04-PLAN.md â Backend search filters: accessory suppression, budget enforcement (QAR-04, QAR-05)
 - [ ] 23-05-PLAN.md â Frontend P2: WCAG contrast, iOS scroll sentinel, landscape nav, chat history, message drop fix, /browse redirect (QAR-13, QAR-14, QAR-15, QAR-16, QAR-18, QAR-19)
 - [ ] 23-06-PLAN.md â Regression gate test suite (QAR-12)
+### Phase 24: Travel Response UI Overhaul
+
+**Goal:** [To be planned]
+**Requirements**: TBD
+**Depends on:** Phase 23
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 24 to break down)
+
 ---
 
 ## Progress
