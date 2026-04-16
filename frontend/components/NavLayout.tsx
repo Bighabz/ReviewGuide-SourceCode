@@ -39,7 +39,7 @@ export default function NavLayout({ children }: NavLayoutProps) {
 
   return (
     <ChatStatusProvider>
-      <div className="flex flex-col min-h-dvh">
+      <div className="flex flex-col h-dvh">
         {/* Desktop: UnifiedTopbar (hidden on mobile) */}
         <div className="hidden md:block">
           <UnifiedTopbar
@@ -55,7 +55,7 @@ export default function NavLayout({ children }: NavLayoutProps) {
         </div>
 
         {/* Content area — padded bottom on mobile for 64px tab bar + safe area */}
-        <main className="flex-1 pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-0">
+        <main className="flex-1 min-h-0 pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-0">
           {children}
         </main>
 

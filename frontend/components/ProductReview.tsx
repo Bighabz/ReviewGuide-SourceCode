@@ -2,6 +2,29 @@
 
 import { ThumbsUp, ThumbsDown, ExternalLink, Star } from 'lucide-react'
 
+const FALLBACK_KEYWORDS: Record<string, string> = {
+  headphone: '/images/products/fallback-headphones.webp',
+  earbuds: '/images/products/fallback-headphones.webp',
+  laptop: '/images/products/fallback-laptop.webp',
+  notebook: '/images/products/fallback-laptop.webp',
+  vacuum: '/images/products/fallback-kitchen.webp',
+  kitchen: '/images/products/fallback-kitchen.webp',
+  fitness: '/images/products/fallback-fitness.webp',
+  shoe: '/images/products/fallback-fitness.webp',
+  running: '/images/products/fallback-fitness.webp',
+  car: '/images/products/fallback-car.webp',
+  hotel: '/images/products/fallback-hotel.webp',
+  flight: '/images/products/fallback-flight.webp',
+}
+
+function getFallbackImage(productName: string): string {
+  const lower = productName.toLowerCase()
+  for (const [keyword, src] of Object.entries(FALLBACK_KEYWORDS)) {
+    if (lower.includes(keyword)) return src
+  }
+  return '/images/products/fallback-default.webp'
+}
+
 interface AffiliateLink {
   product_id: string
   title: string
@@ -61,16 +84,14 @@ export default function ProductReview({ product }: ProductReviewProps) {
       {/* Product Header with Image */}
       <div className="mb-4">
         <div className="flex gap-4">
-          {image_url && (
-            <div className="flex-shrink-0">
-              <img
-                src={image_url}
-                alt={product_name}
-                className="w-24 h-24 object-contain rounded-lg bg-white"
-                loading="lazy"
-              />
-            </div>
-          )}
+          <div className="flex-shrink-0">
+            <img
+              src={image_url || getFallbackImage(product_name)}
+              alt={product_name}
+              className="w-24 h-24 object-contain rounded-lg bg-white"
+              loading="lazy"
+            />
+          </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between">
               <h3 className="text-xl font-semibold font-serif text-[var(--text)]">{product_name}</h3>

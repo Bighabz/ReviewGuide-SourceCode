@@ -127,10 +127,10 @@ function ChatPageContent() {
   }
 
   return (
-    <div className="h-dvh flex flex-col overflow-hidden bg-[var(--background)] text-[var(--text)]">
+    <div className="h-full flex flex-col overflow-hidden bg-[var(--background)] text-[var(--text)]">
 
       {/* Content area below topbar */}
-      <div className="flex-1 flex overflow-hidden relative">
+      <div className="flex-1 flex overflow-hidden relative min-h-0">
         {/* Desktop sidebar — fixed, same as BrowseLayout */}
         <aside className="hidden lg:block fixed left-0 top-14 sm:top-16 bottom-0 w-56 z-30">
           <CategorySidebar />
@@ -142,7 +142,7 @@ function ChatPageContent() {
         )}
 
         {/* Main chat content — offset for sidebar */}
-        <main className="flex-1 flex flex-col overflow-hidden lg:ml-56">
+        <main className="flex-1 flex flex-col overflow-hidden lg:ml-56 min-h-0">
           <ErrorBoundary>
             <ChatContainer
               clearHistoryTrigger={clearHistoryTrigger}

@@ -25,6 +25,7 @@ import ReviewSources from '@/components/ReviewSources'
 import PriceComparison from '@/components/PriceComparison'
 import InlineProductCard from '@/components/InlineProductCard'
 import SourceCitations from '@/components/SourceCitations'
+import ProductReviewCarousel from '@/components/ProductReviewCarousel'
 import DOMPurify from 'dompurify'
 
 /** Each renderer receives the normalized block and returns JSX or null */
@@ -133,8 +134,13 @@ export function UIBlocks({ blocks, itinerary }: UIBlocksProps) {
     const hasFlights = blocks.some(b => b.type === 'flights')
     const showTravelGrid = hasHotels && hasFlights
 
-    // Track whether the travel grid has been rendered
+    // Track whether grouped blocks have been rendered
     let travelGridRendered = false
+    let productReviewCarouselRendered = false
+
+    // Collect product_review blocks for carousel grouping
+    const productReviewBlocks = blocks.filter(b => b.type === 'product_review')
+    const hasMultipleReviews = productReviewBlocks.length > 1
 
     const elements: (JSX.Element | null)[] = blocks.map((block, idx) => {
         // Side-by-side travel grid
@@ -163,6 +169,23 @@ export function UIBlocks({ blocks, itinerary }: UIBlocksProps) {
                 )
             }
             return null // already rendered in grid above
+        }
+
+        // Group product_review blocks into swipeable carousel
+        if (block.type === 'product_review' && hasMultipleReviews) {
+            if (!productReviewCarouselRendered) {
+                productReviewCarouselRendered = true
+                return (
+                    <div key={`product-carousel-${idx}`}>
+                        <ProductReviewCarousel>
+                            {productReviewBlocks.map((b, i) => (
+                                <ProductReview key={`review-${i}`} product={(b.data as any) ?? {}} />
+                            ))}
+                        </ProductReviewCarousel>
+                    </div>
+                )
+            }
+            return null // already rendered in carousel above
         }
 
         // Find renderer — check exact match first, then _products wildcard

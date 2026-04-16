@@ -69,12 +69,27 @@ async def travel_compose(state: Dict[str, Any]) -> Dict[str, Any]:
     hotels = state.get("hotels")
     flights = state.get("flights")
     cars = state.get("cars")
+    activities = state.get("activities")
     destination_facts = state.get("destination_facts")
     general_travel_info = state.get("general_travel_info")
     travel_results = state.get("travel_results")
     intent = state.get("intent", "travel")
 
     logger.info(f"[travel_compose] Composing travel response")
+
+    # --- Recovery path: all upstream tools failed/timed out ---
+    if not any([itinerary, hotels, flights, activities, cars, destination_facts, general_travel_info]):
+        logger.warning("[travel_compose] All travel data missing — returning recovery prompt")
+        return {
+            "assistant_text": (
+                "I ran into an issue fetching travel details. "
+                "You can try again, or ask for a specific piece -- "
+                "e.g., 'Show me hotels in Paris' or 'Give me a 3-day itinerary for Tokyo.'"
+            ),
+            "ui_blocks": [],
+            "citations": [],
+            "success": True,
+        }
     logger.info(f"[travel_compose] State keys: {list(state.keys())}")
     logger.info(f"[travel_compose] itinerary from state: {itinerary}")
     logger.info(f"[travel_compose] hotels from state: {hotels}")
@@ -87,10 +102,11 @@ async def travel_compose(state: Dict[str, Any]) -> Dict[str, Any]:
     has_hotels = hotels and len(hotels) > 0
     has_flights = flights and len(flights) > 0
     has_cars = cars and len(cars) > 0
+    has_activities = activities and len(activities) > 0
     has_destination_facts = destination_facts and isinstance(destination_facts, dict)
     has_general_info = general_travel_info and len(str(general_travel_info).strip()) > 0
 
-    logger.info(f"[travel_compose] has_itinerary={has_itinerary}, has_hotels={has_hotels}, has_flights={has_flights}, has_cars={has_cars}, has_destination_facts={has_destination_facts}, has_general_info={has_general_info}")
+    logger.info(f"[travel_compose] has_itinerary={has_itinerary}, has_hotels={has_hotels}, has_flights={has_flights}, has_cars={has_cars}, has_activities={has_activities}, has_destination_facts={has_destination_facts}, has_general_info={has_general_info}")
 
     # Build intro text directly without LLM call for speed
     # Extract key info from slots
@@ -123,7 +139,11 @@ async def travel_compose(state: Dict[str, Any]) -> Dict[str, Any]:
 
         if has_cars:
             parts.append("I've also found rental car options for you.")
-        elif has_destination_facts:
+
+        if has_activities:
+            parts.append("I've found tours and activities for you to explore.")
+
+        if has_destination_facts:
             # Extract activities, attractions, restaurants from destination_facts
             activities = destination_facts.get("activities", [])
             attractions = destination_facts.get("attractions", [])
@@ -134,6 +154,24 @@ async def travel_compose(state: Dict[str, Any]) -> Dict[str, Any]:
                 parts.append("I've gathered some recommendations for your trip.")
             elif weather:
                 parts.append("Here's what you should know about the destination.")
+
+        # Partial data note: inform user about what couldn't be fetched
+        missing = []
+        if not has_itinerary and not has_general_info:
+            missing.append("itinerary")
+        if not has_flights:
+            missing.append("flights")
+        if not has_hotels:
+            missing.append("hotels")
+
+        # Only add a partial note when at least one thing succeeded but something is missing
+        has_any = has_itinerary or has_hotels or has_flights or has_cars or has_activities or has_destination_facts
+        if has_any and missing and len(missing) < 3:
+            missing_str = " and ".join(missing)
+            parts.append(
+                f"I couldn't find {missing_str} for this trip -- "
+                "you can ask me to search for those specifically."
+            )
 
         assistant_text = " ".join(parts)
 
@@ -151,6 +189,9 @@ async def travel_compose(state: Dict[str, Any]) -> Dict[str, Any]:
     if has_cars:
         ui_blocks.append({"type": "cars", "data": cars})
         logger.info(f"[travel_compose] Added cars UI block with {len(cars)} car rental links")
+    if has_activities:
+        ui_blocks.append({"type": "activities_viator", "data": activities[:5]})
+        logger.info(f"[travel_compose] Added Viator activities UI block with {len(activities[:5])} activities")
 
     # Add destination facts UI blocks
     if has_destination_facts:

@@ -10,6 +10,7 @@ import os
 import json
 from datetime import datetime
 from typing import Dict, Any, List
+from urllib.parse import quote_plus
 from app.core.error_manager import tool_error_handler
 
 # Add backend to path (portable path)
@@ -45,8 +46,13 @@ PROVIDER_CONFIG = {
         "type": "amazon_products",
         "order": 2
     },
+    "serper_shopping": {
+        "title": "Shop Online",
+        "type": "serper_products",
+        "order": 3,
+    },
     # Add more providers here as needed:
-    # "walmart": {"title": "Shop on Walmart", "type": "walmart_products", "order": 3},
+    # "walmart": {"title": "Shop on Walmart", "type": "walmart_products", "order": 4},
 }
 
 # Accessory keywords for relevance filtering
@@ -72,6 +78,37 @@ def _fuzzy_product_match(query_name: str, candidate_name: str, threshold: float 
     intersection = q_tokens & c_tokens
     union = q_tokens | c_tokens
     return len(intersection) / len(union) >= threshold
+
+
+# Domain -> merchant name mapping for label-domain parity correction
+_DOMAIN_TO_MERCHANT = {
+    "amazon.com": "Amazon",
+    "amzn.to": "Amazon",
+    "ebay.com": "eBay",
+    "walmart.com": "Walmart",
+    "bestbuy.com": "Best Buy",
+    "target.com": "Target",
+    "bhphotovideo.com": "B&H Photo",
+    "newegg.com": "Newegg",
+    "costco.com": "Costco",
+    "homedepot.com": "Home Depot",
+    "lowes.com": "Lowe's",
+}
+
+
+def _domain_to_merchant(url: str) -> str:
+    """Derive merchant name from URL domain. Returns empty string if unknown."""
+    try:
+        from urllib.parse import urlparse
+        host = urlparse(url).netloc.lower().lstrip("www.")
+        for domain, merchant in _DOMAIN_TO_MERCHANT.items():
+            if domain in host:
+                return merchant
+        # Use capitalized domain root as fallback (e.g., "example" from "example.com")
+        parts = host.split(".")
+        return parts[0].title() if parts else ""
+    except Exception:
+        return ""
 
 
 def _assign_editorial_labels(review_data: dict, products_with_offers: list) -> dict:
@@ -168,6 +205,24 @@ def _is_follow_up_query(query: str, last_context: dict) -> bool:
     return False
 
 
+COMPARISON_SIGNALS = [
+    "compare", "comparison", "which one", "which should",
+    "help me decide", "help me choose", "between these",
+    "how do these compare", "side by side", "vs", "versus",
+    "differences", "pros and cons of each", "better",
+]
+
+
+def _is_comparison_follow_up(query: str, last_context: dict) -> bool:
+    """Detect if a follow-up message is asking for comparison of the active shortlist."""
+    if not last_context or not last_context.get("product_names"):
+        return False
+    if len(last_context["product_names"]) < 2:
+        return False
+    q = query.lower().strip()
+    return any(signal in q for signal in COMPARISON_SIGNALS)
+
+
 def _find_in_history(query: str, history: list) -> dict | None:
     """Scan search_history for a matching previous context."""
     q = query.lower()
@@ -235,6 +290,59 @@ def _filter_relevant_products(
     return filtered
 
 
+def _parse_budget(budget_str: str) -> tuple:
+    """
+    Parse a budget string into (min_price, max_price) numeric bounds.
+
+    Handles:
+    - "under $500" / "below $500" / "less than $500" → (None, 500.0)
+    - "$100-$200" / "$100 to $200" → (100.0, 200.0)
+    - "around $500" / "about $500" / "roughly $500" → (400.0, 600.0)
+
+    Returns (None, None) when no pattern matches.
+    """
+    import re
+    if not budget_str or not isinstance(budget_str, str):
+        return None, None
+    # "under $500", "below $500", "less than $500"
+    m = re.search(r'(?:under|below|less\s+than)\s*\$?([\d,]+)', budget_str, re.I)
+    if m:
+        return None, float(m.group(1).replace(',', ''))
+    # "$100-$200" or "$100 to $200" or "100–200"
+    m = re.search(r'\$?([\d,]+)\s*[-\u2013to]+\s*\$?([\d,]+)', budget_str, re.I)
+    if m:
+        return float(m.group(1).replace(',', '')), float(m.group(2).replace(',', ''))
+    # "around $500", "about $500", "roughly $500"
+    m = re.search(r'(?:around|about|roughly)\s*\$?([\d,]+)', budget_str, re.I)
+    if m:
+        center = float(m.group(1).replace(',', ''))
+        return center * 0.8, center * 1.2
+    return None, None
+
+
+def _extract_price(offer: dict) -> float | None:
+    """
+    Extract a numeric price from an offer dict.
+
+    The offer's price field may be a float, int, or a string like "$499.99" or "1,299".
+    Returns None when the price cannot be determined.
+    """
+    price = offer.get("price")
+    if price is None:
+        return None
+    if isinstance(price, (int, float)):
+        return float(price) if price > 0 else None
+    if isinstance(price, str):
+        import re
+        cleaned = re.sub(r'[^\d.]', '', price)
+        try:
+            val = float(cleaned)
+            return val if val > 0 else None
+        except ValueError:
+            return None
+    return None
+
+
 @tool_error_handler(tool_name="product_compose", error_message="Failed to compose product response")
 async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
     """
@@ -272,6 +380,7 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
     try:
         # Read from state
         user_message = state.get("user_message", "")
+        user_message_lower = user_message.lower()
         normalized_products = state.get("normalized_products", [])
         affiliate_products_raw = state.get("affiliate_products", {})  # Dynamic: {"ebay": [...], "amazon": [...]}
         intent = state.get("intent", "product")
@@ -292,6 +401,40 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
         # Check for comparison HTML from product_comparison tool
         comparison_html = state.get("comparison_html")
         comparison_data = state.get("comparison_data")
+
+        # ── Comparison follow-up detection (UX-05) ──
+        if _is_comparison_follow_up(user_message, last_search_context):
+            product_names = last_search_context.get("product_names", [])[:5]
+            logger.info(f"[product_compose] Comparison follow-up detected for {product_names}")
+            comparison_products = []
+            for pname in product_names:
+                price = last_search_context.get("top_prices", {}).get(pname, 0)
+                rating = last_search_context.get("avg_rating", {}).get(pname, 0)
+                comparison_products.append({
+                    "title": pname,
+                    "price": price,
+                    "currency": "USD",
+                    "rating": rating,
+                    "merchant": "",
+                    "url": "",
+                })
+            comparison_block = {
+                "type": "product_comparison",
+                "title": "Product Comparison",
+                "data": {
+                    "products": comparison_products,
+                    "criteria": [],
+                    "summary": f"Comparing {', '.join(product_names[:3])}{'...' if len(product_names) > 3 else ''}",
+                }
+            }
+            return {
+                "assistant_text": "Here's a side-by-side comparison of the products from your search.",
+                "ui_blocks": [comparison_block],
+                "citations": [],
+                "last_search_context": last_search_context,
+                "search_history": list(state.get("search_history", [])),
+                "success": True
+            }
 
         # Check if we have any data to display
         if not normalized_products and not affiliate_products and not review_data:
@@ -314,6 +457,17 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
                 "success": True
             }
 
+        # Emit skeleton product cards immediately so the user sees product names
+        # while affiliate data and blog article are still loading
+        if normalized_products:
+            skeleton_names = [p.get("name", "") for p in normalized_products[:5] if p.get("name")]
+            if skeleton_names:
+                state["stream_chunk_data"] = {
+                    "type": "skeleton_cards",
+                    "data": [{"name": n} for n in skeleton_names],
+                }
+                logger.info(f"[product_compose] Emitted {len(skeleton_names)} skeleton cards")
+
         # Merge affiliate links into products for UI display
         # Flatten all affiliate offers from all providers for matching
         all_affiliate_groups = []
@@ -324,10 +478,22 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
                     "provider": provider_name
                 })
 
+        # Parse budget constraint once — used for offer-level filtering below
+        budget_str = (slots.get("budget", "") or "") if slots else ""
+        budget_min, budget_max = _parse_budget(budget_str)
+
         products_with_offers = []
         for product in normalized_products:
             product_copy = product.copy()
             product_name = product.get('name', '')
+
+            # Skip products whose name matches an accessory keyword
+            # (supplements _filter_relevant_products which only checks offer titles)
+            if not any(kw in user_message_lower for kw in ACCESSORY_KEYWORDS):
+                product_name_lower = product_name.lower()
+                if any(kw in product_name_lower for kw in ACCESSORY_KEYWORDS):
+                    logger.info(f"[product_compose] Suppressed accessory product: {product_name}")
+                    continue
 
             # Find matching affiliate links from ALL providers
             all_offers_for_product = []
@@ -347,6 +513,16 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
                     })
 
             if all_offers_for_product:
+                # Apply budget enforcement: filter out offers exceeding the max price.
+                # If all offers exceed the budget, keep them all so the user still sees results.
+                if budget_max is not None:
+                    in_budget = [o for o in all_offers_for_product if _extract_price(o) is not None and _extract_price(o) <= budget_max]
+                    if in_budget:
+                        removed_count = len(all_offers_for_product) - len(in_budget)
+                        if removed_count > 0:
+                            logger.info(f"[product_compose] Budget filter (≤${budget_max:.0f}): removed {removed_count} over-budget offer(s) for {product_name}")
+                        all_offers_for_product = in_budget
+
                 # Best offer = first with a real price, or just first
                 priced = [o for o in all_offers_for_product if o.get("price", 0) > 0]
                 product_copy["best_offer"] = priced[0] if priced else all_offers_for_product[0]
@@ -403,7 +579,7 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
             if provider_products:
                 products_by_provider[provider_name] = {
                     "config": config,
-                    "products": provider_products[:10]
+                    "products": provider_products[:5]
                 }
 
         num_products = sum(len(d["products"]) for d in products_by_provider.values())
@@ -442,12 +618,11 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
                     parts.append(f"favors {', '.join(past_brands)}")
                 pref_note = f"\nReturning user who {' and '.join(parts)}."
 
-            llm_tasks['concierge'] = model_service.generate(
+            llm_tasks['concierge'] = model_service.generate_compose(
                 messages=[
-                    {"role": "system", "content": "You are ReviewGuide, a friendly and knowledgeable AI shopping assistant. Never open with phrases like 'Based on X sources' or mention how many sources you searched. Never describe your process. Write 2-3 SHORT sentences (max 60 words). If the user introduced themselves or shared their name earlier in the conversation, always address them by name. Explain WHY these products match the user's needs. Reference their criteria from the conversation (budget, features, use case). Do NOT list products — they are shown in cards below. End with a brief, warm follow-up that shows you remember the user's context."},
+                    {"role": "system", "content": "You are ReviewGuide, a friendly and knowledgeable AI shopping assistant. Never open with phrases like 'Based on X sources' or mention how many sources you searched. Never describe your process. Write 2-3 SHORT sentences (max 60 words) explaining WHY these products match the user's needs. Reference their criteria from the conversation (budget, features, use case). Do NOT list products — they are shown in cards below. End with 2-3 specific follow-up questions like 'Want to compare the top two?' or 'Looking for budget alternatives?' — make them relevant to the specific products shown."},
                     {"role": "user", "content": f'User asked: "{user_message}"\nContext:\n{context_summary}{pref_note}\nProducts: {", ".join(product_name_list)}\nSources: {", ".join(provider_names)}'}
                 ],
-                model=settings.COMPOSER_MODEL,
                 temperature=0.7,
                 max_tokens=120,
                 agent_name="product_compose"
@@ -479,12 +654,11 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
                     f"- {s.get('site_name', 'Review')}: {s.get('snippet', '')}"
                     for s in bundle.get("sources", [])[:5]
                 ])
-                llm_tasks[f'consensus:{product_name}'] = model_service.generate(
+                llm_tasks[f'consensus:{product_name}'] = model_service.generate_compose(
                     messages=[
                         {"role": "system", "content": "You are an editorial product reviewer writing a concise expert summary. Write a 3-5 sentence summary that covers: (1) what reviewers consistently praise, (2) any notable criticisms or caveats, and (3) who this product is best suited for. Write in a warm, authoritative editorial voice — like a knowledgeable friend giving the tldr. Never open with \"Based on X sources\" or mention how many sources. Weave in source names only when it adds credibility (e.g., \"Wirecutter highlights its noise cancellation\"). End with a sentence describing the ideal buyer."},
                         {"role": "user", "content": f"Product: {product_name}\nAvg Rating: {bundle.get('avg_rating', 0)}/5 from {bundle.get('total_reviews', 0)} reviews\n\nReview excerpts:\n{source_snippets}\n\nWrite a 3-5 sentence editorial summary covering: strengths, criticisms, and ideal buyer."}
                     ],
-                    model=settings.COMPOSER_MODEL,
                     temperature=0.5,
                     max_tokens=220,
                     agent_name="review_consensus"
@@ -504,19 +678,8 @@ async def product_compose(state: Dict[str, Any]) -> Dict[str, Any]:
                     f"See the full reviews for detailed pros and cons."
                 )
 
-            # Opener (only depends on user_message, independent of consensus)
-            # Only queue if we actually have bundles with sources
-            if review_bundles:
-                llm_tasks['opener'] = model_service.generate(
-                    messages=[
-                        {"role": "system", "content": "Write a warm 1-2 sentence intro for product review results. Reference what the user asked for — their budget, use case, or features. Sound like a knowledgeable friend, not a search engine. NEVER mention source counts, number of reviews, or 'trusted sources'. Never describe your process. Respond immediately in a conversational tone. Max 30 words."},
-                        {"role": "user", "content": f'User asked: "{user_message}"'}
-                    ],
-                    model=settings.COMPOSER_MODEL,
-                    temperature=0.7,
-                    max_tokens=60,
-                    agent_name="product_opener"
-                )
+            # REMOVED (v3): opener LLM call — blog_article already provides intro
+            # Saves ~1-2s per query. Fallback template will work without it.
 
         # --- Personalized product descriptions ---
         if all_products_for_desc:
@@ -551,30 +714,19 @@ User's current question: "{user_message}"
 Products to describe:
 {json.dumps(product_titles)}'''
 
-            llm_tasks['descriptions'] = model_service.generate(
+            llm_tasks['descriptions'] = model_service.generate_compose(
                 messages=[
                     {"role": "system", "content": desc_system},
                     {"role": "user", "content": desc_user}
                 ],
-                model=settings.COMPOSER_MODEL,
                 temperature=0.7,
                 max_tokens=600,
                 response_format={"type": "json_object"},
                 agent_name="product_compose_descriptions"
             )
 
-        # --- Conclusion ---
-        if products_by_provider:
-            llm_tasks['conclusion'] = model_service.generate(
-                messages=[
-                    {"role": "system", "content": "You are a helpful shopping assistant. Write 2 sentences: first, briefly interpret what was found (mention count and price range if evident), then ask a natural follow-up question to help narrow down. Be warm and conversational — like a knowledgeable friend. Never describe your process. Do NOT use markdown. Max 50 words total."},
-                    {"role": "user", "content": f'User asked: "{user_message}"\nFound {num_products} products from {", ".join(products_by_provider.keys())}. Write a 2-sentence response: what was found + a follow-up question to narrow things down.'}
-                ],
-                model=settings.COMPOSER_MODEL,
-                temperature=0.7,
-                max_tokens=80,
-                agent_name="product_conclusion"
-            )
+        # REMOVED (v3): conclusion LLM call — blog_article already provides conclusion
+        # Saves ~1-2s per query. Fallback template will work without it.
 
         # --- Blog article composition ---
         # Gather all data the blog writer needs
@@ -585,6 +737,11 @@ Products to describe:
         # Products with reviews (use fuzzy matching for offer lookup)
         if review_bundles:
             for pname, bundle in review_bundles.items():
+                # Skip accessory products from the blog data (unless user is asking for accessories)
+                if not any(kw in user_message_lower for kw in ACCESSORY_KEYWORDS):
+                    if any(kw in pname.lower() for kw in ACCESSORY_KEYWORDS):
+                        logger.info(f"[product_compose] Suppressed accessory from blog: {pname}")
+                        continue
                 label_str = f" ({editorial_labels[pname]})" if pname in editorial_labels else ""
                 rating = bundle.get("avg_rating", 0)
                 total = bundle.get("total_reviews", 0)
@@ -679,30 +836,65 @@ Products to describe:
 
         blog_data = "\n".join(blog_data_parts)
 
-        llm_tasks['blog_article'] = model_service.generate(
+        llm_tasks['blog_article'] = model_service.generate_compose_with_streaming(
             messages=[
-                {"role": "system", "content": """You are an expert product journalist writing a buying guide intro. Write in a warm, authoritative voice — like a Wirecutter or The Verge review.
+                {"role": "system", "content": """You are an expert product journalist writing a buying guide for ReviewGuide.ai. Write in a warm, authoritative voice — like a Wirecutter or The Verge review.
 
-FORMAT REQUIREMENTS:
-- Write a 3-5 paragraph editorial summary of the product category
+FORMAT — FOLLOW THIS EXACT STRUCTURE EVERY TIME:
+
+**SECTION 1: Blog Review (3-5 paragraphs)**
 - Paragraph 1: What the user is looking for and what matters most in this category
 - Paragraph 2-3: Summarize what reviewers say — reference specific reviewer insights using inline citations (e.g., "[Wirecutter](url) highlights..." or "According to [RTINGS](url)..."). Name the top picks and WHY reviewers recommend them.
 - Paragraph 4: Brief mention of what to watch out for — common tradeoffs, things reviewers flag
 - Final paragraph: A short verdict/recommendation summary
+
+**SECTION 2: Follow-up Questions (MANDATORY)**
+After your review, ALWAYS end with exactly 3 conversational follow-up questions to help the user explore further. Write them as a short paragraph starting with something like "Want to dig deeper?" followed by questions like:
+- "Want to compare the top two head-to-head?"
+- "Looking for budget alternatives under $X?"
+- "Want more details on battery life and durability?"
+- "Interested in seeing what real users say about these?"
+- "Need help picking between [Product A] and [Product B]?"
+Make the questions SPECIFIC to the products and category — not generic.
+
+RULES:
 - DO NOT write per-product ## headings or sections — the individual products are shown as interactive cards below your text
 - DO NOT include product images, prices, or buy links — those are in the cards
 - DO include review source names and citation links throughout the text
 - Write naturally — vary sentence structure, don't be formulaic
 - NEVER invent features or specs not in the data
+- NEVER invent URLs — only link to sources explicitly listed in the data
 - NEVER mention personal details unless the user provided them
-- Keep the total response under 350 words"""},
+- Keep the total response under 400 words
+- The follow-up questions at the end are REQUIRED — never skip them"""},
                 {"role": "user", "content": blog_data}
             ],
-            model=settings.COMPOSER_MODEL,
             temperature=0.7,
             max_tokens=500,
             agent_name="blog_article_composer"
         )
+
+        # --- Top Pick editorial prose (UX-03) ---
+        # Uses deterministic "Best Overall" selection + LLM for prose
+        if review_data and review_bundles:
+            sorted_by_quality = sorted(
+                review_data.items(),
+                key=lambda x: x[1].get("quality_score", 0),
+                reverse=True
+            )
+            if sorted_by_quality and sorted_by_quality[0][1].get("quality_score", 0) > 0:
+                best_product_name = sorted_by_quality[0][0]
+                best_bundle = sorted_by_quality[0][1]
+                llm_tasks['top_pick'] = model_service.generate_compose(
+                    messages=[
+                        {"role": "system", "content": "You are an editorial product reviewer. Given a top-rated product, write a JSON object with exactly three keys: headline (one sentence why it's the best pick), best_for (who should buy it, one sentence), not_for (who should look elsewhere, one sentence). Be specific and opinionated. Do not use generic phrases."},
+                        {"role": "user", "content": f'Product: {best_product_name}\nRating: {best_bundle.get("avg_rating", 0)}/5 from {best_bundle.get("total_reviews", 0)} reviews\nUser asked: "{user_message}"'}
+                    ],
+                    temperature=0.5,
+                    max_tokens=150,
+                    response_format={"type": "json_object"},
+                    agent_name="top_pick_composer"
+                )
 
         # ── Phase 3: Fire all LLM calls in parallel ──
 
@@ -733,6 +925,61 @@ FORMAT REQUIREMENTS:
         # ── Phase 4: Assemble blog-style article ──
 
         ui_blocks = []
+
+        # ── Top Pick block (UX-03) — must be FIRST in ui_blocks ──
+        if 'top_pick' in result_map:
+            top_pick_raw = _get_result('top_pick', '')
+            if top_pick_raw:
+                try:
+                    top_pick_result = json.loads(top_pick_raw)
+                    # Find the best product name (same selection as Phase 2)
+                    sorted_by_quality = sorted(
+                        review_data.items(),
+                        key=lambda x: x[1].get("quality_score", 0),
+                        reverse=True
+                    )
+                    best_product_name = sorted_by_quality[0][0] if sorted_by_quality else ""
+                    # Find image and affiliate URL from products_with_offers
+                    # Prefer Amazon offer for the buy button; fall back to best_offer
+                    best_image = ""
+                    best_url = ""
+                    for p in products_with_offers:
+                        if _fuzzy_product_match(p.get("name", ""), best_product_name):
+                            all_p_offers = p.get("all_offers", [])
+                            # Pick Amazon offer first (don't send users to eBay with "Buy on Amazon")
+                            amazon_offer = next(
+                                (o for o in all_p_offers if "amazon" in o.get("url", "").lower() or "amzn.to" in o.get("url", "").lower()),
+                                None
+                            )
+                            if amazon_offer:
+                                best_url = amazon_offer.get("url", "")
+                                best_image = amazon_offer.get("image_url", "")
+                            else:
+                                offer = p.get("best_offer", {})
+                                best_url = offer.get("url", "")
+                                best_image = offer.get("image_url", "")
+                            # If Amazon offer had no image, grab from any offer that has one
+                            if not best_image:
+                                for o in all_p_offers:
+                                    if o.get("image_url"):
+                                        best_image = o["image_url"]
+                                        break
+                            break
+                    ui_blocks.insert(0, {
+                        "type": "top_pick",
+                        "title": "Our Top Pick",
+                        "data": {
+                            "product_name": best_product_name,
+                            "headline": top_pick_result.get("headline", ""),
+                            "best_for": top_pick_result.get("best_for", ""),
+                            "not_for": top_pick_result.get("not_for", ""),
+                            "image_url": best_image,
+                            "affiliate_url": best_url,
+                        }
+                    })
+                    logger.info(f"[product_compose] Added top_pick block for {best_product_name}")
+                except (json.JSONDecodeError, Exception) as e:
+                    logger.warning(f"[product_compose] Failed to parse top_pick: {e}")
 
         # Comparison HTML block (keep as structured UI)
         if comparison_html:
@@ -786,6 +1033,8 @@ FORMAT REQUIREMENTS:
         seen_card_names = set()
 
         for idx, product in enumerate(products_with_offers, 1):
+            if review_card_count >= 5:
+                break
             pname = product.get("name", "")
             all_offers = product.get("all_offers", [])
             if not all_offers:
@@ -797,39 +1046,95 @@ FORMAT REQUIREMENTS:
                 if o.get("url") and "placehold.co" not in o.get("image_url", "")
             ]
 
-            # Require at least 2 providers (e.g., both eBay + Amazon)
+            # Require at least 1 real offer with a valid URL (relaxed from 2-provider gate)
+            # Provider set is still computed for ranking/deduplication purposes
             providers_in_offers = set(o.get("source", "") for o in real_offers)
-            if len(providers_in_offers) < 2:
-                # Fallback: include if at least 1 real offer exists (for curated Amazon links)
-                curated_offers = [o for o in real_offers if "amzn.to" in o.get("url", "")]
-                ebay_offers = [o for o in real_offers if o.get("source") == "ebay"]
-                if not (curated_offers or ebay_offers):
-                    continue
+            if not real_offers:
+                continue
 
             if pname in seen_card_names:
                 continue
             seen_card_names.add(pname)
 
             # Build affiliate_links array for the card
-            # Prioritize eBay offers first (they have real images/prices)
-            sorted_offers = sorted(real_offers, key=lambda o: (o.get("source") != "ebay", not o.get("image_url")))
+            # Image priority: Serper/Google > Amazon > eBay (Google images are cleanest)
+            # Offer priority: Amazon first, then one eBay, then other retailers
+            def _offer_sort_key(o):
+                src = o.get("source", "").lower()
+                url = o.get("url", "").lower()
+                if "amazon" in url or "amzn.to" in url or src == "amazon":
+                    return (0, not o.get("image_url"))
+                if src == "serper_shopping":
+                    return (1, not o.get("image_url"))
+                if src == "ebay":
+                    return (2, not o.get("image_url"))
+                return (3, not o.get("image_url"))
+
+            sorted_offers = sorted(real_offers, key=_offer_sort_key)
+
+            # Dedupe by merchant — keep only 1 offer per merchant (e.g., one eBay, one Amazon)
+            seen_merchants = set()
+            deduped_offers = []
+            for o in sorted_offers:
+                merchant_key = o.get("source", "").lower()
+                if merchant_key == "ebay":
+                    merchant_key = "ebay"  # collapse all eBay sellers
+                elif "amazon" in o.get("url", "").lower():
+                    merchant_key = "amazon"
+                else:
+                    merchant_key = o.get("merchant", "").lower()
+                if merchant_key in seen_merchants:
+                    continue
+                seen_merchants.add(merchant_key)
+                deduped_offers.append(o)
+
+            # Cap at 3 offers per product card
+            capped_offers = deduped_offers[:3]
+
             affiliate_links = []
             best_image = ""
-            for o in sorted_offers:
+
+            # Pick best image separately — prefer Serper > Amazon > eBay
+            def _image_priority(o):
+                src = o.get("source", "").lower()
+                if src == "serper_shopping":
+                    return 0
+                if "amazon" in o.get("url", "").lower() or src == "amazon":
+                    return 1
+                return 2
+
+            for o in sorted(real_offers, key=_image_priority):
                 img = o.get("image_url", "")
+                if img and "placehold" not in img:
+                    best_image = img
+                    break
+
+            for o in capped_offers:
+                img = o.get("image_url", "")
+                offer_url = o.get("url", "")
+                offer_merchant = o.get("merchant", "")
+                # Label-domain parity: correct merchant label if it doesn't match the URL domain
+                derived_merchant = _domain_to_merchant(offer_url)
+                if (
+                    derived_merchant
+                    and offer_merchant.lower() != derived_merchant.lower()
+                    and "amazon" in offer_merchant.lower()
+                    and "amazon" not in offer_url.lower()
+                    and "amzn.to" not in offer_url.lower()
+                ):
+                    # Mislabeled as Amazon but URL is a different domain — correct the label
+                    offer_merchant = derived_merchant
                 affiliate_links.append({
                     "product_id": f"{o.get('source', 'unknown')}-{idx}",
-                    "title": o.get("merchant", "") + " - " + pname,
+                    "title": offer_merchant + " - " + pname,
                     "price": o.get("price", 0),
                     "currency": o.get("currency", "USD"),
-                    "affiliate_link": o.get("url", ""),
-                    "merchant": o.get("merchant", ""),
+                    "affiliate_link": offer_url,
+                    "merchant": offer_merchant,
                     "image_url": img,
                     "rating": o.get("rating"),
                     "review_count": o.get("review_count"),
                 })
-                if not best_image and img:
-                    best_image = img
 
             if not affiliate_links:
                 continue
@@ -874,6 +1179,68 @@ FORMAT REQUIREMENTS:
             review_card_count += 1
 
         logger.info(f"[product_compose] Built {review_card_count} unified product_review cards")
+
+        # ── Fallback cards for blog-mentioned products without product_review blocks ──
+        # Every product mentioned in the blog article must have a clickable card
+        fallback_card_count = 0
+        for pname in blog_product_names:
+            if review_card_count + fallback_card_count >= 5:
+                break   # cap reached — stop entirely
+            if pname in seen_card_names:
+                continue   # skip duplicate but keep iterating
+
+            # Build Amazon search URL as fallback affiliate link
+            amazon_search_url = f"https://www.amazon.com/s?k={quote_plus(pname)}&tag=revguide-20"
+
+            # Get review data if available
+            review_bundle = review_data.get(pname, {})
+            consensus = _get_result(f'consensus:{pname}', '')
+            avg_rating = review_bundle.get("avg_rating", 0)
+            label = editorial_labels.get(pname, "")
+
+            # Try to find image from any source
+            fallback_image = ""
+            for p in products_with_offers:
+                if _fuzzy_product_match(p.get("name", ""), pname):
+                    for o in p.get("all_offers", []):
+                        if o.get("image_url") and "placehold" not in o.get("image_url", ""):
+                            fallback_image = o["image_url"]
+                            break
+                    break
+
+            fallback_links = [{
+                "product_id": f"amazon-search-{fallback_card_count + 1}",
+                "title": f"Amazon - {pname}",
+                "price": 0,
+                "currency": "USD",
+                "affiliate_link": amazon_search_url,
+                "merchant": "Amazon",
+                "image_url": "",
+                "rating": None,
+                "review_count": None,
+            }]
+
+            card_data = {
+                "product_name": pname,
+                "image_url": fallback_image,
+                "rating": f"{avg_rating}/5" if avg_rating else "",
+                "summary": consensus if consensus else "",
+                "features": [label] if label else [],
+                "pros": [],
+                "cons": [],
+                "affiliate_links": fallback_links,
+                "rank": review_card_count + fallback_card_count + 1,
+            }
+
+            ui_blocks.append({
+                "type": "product_review",
+                "data": card_data,
+            })
+            seen_card_names.add(pname)
+            fallback_card_count += 1
+
+        if fallback_card_count > 0:
+            logger.info(f"[product_compose] Added {fallback_card_count} fallback product cards with Amazon search links")
 
         # ── Restore review_sources UI block (deleted in bd4b5c3) ──
         if review_data and review_bundles:
@@ -958,7 +1325,7 @@ FORMAT REQUIREMENTS:
             for provider_name, data in products_by_provider.items():
                 for product in data["products"]:
                     title = product.get("title", "")
-                    if title in seen_products or product_idx >= 8:
+                    if title in seen_products or product_idx >= 5:
                         continue
                     seen_products.add(title)
                     product_idx += 1
@@ -987,8 +1354,16 @@ FORMAT REQUIREMENTS:
             if not assistant_text:
                 assistant_text = "Here's what I found for you."
 
-        # Create citations
-        citations = [p["url"] for p in normalized_products if p.get("url")][:5]
+        # Create citations — prefer review source URLs (Wirecutter, Reddit, etc.)
+        # Only include URLs that start with "http" to exclude fabricated/empty URLs
+        review_source_urls = []
+        for bundle in review_bundles.values():
+            for source in bundle.get("sources", [])[:2]:
+                url = source.get("url")
+                if url and url.startswith("http"):
+                    review_source_urls.append(url)
+
+        citations = review_source_urls[:5] or [p["url"] for p in normalized_products if p.get("url") and p["url"].startswith("http")][:5]
 
         # Log summary
         provider_summary = ", ".join([f"{len(affiliate_products.get(p, []))} {p}" for p in sorted_providers])
