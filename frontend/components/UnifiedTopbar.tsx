@@ -174,15 +174,8 @@ export default function UnifiedTopbar({
             >
               Compare
             </Link>
-            <Link
-              href="/browse"
-              className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'profile'
-                ? 'text-[var(--text)] bg-[var(--surface)]'
-                : 'text-[var(--text-muted)] hover:text-[var(--text)]'
-                }`}
-            >
-              Profile
-            </Link>
+            {/* Profile link hidden 2026-04-21 — href was /browse (→ redirects to /), misleading.
+                Re-enable once a real /profile page ships. */}
           </nav>
 
           {/* Search Bar */}

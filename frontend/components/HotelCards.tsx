@@ -2,6 +2,7 @@
 
 import { MapPin, Star, ExternalLink, Search, Hotel as HotelIcon } from 'lucide-react'
 import { trackAffiliateClick } from '@/lib/trackAffiliate'
+import { formatDate } from '@/lib/formatDate'
 
 // Traditional hotel card with full details
 interface HotelCard {
@@ -43,18 +44,7 @@ function isPLPLink(hotel: Hotel): hotel is HotelPLPLink {
 
 // PLP Link Card Component
 function PLPLinkCard({ hotel, fullHeight = false }: { hotel: HotelPLPLink; fullHeight?: boolean }) {
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return null
-    try {
-      return new Date(dateStr).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-      })
-    } catch {
-      return dateStr
-    }
-  }
+  // Uses shared formatDate from @/lib/formatDate (dedup 2026-04-21)
 
   return (
     <a

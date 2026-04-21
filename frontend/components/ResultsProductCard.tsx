@@ -2,40 +2,12 @@
 
 import { useState } from 'react'
 import { ShoppingCart } from 'lucide-react'
-import { curatedLinks } from '@/lib/curatedLinks'
+import { lookupCuratedProduct } from '@/lib/curatedProductLookup'
 import type { ExtractedProduct } from '@/lib/extractResultsData'
 
 interface ResultsProductCardProps {
   product: ExtractedProduct
   index: number
-}
-
-function lookupCuratedProduct(name: string): { imageUrl: string | null; affiliateUrl: string | null } {
-  const nameLower = name.toLowerCase()
-  for (const category of Object.values(curatedLinks)) {
-    for (const topic of category) {
-      if (
-        topic.title.toLowerCase().includes(nameLower) ||
-        nameLower.includes(
-          topic.title
-            .toLowerCase()
-            .split(' ')
-            .slice(1)
-            .join(' ')
-            .toLowerCase()
-        )
-      ) {
-        const firstProduct = topic.products[0]
-        if (firstProduct) {
-          return {
-            imageUrl: `https://images-na.ssl-images-amazon.com/images/I/${firstProduct.asin}._SL300_.jpg`,
-            affiliateUrl: firstProduct.url,
-          }
-        }
-      }
-    }
-  }
-  return { imageUrl: null, affiliateUrl: null }
 }
 
 const POSITION_SCORES = [95, 88, 82, 76, 70]

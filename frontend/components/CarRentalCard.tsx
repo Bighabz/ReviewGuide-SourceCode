@@ -2,6 +2,7 @@
 
 import { Car, ExternalLink, Search, Calendar } from 'lucide-react'
 import { trackAffiliateClick } from '@/lib/trackAffiliate'
+import { formatDate } from '@/lib/formatDate'
 
 interface CarRental {
   type: 'plp_link'
@@ -17,18 +18,7 @@ interface CarRentalCardProps {
   cars: CarRental[]
 }
 
-function formatDate(dateStr?: string) {
-  if (!dateStr) return null
-  try {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
-    })
-  } catch {
-    return dateStr
-  }
-}
+// formatDate extracted to @/lib/formatDate (dedup 2026-04-21)
 
 export default function CarRentalCard({ cars }: CarRentalCardProps) {
   if (!cars || cars.length === 0) return null

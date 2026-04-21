@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { ShoppingCart } from 'lucide-react'
-import { curatedLinks } from '@/lib/curatedLinks'
+import { lookupCuratedProduct } from '@/lib/curatedProductLookup'
 
 interface ProductItem {
   name: string
@@ -25,24 +25,6 @@ function getRankBadge(index: number): { label: string; emoji?: string } {
     return { label: RANK_LABELS[index], emoji: RANK_EMOJIS[index] }
   }
   return { label: `#${index + 1}` }
-}
-
-function lookupCuratedProduct(name: string): { imageUrl: string | null; affiliateUrl: string | null } {
-  const nameLower = name.toLowerCase()
-  for (const category of Object.values(curatedLinks)) {
-    for (const topic of category) {
-      if (topic.title.toLowerCase().includes(nameLower) || nameLower.includes(topic.title.toLowerCase().split(' ').slice(1).join(' ').toLowerCase())) {
-        const firstProduct = topic.products[0]
-        if (firstProduct) {
-          return {
-            imageUrl: `https://images-na.ssl-images-amazon.com/images/I/${firstProduct.asin}._SL300_.jpg`,
-            affiliateUrl: firstProduct.url,
-          }
-        }
-      }
-    }
-  }
-  return { imageUrl: null, affiliateUrl: null }
 }
 
 function ProductImage({ name, imageUrl }: { name: string; imageUrl: string | null }) {

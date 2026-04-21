@@ -54,8 +54,12 @@ export default function NavLayout({ children }: NavLayoutProps) {
           <MobileHeader />
         </div>
 
-        {/* Content area — padded bottom on mobile for 64px tab bar + safe area */}
-        <main className="flex-1 min-h-0 pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-0">
+        {/* Content area — padded bottom on mobile for 64px tab bar + safe area.
+            overflow-y-auto added 2026-04-21 to fix desktop overflow at ≤1200px-tall viewports:
+            without it, content taller than (viewport - topbar - footer) overflowed main and
+            rendered behind the footer. Chat page's inner h-full overflow-hidden prevents
+            double-scroll; homepage/browse use main's scroll. */}
+        <main className="flex-1 min-h-0 overflow-y-auto pb-[calc(64px+env(safe-area-inset-bottom))] md:pb-0">
           {children}
         </main>
 
