@@ -244,6 +244,51 @@ def parse_associate_tags(tags_string: str) -> Dict[str, str]:
     return tags
 
 
+def validate_amazon_affiliate_config() -> Dict[str, Any]:
+    """
+    Validate Amazon affiliate config is set up to earn commissions.
+
+    Returns a dict describing the current state. Call this at startup and
+    log the result at CRITICAL level if misconfigured — affiliate links
+    without a tag= parameter earn $0.
+
+    Logic:
+    - If AMAZON_API_ENABLED is False (mock mode), curated amzn.to links
+      short-circuit most traffic and a missing tag is less catastrophic.
+    - If AMAZON_API_ENABLED is True and both AMAZON_ASSOCIATE_TAG is empty
+      AND parse_associate_tags(AMAZON_ASSOCIATE_TAGS) is empty, EVERY
+      generated link will be untagged = zero revenue.
+    """
+    default_tag = (settings.AMAZON_ASSOCIATE_TAG or "").strip()
+    country_tags = parse_associate_tags(settings.AMAZON_ASSOCIATE_TAGS or "")
+    has_any_tag = bool(default_tag) or bool(country_tags)
+
+    state = {
+        "enabled": settings.AMAZON_API_ENABLED,
+        "default_tag": default_tag,
+        "country_tags": country_tags,
+        "has_any_tag": has_any_tag,
+        "critical": settings.AMAZON_API_ENABLED and not has_any_tag,
+    }
+
+    if state["critical"]:
+        logger.critical(
+            "[amazon_provider] AMAZON_API_ENABLED=True but no associate tag set. "
+            "AMAZON_ASSOCIATE_TAG='%s', AMAZON_ASSOCIATE_TAGS='%s'. "
+            "Generated Amazon links will be UNTAGGED and earn $0 commission. "
+            "Set AMAZON_ASSOCIATE_TAG (e.g. 'revguide-20') in the environment.",
+            default_tag,
+            settings.AMAZON_ASSOCIATE_TAGS,
+        )
+    elif not has_any_tag:
+        logger.warning(
+            "[amazon_provider] No associate tag configured (mock mode OK, "
+            "but direct Amazon links from compose will be untagged)."
+        )
+
+    return state
+
+
 def generate_amazon_affiliate_link(
     asin: str,
     country_code: str = "US",
@@ -282,7 +327,13 @@ def generate_amazon_affiliate_link(
     if tag:
         return f"https://www.{domain}/dp/{asin}?tag={tag}"
     else:
-        # Return direct link if no tag configured
+        # No tag configured — log at WARNING so operators notice the revenue leak
+        logger.warning(
+            "[amazon_provider] generated untagged link for ASIN=%s country=%s — $0 commission. "
+            "Set AMAZON_ASSOCIATE_TAG.",
+            asin,
+            country_code,
+        )
         return f"https://www.{domain}/dp/{asin}"
 
 

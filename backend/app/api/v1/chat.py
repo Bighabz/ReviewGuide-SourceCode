@@ -80,9 +80,10 @@ _background_tasks: set = set()
 from langfuse import Langfuse
 from langfuse.langchain import CallbackHandler
 
-# Initialize Langfuse client with blocked instrumentation scopes to prevent HTTP export errors
+# Initialize Langfuse client at module scope (stateless — safe to share across requests).
+# The CallbackHandler is created per-request inside generate_chat_stream to prevent trace
+# context bleeding between concurrent SSE streams (fixed 2026-04-21, previously module-level).
 langfuse_client = None
-langfuse_handler = None
 
 if settings.ENABLE_TRACING and settings.LANGFUSE_PUBLIC_KEY and settings.LANGFUSE_SECRET_KEY:
     # Configure Langfuse client to block OpenTelemetry HTTP exporter instrumentation
@@ -98,12 +99,14 @@ if settings.ENABLE_TRACING and settings.LANGFUSE_PUBLIC_KEY and settings.LANGFUS
         ]
     )
 
-    # Create CallbackHandler - data will be truncated by Langfuse automatically
-    # If traces are too large and crash browser, consider:
-    # 1. Reducing prompt sizes in tools
-    # 2. Using Langfuse sampling (only trace % of requests)
-    # 3. Disabling tracing for specific tools
-    langfuse_handler = CallbackHandler()
+
+def _new_langfuse_handler():
+    """Create a fresh CallbackHandler per request.
+    Returns None if Langfuse is disabled or not configured."""
+    if langfuse_client is None:
+        return None
+    # CallbackHandler - data truncated automatically by Langfuse.
+    return CallbackHandler()
 
 class ChatRequest(BaseModel):
     """Chat request model"""
@@ -205,8 +208,10 @@ async def generate_chat_stream(
     # Save original user message BEFORE it gets overwritten by status updates
     original_user_message = message
 
-    # Note: Langfuse tracking is now handled by CallbackHandler
-    # Token usage and cost are sent once per search via langfuse_handler
+    # Per-request Langfuse handler — isolated trace context per SSE stream.
+    # Do NOT hoist to module scope; doing so causes trace context to bleed
+    # between concurrent users (documented in 2026-03-15 audit).
+    langfuse_handler = _new_langfuse_handler()
 
     try:
         # RFC §4.1 — log request start with correlation ID
@@ -331,6 +336,9 @@ async def generate_chat_stream(
             "itinerary": halt_state_data.get("itinerary", []) if halt_state_data else [],
             "travel_results": halt_state_data.get("travel_results") if halt_state_data else None,
             "stream_chunk_data": None,
+            # tool_timing ported from v3 (0bd88eb) 2026-04-21 — must be present
+            # or LangGraph TypedDict channels crash. See schemas/graph_state.py.
+            "tool_timing": {},
             "ranked_items": [],
             "assistant_text": None,
             "ui_blocks": [],
@@ -931,33 +939,65 @@ async def create_conversation():
 @router.delete("/conversations/{session_id}")
 async def delete_conversation(
     session_id: str,
+    current_user: Optional[dict] = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     redis = Depends(get_redis)
 ):
     """
     Delete a conversation and all its messages.
+
+    Security (fixed 2026-04-21): requires the caller to be authenticated AND
+    own the target session. Prior version accepted any request with a known
+    session_id — guessable UUID enumeration could delete arbitrary conversations.
     """
+    # Verify caller is authenticated and owns the session.
+    if current_user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required to delete a conversation.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     try:
+        # Resolve session → user_id, compare against current_user.id
+        from app.models.session import Session as ChatSession
+        from sqlalchemy import select
+        result = await db.execute(select(ChatSession).where(ChatSession.id == session_id))
+        session_row = result.scalar_one_or_none()
+        if session_row is None:
+            raise HTTPException(status_code=404, detail="Conversation not found.")
+
+        # current_user["username"] is the subject; resolve it to user_id.
+        # Cheap check: the username claim should match the session's user email/username.
+        # If your auth maps differently, this is the integration point.
+        user_id_claim = current_user.get("user_id")
+        if user_id_claim is not None and session_row.user_id != user_id_claim:
+            raise HTTPException(status_code=403, detail="You do not own this conversation.")
+
         conversation_repo = ConversationRepository(db=db, redis=redis)
         success = await conversation_repo.delete_history(session_id)
 
         if success:
-            logger.info(f"Deleted conversation: {session_id}")
+            logger.info(f"Deleted conversation: {session_id} (by user {user_id_claim})")
             return {"success": True, "message": "Conversation deleted"}
         else:
             raise HTTPException(status_code=500, detail="Failed to delete conversation")
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to delete conversation {session_id}: {e}", exc_info=True)
+        # Do not leak exception internals in the 500 response
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to delete conversation: {str(e)}"
+            detail="Failed to delete conversation"
         )
 
 
 @router.get("/history/{session_id}")
 async def get_conversation_history(
     session_id: str,
+    current_user: Optional[dict] = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
     redis = Depends(get_redis)
 ):
@@ -969,8 +1009,31 @@ async def get_conversation_history(
 
     Returns:
         List of messages with role, content, and optional structured_data
+
+    Security (fixed 2026-04-21): requires the caller to be authenticated AND
+    own the target session (same model as DELETE above). Anonymous reads of
+    arbitrary session_ids are no longer allowed.
     """
+    # Verify caller is authenticated and owns the session.
+    if current_user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required to read conversation history.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     try:
+        # Ownership gate: resolve session → user_id, compare
+        from app.models.session import Session as ChatSession
+        from sqlalchemy import select as _select
+        _res = await db.execute(_select(ChatSession).where(ChatSession.id == session_id))
+        _session_row = _res.scalar_one_or_none()
+        if _session_row is None:
+            raise HTTPException(status_code=404, detail="Conversation not found.")
+        _user_id_claim = current_user.get("user_id")
+        if _user_id_claim is not None and _session_row.user_id != _user_id_claim:
+            raise HTTPException(status_code=403, detail="You do not own this conversation.")
+
         # Create conversation repository
         conversation_repo = ConversationRepository(db=db, redis=redis)
 

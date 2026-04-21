@@ -71,7 +71,10 @@ class MetricsResponse(BaseModel):
 # ===== Config Endpoints =====
 
 @router.get("/config", response_model=List[ConfigItem])
-async def list_configs(db: Session = Depends(get_db)):
+async def list_configs(
+    db: Session = Depends(get_db),
+    _admin: dict = Depends(get_current_admin_user),
+):
     """
     List all configuration items from both database and .env
 
@@ -87,7 +90,11 @@ async def list_configs(db: Session = Depends(get_db)):
 
 
 @router.get("/config/{config_id}", response_model=ConfigItem)
-async def get_config(config_id: int, db: Session = Depends(get_db)):
+async def get_config(
+    config_id: int,
+    db: Session = Depends(get_db),
+    _admin: dict = Depends(get_current_admin_user),
+):
     """Get a single config item by ID (sensitive values masked with *********)"""
     try:
         service = ConfigService(db)
@@ -106,7 +113,12 @@ async def get_config(config_id: int, db: Session = Depends(get_db)):
 
 
 @router.put("/config/{config_id}", response_model=ConfigItem)
-async def update_config(config_id: int, update: ConfigUpdate, db: Session = Depends(get_db)):
+async def update_config(
+    config_id: int,
+    update: ConfigUpdate,
+    db: Session = Depends(get_db),
+    _admin: dict = Depends(get_current_admin_user),
+):
     """Update a config value (updates DB, Redis cache, and in-memory settings)"""
     try:
         service = ConfigService(db)
@@ -125,7 +137,11 @@ async def update_config(config_id: int, update: ConfigUpdate, db: Session = Depe
 
 
 @router.delete("/config/{config_id}")
-async def delete_config(config_id: int, db: Session = Depends(get_db)):
+async def delete_config(
+    config_id: int,
+    db: Session = Depends(get_db),
+    _admin: dict = Depends(get_current_admin_user),
+):
     """Delete a config (deletes from DB and Redis, reverts to .env default)"""
     try:
         service = ConfigService(db)
@@ -145,7 +161,11 @@ async def delete_config(config_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/config", response_model=ConfigItem)
-async def create_config(config: ConfigItem, db: Session = Depends(get_db)):
+async def create_config(
+    config: ConfigItem,
+    db: Session = Depends(get_db),
+    _admin: dict = Depends(get_current_admin_user),
+):
     """Create a new config override (saves to DB, Redis cache, and in-memory settings)"""
     try:
         service = ConfigService(db)
@@ -164,7 +184,10 @@ async def create_config(config: ConfigItem, db: Session = Depends(get_db)):
 
 
 @router.post("/config/clear-cache")
-async def clear_config_cache(db: Session = Depends(get_db)):
+async def clear_config_cache(
+    db: Session = Depends(get_db),
+    _admin: dict = Depends(get_current_admin_user),
+):
     """Invalidate config cache snapshot and rebuild (cache warming)"""
     try:
         service = ConfigService(db)

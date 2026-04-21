@@ -241,6 +241,15 @@ def build_startup_manifest() -> StartupManifest:
                 enabled=amazon_enabled,
             )
         )
+        # Loudly validate affiliate tag config regardless of AMAZON_API_ENABLED —
+        # curated amzn.to links + direct-link compose paths both rely on the tag.
+        try:
+            from app.services.affiliate.providers.amazon_provider import (
+                validate_amazon_affiliate_config,
+            )
+            validate_amazon_affiliate_config()
+        except Exception as _e:  # noqa: BLE001 — don't block startup on validator itself
+            logger.warning("[startup_manifest] Amazon tag validator failed: %s", _e)
 
         # ------------------------------------------------------------------
         # 5. eBay affiliate — optional (treated as enabled when any key set)
