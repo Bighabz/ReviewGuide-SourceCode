@@ -11,6 +11,7 @@ from datetime import datetime
 from typing import Optional, Dict, AsyncGenerator
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
+from langchain_core.language_models.chat_models import BaseChatModel
 from app.core.config import settings
 from app.core.colored_logging import get_colored_logger
 
@@ -115,6 +116,164 @@ class ModelService:
             self._llm_cache[cache_key] = ChatOpenAI(**kwargs)
             logger.info(f"[model_service] Created new ChatOpenAI instance (cache size: {len(self._llm_cache)})")
         return self._llm_cache[cache_key]
+
+    # ------------------------------------------------------------------
+    # Compose methods (ported 2026-04-21 from v3 commits 6cde1a6 + a4013da).
+    # These MUST exist because product_compose.py lines 621/657/717/839/888
+    # call model_service.generate_compose() and generate_compose_with_streaming().
+    # The callsites landed in v2-with-swipe (4a544d7, 4cb253a, b30e861) but
+    # the methods themselves were on v3-full-implementation and never cherry-
+    # picked — producing AttributeError at runtime on every product query.
+    # ------------------------------------------------------------------
+
+    def get_compose_model(self) -> BaseChatModel:
+        """Return the LLM instance for compose operations.
+
+        When ``USE_ANTHROPIC_COMPOSE`` is enabled and an Anthropic API key is
+        configured, returns a ``ChatAnthropic`` (Claude Haiku 4.5) instance.
+        Otherwise falls back to the existing ``ChatOpenAI`` path using
+        ``COMPOSER_MODEL``.
+        """
+        if getattr(settings, "USE_ANTHROPIC_COMPOSE", False) and getattr(settings, "ANTHROPIC_API_KEY", ""):
+            cache_key = ("anthropic_compose", getattr(settings, "FAST_ROUTER_MODEL", "claude-haiku-4-5-20251001"))
+            if cache_key not in self._llm_cache:
+                from langchain_anthropic import ChatAnthropic
+                self._llm_cache[cache_key] = ChatAnthropic(
+                    model=getattr(settings, "FAST_ROUTER_MODEL", "claude-haiku-4-5-20251001"),
+                    anthropic_api_key=settings.ANTHROPIC_API_KEY,
+                    max_tokens=4096,
+                    temperature=0.7,
+                    streaming=True,
+                )
+                logger.info(f"[model_service] Created ChatAnthropic compose instance (cache size: {len(self._llm_cache)})")
+            return self._llm_cache[cache_key]
+        # Fall back to existing ChatOpenAI with COMPOSER_MODEL
+        return self._get_llm(
+            model=settings.COMPOSER_MODEL,
+            temperature=0.7,
+            max_tokens=None,
+            json_mode=False,
+            stream=False,
+        )
+
+    async def generate_compose(
+            self,
+            messages: list[Dict[str, str]],
+            temperature: float = 0.7,
+            max_tokens: Optional[int] = None,
+            agent_name: Optional[str] = None,
+            session_id: Optional[str] = None,
+            response_format: Optional[Dict[str, str]] = None,
+            callbacks: Optional[list] = None,
+    ) -> str:
+        """Generate a completion using the compose model (Anthropic or OpenAI).
+
+        Mirrors ``generate()``. When ``USE_ANTHROPIC_COMPOSE`` is off (default),
+        delegates to ``generate()`` with ``COMPOSER_MODEL`` — i.e. the original
+        OpenAI path. This keeps the call sites in product_compose / general_compose
+        working whether or not the Anthropic flag is set.
+        """
+        use_anthropic = (
+            getattr(settings, "USE_ANTHROPIC_COMPOSE", False)
+            and getattr(settings, "ANTHROPIC_API_KEY", "")
+        )
+        # Flag off, or JSON-mode requested (Anthropic doesn't support OpenAI's
+        # response_format the same way) → use existing OpenAI generate().
+        if not use_anthropic or (response_format and response_format.get("type") == "json_object"):
+            return await self.generate(
+                messages=messages,
+                model=settings.COMPOSER_MODEL,
+                temperature=temperature,
+                max_tokens=max_tokens,
+                agent_name=agent_name,
+                session_id=session_id,
+                response_format=response_format,
+                callbacks=callbacks,
+            )
+
+        try:
+            llm = self.get_compose_model()
+            lc_messages = self._convert_messages(messages)
+            model_name = getattr(settings, "FAST_ROUTER_MODEL", "claude-haiku-4-5-20251001")
+            async with self._sync_semaphore:
+                if callbacks:
+                    response = await llm.ainvoke(lc_messages, config={"callbacks": callbacks})
+                else:
+                    response = await llm.ainvoke(lc_messages)
+            content = response.content
+            logger.info(json.dumps({
+                "event": "model_call", "agent": agent_name or "unknown",
+                "model": model_name, "session_id": session_id, "provider": "anthropic",
+            }))
+            return content
+        except Exception as e:
+            logger.error(json.dumps({
+                "event": "model_error", "agent": agent_name or "unknown",
+                "model": getattr(settings, "FAST_ROUTER_MODEL", "?"),
+                "error": str(e), "session_id": session_id, "provider": "anthropic",
+            }))
+            raise
+
+    async def generate_compose_with_streaming(
+            self,
+            messages: list[Dict[str, str]],
+            temperature: float = 0.7,
+            max_tokens: Optional[int] = None,
+            agent_name: Optional[str] = None,
+    ) -> str:
+        """Generate a compose completion while streaming tokens via LangGraph custom events.
+
+        Uses ``llm.astream()`` for incremental tokens dispatched as ``stream_token``
+        custom events. Falls back to ``generate_compose()`` if streaming setup fails.
+        """
+        try:
+            from langchain_core.callbacks.manager import adispatch_custom_event
+        except ImportError:
+            logger.debug("adispatch_custom_event not available, falling back to non-streaming")
+            return await self.generate_compose(
+                messages=messages, temperature=temperature,
+                max_tokens=max_tokens, agent_name=agent_name,
+            )
+        use_anthropic = (
+            getattr(settings, "USE_ANTHROPIC_COMPOSE", False)
+            and getattr(settings, "ANTHROPIC_API_KEY", "")
+        )
+        try:
+            if use_anthropic:
+                llm = self.get_compose_model()
+            else:
+                llm = self._get_llm(model=settings.COMPOSER_MODEL, temperature=temperature)
+            lc_messages = self._convert_messages(messages)
+            full_text_parts: list[str] = []
+            # Semaphore name varies across versions — guard if attribute missing.
+            _sema = getattr(self, "_streaming_semaphore", None) or getattr(self, "_sync_semaphore", None)
+            if _sema is not None:
+                async with _sema:
+                    async for chunk in llm.astream(lc_messages):
+                        if chunk.content:
+                            full_text_parts.append(chunk.content)
+                            try:
+                                await adispatch_custom_event("stream_token", {"token": chunk.content})
+                            except Exception:
+                                pass
+            else:
+                async for chunk in llm.astream(lc_messages):
+                    if chunk.content:
+                        full_text_parts.append(chunk.content)
+                        try:
+                            await adispatch_custom_event("stream_token", {"token": chunk.content})
+                        except Exception:
+                            pass
+            result = "".join(full_text_parts)
+            if agent_name:
+                logger.info(f"[{agent_name}] Streamed {len(result)} chars ({len(full_text_parts)} chunks)")
+            return result
+        except Exception as e:
+            logger.warning(f"Streaming compose failed ({e}), falling back to non-streaming")
+            return await self.generate_compose(
+                messages=messages, temperature=temperature,
+                max_tokens=max_tokens, agent_name=agent_name,
+            )
 
     def invalidate_cache(self, reason: str = "manual") -> int:
         """Clear all cached LLM instances.
