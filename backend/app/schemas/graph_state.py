@@ -79,6 +79,12 @@ class GraphState(TypedDict):
     # Streaming Data
     stream_chunk_data: Optional[Dict[str, Any]]  # Data to be streamed immediately: {"type": "itinerary", "data": [...]}
 
+    # Tool Timing (per-tool elapsed seconds for diagnostics)
+    # Ported from v3 commit 0bd88eb (Phase 23-03) 2026-04-21.
+    # Must be initialized to {} in initial_state (backend/app/api/v1/chat.py) —
+    # omission causes LangGraph TypedDict channels to crash.
+    tool_timing: Dict[str, float]
+
     # Ranking
     ranked_items: List[Dict[str, Any]]
 

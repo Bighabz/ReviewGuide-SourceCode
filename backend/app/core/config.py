@@ -52,8 +52,8 @@ class Settings(BaseSettings):
 
     # Database
     DATABASE_URL: str = Field(..., description="PostgreSQL connection string")
-    DB_POOL_SIZE: int = Field(default=50, description="Database connection pool size")
-    DB_MAX_OVERFLOW: int = Field(default=50, description="Database connection pool max overflow")
+    DB_POOL_SIZE: int = Field(default=10, description="Database connection pool size per worker (reduced from 50 — Postgres default max_connections=100 was exhausted at 2+ workers)")
+    DB_MAX_OVERFLOW: int = Field(default=5, description="Database connection pool max overflow per worker (reduced from 50)")
     DB_POOL_RECYCLE: int = Field(default=3600, description="Database connection recycle time in seconds")
     DB_CONNECT_TIMEOUT: int = Field(default=10, description="Database connection timeout in seconds")
 
@@ -210,7 +210,7 @@ class Settings(BaseSettings):
     PLANNER_MAX_TOKENS: int = Field(default=2000, description="Max tokens for planner agent")
     INTENT_MAX_TOKENS: int = Field(default=50, description="Max tokens for intent agent")
     CLARIFIER_MAX_TOKENS: int = Field(default=800, description="Max tokens for clarifier agent")
-    COMPOSER_MAX_TOKENS: int = Field(default=80, description="Max tokens for composer agents")
+    COMPOSER_MAX_TOKENS: int = Field(default=1500, description="Max tokens for composer agents (raised from 80 — was truncating JSON output and causing Pydantic parse failures in product_compose)")
     PRODUCT_SEARCH_MAX_TOKENS: int = Field(default=500, description="Max tokens for product search")
 
     # Search Provider Configuration
@@ -354,6 +354,7 @@ class Settings(BaseSettings):
     CONFIG_ENCRYPTION_KEY: str = Field(default="", description="Master encryption key for sensitive config values in database (Fernet key)")
 
     # Observability
+    SENTRY_DSN: str = Field(default="", description="Sentry DSN for error monitoring (added 2026-04-21 — empty = disabled)")
     LANGFUSE_PUBLIC_KEY: str = Field(default="", description="Langfuse public key")
     LANGFUSE_SECRET_KEY: str = Field(default="", description="Langfuse secret key")
     LANGFUSE_HOST: str = Field(default="https://cloud.langfuse.com", description="Langfuse host URL")
