@@ -32,6 +32,30 @@ setup_logging(
 )
 logger = get_logger(__name__)
 
+# Sentry error monitoring (added 2026-04-21).
+# Requires: pip install "sentry-sdk[fastapi]" and SENTRY_DSN env var.
+# No-op if SDK not installed or DSN empty — safe for local dev.
+_sentry_dsn = getattr(settings, "SENTRY_DSN", "") or ""
+if _sentry_dsn:
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.fastapi import FastApiIntegration
+        from sentry_sdk.integrations.starlette import StarletteIntegration
+
+        sentry_sdk.init(
+            dsn=_sentry_dsn,
+            environment=getattr(settings, "ENV", "development"),
+            integrations=[FastApiIntegration(), StarletteIntegration()],
+            traces_sample_rate=0.1,
+            # Redact known sensitive keys from breadcrumbs/payloads.
+            send_default_pii=False,
+        )
+        logger.info("[sentry] initialized (env=%s)", getattr(settings, "ENV", "?"))
+    except ImportError:
+        logger.warning("[sentry] SENTRY_DSN set but sentry-sdk not installed — skipping")
+    except Exception as _e:  # noqa: BLE001
+        logger.warning("[sentry] init failed: %s", _e)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
