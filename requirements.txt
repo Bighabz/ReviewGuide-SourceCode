@@ -56,9 +56,11 @@ aiohttp==3.13.2
 # Observability
 # =============================
 langfuse==3.9.1
-# Sentry error monitoring (added 2026-04-21). Wired in backend/app/main.py.
-# No-op unless SENTRY_DSN env var is set.
-sentry-sdk[fastapi]==2.20.0
+# sentry-sdk[fastapi]==2.20.0 — removed 2026-04-21 after Railway boot 502 following
+# its first push. Add back with a controlled dep bump once we verify compatibility
+# with the langfuse + opentelemetry stack (likely version conflict via OTel shared deps).
+# backend/app/main.py Sentry init is guarded by try/except ImportError so it's safely
+# disabled without this package.
 # OpenTelemetry core packages (required by Langfuse, but we don't use OTLP export)
 opentelemetry-api==1.38.0
 opentelemetry-sdk==1.38.0
