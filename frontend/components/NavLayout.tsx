@@ -25,6 +25,12 @@ export default function NavLayout({ children }: NavLayoutProps) {
     return <>{children}</>
   }
 
+  // Chat routes render without the desktop footer: the footer eats 395px of
+  // viewport, cramming the chat welcome screen into <350px of visible space
+  // even after main's overflow-y:auto kicks in. Chat should be chrome-free
+  // (same pattern as ChatGPT / Perplexity). Added 2026-04-21.
+  const isChat = !!pathname?.startsWith('/chat')
+
   const handleSearch = (query: string) => {
     router.push(`/chat?q=${encodeURIComponent(query)}&new=1`)
   }
@@ -63,10 +69,13 @@ export default function NavLayout({ children }: NavLayoutProps) {
           {children}
         </main>
 
-        {/* Desktop: Footer (hidden on mobile) */}
-        <div className="hidden md:block">
-          <Footer />
-        </div>
+        {/* Desktop: Footer (hidden on mobile, and hidden on /chat so the chat
+            welcome screen + input can fill the viewport). */}
+        {!isChat && (
+          <div className="hidden md:block">
+            <Footer />
+          </div>
+        )}
 
         {/* Mobile: MobileTabBar (hidden on desktop) */}
         <div className="block md:hidden">
