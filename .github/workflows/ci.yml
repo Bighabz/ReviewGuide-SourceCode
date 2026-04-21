@@ -1,0 +1,128 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, v2-with-swipe, v3-full-implementation]
+  push:
+    branches: [main, v2-with-swipe]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend (pytest + ruff + black)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: reviewguide_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Alembic migrations
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/reviewguide_test
+          REDIS_URL: redis://localhost:6379/0
+          SECRET_KEY: test-secret-key-32-characters-long-xxx
+          ADMIN_PASSWORD: test-admin-password
+          OPENAI_API_KEY: sk-test-placeholder
+        run: alembic upgrade head
+
+      - name: Run pytest
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/reviewguide_test
+          REDIS_URL: redis://localhost:6379/0
+          SECRET_KEY: test-secret-key-32-characters-long-xxx
+          ADMIN_PASSWORD: test-admin-password
+          OPENAI_API_KEY: sk-test-placeholder
+          ENV: test
+        run: pytest -x --ignore=tests/integration -q
+
+      - name: Ruff lint
+        run: ruff check backend/ || true # soft-warn for now; make hard-fail once clean
+
+      - name: Black format check
+        run: black --check backend/ || true # soft-warn for now
+
+  frontend:
+    name: Frontend (vitest + lint + build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint (Next.js)
+        run: npm run lint
+
+      - name: Unit tests (vitest)
+        run: npm run test:run
+
+      - name: Build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000
+        run: npm run build
+
+  secret-scan:
+    name: Secret scanning (gitleaks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
