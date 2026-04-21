@@ -43,7 +43,10 @@ hiredis==3.3.0
 # Authentication
 # =============================
 python-jose[cryptography]==3.5.0
-# passlib[bcrypt] removed 2026-04-21 — unused; code uses bcrypt directly in backend/app/utils/auth.py
+# passlib[bcrypt] removed 2026-04-21 — unused; code uses bcrypt directly in
+# backend/app/utils/auth.py. Adding bcrypt as a top-level dep because removing
+# passlib[bcrypt] took the transitive bcrypt install with it and crashed boot.
+bcrypt==4.2.1
 python-dotenv==1.2.1
 
 # =============================
